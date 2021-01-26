@@ -96,9 +96,9 @@ std::vector<Particle*> &QuadTree::getObjectsInBound_unchecked(const Rectangle &b
 }
 
 std::tuple<float, float, float> QuadTree::getCenterOfMass() {
-    double total_mass = 0.0f;
-    double m_r_x = 0.0;
-    double m_r_y = 0.0;
+    float total_mass = 0.0f;
+    float m_r_x = 0.0f;
+    float m_r_y = 0.0f;
     for (auto&& found : this->getObjectsInBound_unchecked(bounds)) {
         total_mass += found->m;
         m_r_x += found->m * found->x;
@@ -257,6 +257,50 @@ QuadTree *QuadTree::getChild(const double x, const double y) const noexcept {
         if (right) return children[3]; // Bottom right
     }
     return nullptr; // Cannot contain boundary -- too large
+}
+
+
+/**
+//calculate force directly
+for (auto&& found : this->getObjectsInBound_unchecked(bounds)) {
+    if (!obj->identical(found)) {
+        obj->calculateForce(found);
+    }
+}
+ **/
+
+void QuadTree::calculateForce(Particle *obj) {
+
+    if (isLeaf) {
+        auto com = getCenterOfMass();
+        Particle COMParticle = Particle(std::get<0>(com),
+                                        std::get<1>(com),
+                                        std::get<2>(com));
+        if (!obj->identical(COMParticle)) {
+            obj->calculateForce(COMParticle);
+        }
+    } else {
+        // Get distances
+        auto com = getCenterOfMass();
+        Particle COMParticle = Particle(std::get<0>(com),
+                                        std::get<1>(com),
+                                        std::get<2>(com));
+
+        float distance = obj->getDistance(COMParticle);
+
+        if ((bounds.width) / distance > 0.5f) {
+            // Go deeper in the tree
+            if (QuadTree *child = getChild(obj->x, obj->y)) {
+                child->calculateForce(obj);
+            }
+        } else {
+            if (!obj->identical(COMParticle)) {
+                std::cout << "Not identical!!!" << std::endl;
+                std::cout << COMParticle.x << " " << COMParticle.y << std::endl;
+                obj->calculateForce(COMParticle);
+            }
+        }
+    }
 }
 
 QuadTree::~QuadTree() {

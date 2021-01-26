@@ -4,7 +4,9 @@
 #include "Rectangle.h"
 #include "QuadTree.h"
 
+#include <iostream>
 #include <any>
+#include <math.h>
 
 class QuadTree;
 
@@ -18,6 +20,10 @@ public:
     double dx;  //! x-velocity
     double dy;  //! y-velocity
     double m;   //! mass
+    double ax;
+    double ay;
+    double fx;
+    double fy;
 
     /**!
      *
@@ -31,10 +37,24 @@ public:
 
     Particle();
 
+    Particle(double _x, double _y, double _m);
+
     /**!
      *
      */
-    void move(const Rectangle &map_bounds);
+    void move(const Rectangle &map_bounds, float timeStep);
+
+    void advance(const Rectangle &map_bounds, float timeStep);
+
+    float getDistance(const Particle &otherParticle);
+
+    void accelerate(const Particle &interactingParticle);
+
+    void resetForce();
+
+    void calculateForce(const Particle &interactingParticle);
+
+    bool identical(const Particle &otherParticle);
 
 private:
     /**!
@@ -45,7 +65,7 @@ private:
     /**!
      *
      */
-    Particle(const Particle&) = delete;
+    //Particle(const Particle&) = delete;
 };
 
 

@@ -9,6 +9,7 @@
 #include <tuple>
 #include <sstream>
 #include <algorithm>
+#include <iostream>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
@@ -149,6 +150,10 @@ public:
      * @return QuadTree
      */
     QuadTree *getLeaf(const Rectangle &bound);
+
+    void calculateForce(Particle *obj);
+
+    //void calculateForce(const Particle &obj);
 
     /**!
      * Destructor for the QuadTree, in order to delete the children recursively

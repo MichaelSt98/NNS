@@ -14,6 +14,7 @@ Rectangle MAP_BOUNDS = {0, 0, WINDOW_BOUNDS.width - 560, WINDOW_BOUNDS.height};
 float RADIUS = 3;
 unsigned CAPACITY = 8;
 unsigned MAX_LEVEL = 5;
+float TIME_STEP = 0.1;
 
 class Object {
 
@@ -25,9 +26,9 @@ public:
 
     Object(double _x, double _y) {
 
-        double dx = (rand() % 201 - 100) * 0.05f; //0.05f;
-        double dy = (rand() % 201 - 100) * 0.05f; //0.05f
-        double mass = 1;
+        double dx = (rand() % 201 - 100) * 0.01f; //0.05f;
+        double dy = (rand() % 201 - 100) * 0.01f; //0.05f
+        double mass = 10;
 
         item = Particle( _x, _y, dx, dy, mass);
 
@@ -36,8 +37,15 @@ public:
 
     }
 
-    void move() {
-        item.move(MAP_BOUNDS);
+    void move(float timeStep) {
+        //item.applyAcceleration();
+        item.move(MAP_BOUNDS, timeStep);
+        //item.advance(MAP_BOUNDS, 0.1f);
+        shape.setPosition((float)item.x - RADIUS/2.0f, (float)item.y - RADIUS/2.0f);
+    }
+
+    void advance(float timeStep) {
+        item.advance(MAP_BOUNDS, timeStep);
         shape.setPosition((float)item.x - RADIUS/2.0f, (float)item.y - RADIUS/2.0f);
     }
 };
@@ -78,6 +86,7 @@ int main() {
     // moving objects or frozen objects
     bool freezeObjects = false;
     bool centerOfMass = true;
+    bool gravity = true;
 
     /** GUI mainloop **/
 
@@ -98,6 +107,10 @@ int main() {
                         // M = center of mass
                     case sf::Keyboard::M:
                         centerOfMass = !centerOfMass;
+                        break;
+                        // G = gravity force
+                    case sf::Keyboard::G:
+                        gravity = !gravity;
                         break;
                         // C = clear quadtree and remove all objects
                     case sf::Keyboard::C:
@@ -133,7 +146,33 @@ int main() {
 
             if (!freezeObjects) {
                 //obj->item.move(MAP_BOUNDS);
-                obj->move();
+                //map.applyAcceleration(&obj->item);
+                //obj->move(TIME_STEP);
+
+                if (gravity) {
+                    for (auto &&inner_obj : objects) {
+                        if (!obj->item.identical(inner_obj->item)) {
+                            obj->item.calculateForce(inner_obj->item);
+                        }
+                    }
+
+                    obj->advance(TIME_STEP);
+                }
+                else {
+                    obj->move(TIME_STEP);
+                }
+
+
+                /**
+                if (gravity) {
+                    map.calculateForce(&obj->item);
+                    obj->advance(TIME_STEP);
+                }
+                else {
+                    obj->move(TIME_STEP);
+                }
+                 **/
+
                 map.update(&obj->item);
             }
             window.draw(obj->shape);
