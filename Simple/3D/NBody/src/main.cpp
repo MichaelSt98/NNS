@@ -34,6 +34,7 @@ void runSimulation(Body* b, char* image, double* hdImage);
 
 void runSimulation(Body* b, char* image, double* hdImage)
 {
+    double stepDurations [STEP_COUNT];
     Timer stepTimer;
 
     renderer.createFrame(image, hdImage, b, 1);
@@ -49,8 +50,17 @@ void runSimulation(Body* b, char* image, double* hdImage)
         {
             renderer.createFrame(image, hdImage, b, step + 1);
         }
-        Logger(INFO) << "-------------- finished timestep: " << step << " in " << stepTimer.elapsed() << " s";
+        double elapsedTime = stepTimer.elapsed();
+        stepDurations[step] = elapsedTime;
+        Logger(INFO) << "-------------- finished timestep: " << step << " in " << elapsedTime << " s";
     }
+
+    double totalElapsedTime = 0.0;
+    for(auto& num : stepDurations)
+        totalElapsedTime += num;
+
+    Logger(INFO) << "Total elapsed time:     " << totalElapsedTime;
+    Logger(INFO) << "Averaged time per step: " << totalElapsedTime/STEP_COUNT;
 }
 
 
