@@ -5,6 +5,9 @@ This repository investigates different implementations of the [Nearest neighbor 
 
 ## GitHub
 
+Investigate:
+
 * [Ixxue/FRNN](https://github.com/lxxue/FRNN): Cuda (38.8%), Python (35.2%), C++ (26.0%)
 * [JensPfeifle/sph-nearest-neighbor](https://github.com/JensPfeifle/sph-nearest-neighbor): C++ (64.3%), Jupyter Notebook (26.1%)
+* [PWiddy](https://github.com/PWhiddy/Nbody-Gravity)
 * [dials/annlib](https://github.com/dials/annlib): ANN (Approximate Nearest Neighbors) library: C++ (90.3%)

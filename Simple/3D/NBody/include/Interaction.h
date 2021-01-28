@@ -24,7 +24,7 @@ public:
 
     void singleInteraction(Body* body1, Body* body2, bool single);
 
-    void singleInteractionSymmetric(Body* body1, Body* body2);
+    //void singleInteractionSymmetric(Body* body1, Body* body2);
 
     void treeInteraction(Tree *tree, Body *body);
 

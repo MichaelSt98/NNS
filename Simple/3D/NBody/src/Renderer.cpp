@@ -89,7 +89,7 @@ double Renderer::toPixelSpace(double p, int size)
 void Renderer::colorDot(double x, double y, double vMag, double* hdImage)
 {
     const double velocityMax = maxVelocityColor;
-    const double velocityMin = minVelocityColor;
+    const double velocityMin = 0.0; //minVelocityColor;
 
     if (vMag < velocityMin)
         return;

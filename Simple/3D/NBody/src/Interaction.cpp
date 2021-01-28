@@ -8,7 +8,7 @@ Interaction::Interaction() : frictionEnabled { true } { }
 
 Interaction::Interaction(bool _frictionEnabled) : frictionEnabled { _frictionEnabled } { }
 
-void Interaction::singleInteraction(Body* body1, Body* body2, bool single) {
+void Interaction::singleInteraction(Body* body1, Body* body2, bool symmetric) {
     Vector3D positionDifference;
     positionDifference.x = (body1->position.x - body2->position.x) * TO_METERS;
     positionDifference.y = (body1->position.y - body2->position.y) * TO_METERS;
@@ -26,25 +26,15 @@ void Interaction::singleInteraction(Body* body1, Body* body2, bool single) {
     body1->acceleration.y -= force * positionDifference.y / body1->mass;
     body1->acceleration.z -= force * positionDifference.z / body1->mass;
 
-#if ENABLE_FRICTION
-        if (single)
-        {
-            double friction = 0.5/pow(2.0, FRICTION_FACTOR * (((distance + SOFTENING)) /
-                                            (TO_METERS)));
-
-            if (friction > 0.0001 && ENABLE_FRICTION)
-            {
-                body1->acceleration.x += friction * (body2->velocity.x - body1->velocity.x) / 2;
-                body1->acceleration.y += friction * (body2->velocity.y - body1->velocity.y) / 2;
-                body1->acceleration.z += friction * (body2->velocity.z - body1->velocity.z) / 2;
-            }
-        }
-#else
-    (void)single;
-#endif
+    if (symmetric) {
+        body2->acceleration.x += force * positionDifference.x / body2->mass;
+        body2->acceleration.y += force * positionDifference.y / body2->mass;
+        body2->acceleration.z += force * positionDifference.z / body2->mass;
+    }
 
 }
 
+/**
 void Interaction::singleInteractionSymmetric(Body* body1, Body* body2)
 {
     Vector3D positionDifference;
@@ -63,13 +53,14 @@ void Interaction::singleInteractionSymmetric(Body* body1, Body* body2)
     body2->acceleration.y += force * positionDifference.y / body2->mass;
     body2->acceleration.z += force * positionDifference.z / body2->mass;
 }
+ **/
 
 
 void Interaction::treeInteraction(Tree *tree, Body *body) {
 
     if (tree->isExternal()) {
         Body *treeBody = &tree->centerOfMass;
-        singleInteraction(body, treeBody, true);
+        singleInteraction(body, treeBody, false);
     }
     else if (tree->getOctant().getLength() /
             Vector3D::magnitude(tree->centerOfMass.position.x - body->position.x,
@@ -116,7 +107,7 @@ void Interaction::interactBodies(Body* bods)
     #pragma omp parallel for
     for (int bIndex=1; bIndex<NUM_BODIES; bIndex++)
     {
-        singleInteractionSymmetric(sun, &bods[bIndex]);
+        singleInteraction(sun, &bods[bIndex], true);
     }
 
     if (DEBUG_INFO) {std::cout << "\nBuilding Octree..." << std::flush;}
