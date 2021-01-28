@@ -14,12 +14,35 @@ public:
     double y;
     double z;
 
+    /**!
+     * Standard constructor for Vector3D class.
+     */
     Vector3D();
 
+    /**!
+     * Constructor for Vector3D class.
+     *
+     * @param _x x coordinate
+     * @param _y y coordinate
+     * @param _z z coordinate
+     */
     Vector3D(double _x, double _y, double _z);
 
+    /**!
+     * Calculate magnitude of the Vector3D instance.
+     *
+     * @return double, the magnitude
+     */
     double magnitude();
 
+    /**!
+     * Calculate magnitude (static method).
+     *
+     * @param _x x coordinate
+     * @param _y y coordinate
+     * @param _z y coordinate
+     * @return double, the magnitude
+     */
     static double magnitude(double _x, double _y, double _z);
 };
 

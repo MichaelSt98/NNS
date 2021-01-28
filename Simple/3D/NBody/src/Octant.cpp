@@ -39,22 +39,22 @@ bool Octant::contains(const Vector3D &particle) const {
 int Octant::getSubOctant(const Vector3D &particle) const {
     if (particle.z <= center.z) { // Lower
         if (particle.y <= center.y) { // South
-            if (particle.x <= center.x) { return 6; } // (West) return getLNW(); }
+            if (particle.x <= center.x) { return 6; } // West
             else { return 7; } // (East) return getLSW(); }
         }
         else {
-            if (particle.x <= center.x) { return 4; } // (East) return getLNE(); }
-            else { return 5; } // (South) return getLSE(); }
+            if (particle.x <= center.x) { return 4; } // East
+            else { return 5; } // South
         }
     }
     else { // Upper
         if (particle.y <= center.y) { // West
-            if (particle.x <= center.x) { return 2; } // (North) return getUNW(); }
-            else { return 3; } // (South) return getUSW();}
+            if (particle.x <= center.x) { return 2; } // North
+            else { return 3; } // South
         }
         else {
-            if (particle.x <= center.x) { return 0; } // (East) return getUNE(); }
-            else { return 1; } // (South) return getUSE(); }
+            if (particle.x <= center.x) { return 0; } // East
+            else { return 1; } // South
         }
     }
 }

@@ -9,28 +9,65 @@
 #include "Body.h"
 #include "Tree.h"
 #include "Constants.h"
+#include "Logger.h"
+#include "Utils.h"
 
 class Interaction {
 
-public:
+private:
 
     bool frictionEnabled;
 
-    //friend class Tree;
+    /**
+     * Gravitational interaction between two bodies.
+     *
+     * @param body1 Body instance
+     * @param body2 Body instance
+     * @param bool, symmetric apply force/acceleration on both bodies
+     */
+    void singleInteraction(Body* body1, Body* body2, bool symmetric);
 
-    Interaction();
-
-    Interaction(bool _frictionEnabled);
-
-    void singleInteraction(Body* body1, Body* body2, bool single);
-
-    //void singleInteractionSymmetric(Body* body1, Body* body2);
-
+    /**!
+     * Gravitational interaction from Octree (recursive).
+     *
+     * @param tree Tree instance
+     * @param body Body instance
+     */
     void treeInteraction(Tree *tree, Body *body);
 
+    /**!
+     * Update/advance particles/bodies.
+     *
+     * @param bods Body instances
+     */
+    void updateBodies(Body* bods);
+
+public:
+
+    /**!
+     * Default constructor for Interaction class.
+     */
+    Interaction();
+
+    /**!
+     * Constructor for Interaction class.
+     *
+     * @param _frictionEnabled
+     */
+    Interaction(bool _frictionEnabled);
+
+    /**!
+     * Handle interactions for all particles/bodies.
+     *
+     * * Calculate force from star(s)
+     * * Build Octree
+     * * Calculate (approximate) gravitational forces
+     * * update/advance particles
+     *
+     * @param b Body instances.
+     */
     void interactBodies(Body* b);
 
-    void updateBodies(Body* bods);
 };
 
 

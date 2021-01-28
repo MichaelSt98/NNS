@@ -22,7 +22,7 @@
 #include <random>
 #include <omp.h>
 
-Renderer renderer { WIDTH, HEIGHT, RENDER_SCALE, MAX_VEL_COLOR, MIN_VEL_COLOR,
+Renderer renderer { NUM_BODIES, WIDTH, HEIGHT, RENDER_SCALE, MAX_VEL_COLOR, MIN_VEL_COLOR,
                     PARTICLE_BRIGHTNESS, PARTICLE_SHARPNESS, DOT_SIZE,
                     SYSTEM_SIZE, RENDER_INTERVAL};
 
@@ -34,19 +34,22 @@ void runSimulation(Body* b, char* image, double* hdImage);
 
 void runSimulation(Body* b, char* image, double* hdImage)
 {
+    Timer stepTimer;
+
     renderer.createFrame(image, hdImage, b, 1);
     for (int step=1; step<STEP_COUNT; step++)
     {
-        std::cout << std::endl << "Timestep: " << step << std::endl;
+        stepTimer.reset();
+
+        Logger(INFO) << "Timestep: " << step;
+
         interactionHandler.interactBodies(b);
 
         if (step%renderer.getRenderInterval()==0)
         {
             renderer.createFrame(image, hdImage, b, step + 1);
         }
-        if (DEBUG_INFO) {
-            std::cout << std::endl << "-------Done------- timestep: " << step << "\n" << std::flush;
-        }
+        Logger(INFO) << "-------------- finished timestep: " << step << " in " << stepTimer.elapsed() << " s";
     }
 }
 
@@ -54,7 +57,7 @@ void runSimulation(Body* b, char* image, double* hdImage)
 int main()
 {
     LOGCFG.headers = true;
-    LOGCFG.level = DEBUG;
+    LOGCFG.level = INFO;
 
     Logger(INFO) << SYSTEM_THICKNESS << "AU thick disk";
 
@@ -67,7 +70,7 @@ int main()
 
     runSimulation(bodies, image, hdImage);
 
-    std::cout << std::endl << "FINISHED!" << std::endl;
+    Logger(INFO) << "FINISHED!";
 
     delete[] bodies;
     delete[] image;

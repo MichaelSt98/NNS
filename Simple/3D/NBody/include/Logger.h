@@ -2,8 +2,8 @@
 // Created by Michael Staneker on 18.12.20.
 //
 
-#ifndef BASICSPH_LOGGER_H
-#define BASICSPH_LOGGER_H
+#ifndef NBODY_LOGGER_H
+#define NBODY_LOGGER_H
 
 #include <iostream>
 #include "Utils.h"
@@ -43,4 +43,4 @@ private:
     inline Color::Modifier getColor(typelog type);
 };
 
-#endif //BASICSPH_LOGGER_H
+#endif //NBODY_LOGGER_H

@@ -4,9 +4,15 @@
 
 #include "../include/Interaction.h"
 
-Interaction::Interaction() : frictionEnabled { true } { }
+Interaction::Interaction() : frictionEnabled { true } {
+    LOGCFG.headers = true;
+    LOGCFG.level = INFO;
+}
 
-Interaction::Interaction(bool _frictionEnabled) : frictionEnabled { _frictionEnabled } { }
+Interaction::Interaction(bool _frictionEnabled) : frictionEnabled { _frictionEnabled } {
+    LOGCFG.headers = true;
+    LOGCFG.level = INFO;
+}
 
 void Interaction::singleInteraction(Body* body1, Body* body2, bool symmetric) {
     Vector3D positionDifference;
@@ -33,27 +39,6 @@ void Interaction::singleInteraction(Body* body1, Body* body2, bool symmetric) {
     }
 
 }
-
-/**
-void Interaction::singleInteractionSymmetric(Body* body1, Body* body2)
-{
-    Vector3D positionDifference;
-    positionDifference.x = (body1->position.x-body2->position.x)*TO_METERS;
-    positionDifference.y = (body1->position.y-body2->position.y)*TO_METERS;
-    positionDifference.z = (body1->position.z-body2->position.z)*TO_METERS;
-
-    double distance = positionDifference.magnitude();
-    double force = TIME_STEP * (G * body1->mass * body2->mass) /
-                   ((distance*distance + SOFTENING*SOFTENING) * distance);
-
-    body1->acceleration.x -= force * positionDifference.x / body1->mass;
-    body1->acceleration.y -= force * positionDifference.y / body1->mass;
-    body1->acceleration.z -= force * positionDifference.z / body1->mass;
-    body2->acceleration.x += force * positionDifference.x / body2->mass;
-    body2->acceleration.y += force * positionDifference.y / body2->mass;
-    body2->acceleration.z += force * positionDifference.z / body2->mass;
-}
- **/
 
 
 void Interaction::treeInteraction(Tree *tree, Body *body) {
@@ -101,8 +86,9 @@ void Interaction::treeInteraction(Tree *tree, Body *body) {
 
 void Interaction::interactBodies(Body* bods)
 {
-    // Sun interacts individually
-    if (DEBUG_INFO) {std::cout << "\nCalculating Force from star..." << std::flush;}
+
+    Logger(DEBUG) << "Calculating force from star(s) ...";
+
     Body *sun = &bods[0];
     #pragma omp parallel for
     for (int bIndex=1; bIndex<NUM_BODIES; bIndex++)
@@ -110,15 +96,14 @@ void Interaction::interactBodies(Body* bods)
         singleInteraction(sun, &bods[bIndex], true);
     }
 
-    if (DEBUG_INFO) {std::cout << "\nBuilding Octree..." << std::flush;}
+    Logger(DEBUG) << "Building Octree ...";
 
-    // Build tree
     Octant&& proot = Octant(0.0, // center x
                             0.0, // center y
-                            0.0, //0.1374,
+                            0.0, // center z
                             60.0*SYSTEM_SIZE);
-    Tree *tree = new Tree(std::move(proot));
 
+    Tree *tree = new Tree(std::move(proot));
 
     for (int bIndex=1; bIndex<NUM_BODIES; bIndex++)
     {
@@ -128,9 +113,10 @@ void Interaction::interactBodies(Body* bods)
         }
     }
 
-    if (DEBUG_INFO) {std::cout << "\nCalculating particle-particle interactions..." << std::flush;}
+    Logger(DEBUG) << "Calculating particle-particle interactions ...";
 
-    // loop through interactions
+    //ProgressBar progressBar = ProgressBar(50);
+
     #pragma omp parallel for
     for (int bIndex=1; bIndex<NUM_BODIES; bIndex++)
     {
@@ -138,6 +124,7 @@ void Interaction::interactBodies(Body* bods)
         {
             treeInteraction(tree, &bods[bIndex]);
         }
+        //progressBar.show_progress(bIndex / NUM_BODIES);
     }
 
     delete tree;
@@ -148,27 +135,13 @@ void Interaction::interactBodies(Body* bods)
 
 void Interaction::updateBodies(Body* bods)
 {
-    if (DEBUG_INFO) {std::cout << "\nUpdating particle positions..." << std::flush;}
-    double mAbove = 0.0;
-    double mBelow = 0.0;
+    Logger(DEBUG) << "Updating particle positions ...";
+
     #pragma omp for
     for (int bIndex=0; bIndex<NUM_BODIES; bIndex++)
     {
         Body *current = &bods[bIndex];
-        if (DEBUG_INFO)
-        {
-            if (bIndex==0)
-            {
-                std::cout   << std::endl
-                            << "  Star x acceleration: " << current->acceleration.x
-                            << "  Star y acceleration: " << current->acceleration.y;
-            } else if (current->position.y > 0.0)
-            {
-                mAbove += current->mass;
-            } else {
-                mBelow += current->mass;
-            }
-        }
+
         current->velocity.x += current->acceleration.x;
         current->velocity.y += current->acceleration.y;
         current->velocity.z += current->acceleration.z;
@@ -180,10 +153,5 @@ void Interaction::updateBodies(Body* bods)
         current->position.z += TIME_STEP*current->velocity.z/TO_METERS;
     }
 
-    //if (DEBUG_INFO)
-    //{
-    //    std::cout << "\nMass below: " << mBelow << " Mass Above: "
-    //              << mAbove << " \nRatio: " << mBelow/mAbove;
-    //}
 }
 

@@ -13,30 +13,73 @@ class Tree;
 
 class Octant {
 
-public:
+private:
 
     double length;
     Vector3D center;
 
+public:
+
+    /**!
+     * Constructor for Octant class.
+     *
+     * @param _x x coordinate for center
+     * @param _y y coordinate for center
+     * @param _z z coordinate for center
+     * @param _length length of octant instance
+     */
     Octant(double _x, double _y, double _z, double _length);
 
+    /**!
+     * Move constructor for Octant class.
+     *
+     * @param otherOctant other Octant instance
+     */
     Octant(Octant&& otherOctant);
 
+    /**!
+     * Copy constructor for Octant class.
+     *
+     * @param otherOctant other Octant istance
+     */
     Octant(const Octant& otherOctant);
 
+    /**!
+     * Overwritten stream operator to print Octant instances.
+     */
     friend std::ostream &operator<<(std::ostream &os, const Octant &octant);
 
+    /**!
+     * get length of the octant instance
+     *
+     * @return length of the octant instance as double
+     */
     double getLength() const;
 
+    /**!
+     * Check if particle is within the octant instance.
+     *
+     * @param particle Body instance
+     * @return bool, whether particle within the Octant
+     */
     bool contains(const Vector3D &particle) const;
 
-    int getSubOctant(const Vector3D &particle) const; //, Tree *tree) const;
-
-    // UNW; //0 // UNE; //1 // USW; //2 // USE; //3
-    // LNW; //4 // LNE; //5 // LSW; //6 // LSE; //7
-    //void getSubOctant(const Vector3D &particle,
-    //                  Octant *unw, Octant *une, Octant *usw, Octant *use,
-    //                  Octant *lnw, Octant *lne, Octant *lsw, Octant *lse);
+    /**!
+     * Get the corresponding sub-octant (when subdividing is required) in dependence of the particle to be insert
+     *
+     * * UNW -> 0
+     * * UNE -> 1
+     * * USW -> 2
+     * * USE -> 3
+     * * LNW -> 4
+     * * LNE -> 5
+     * * LSW -> 6
+     * * LSE -> 7
+     *
+     * @param particle Body instance
+     * @return integer, sub-octant
+     */
+    int getSubOctant(const Vector3D &particle) const;
 
     /**!
      * (- + +) or upper-north-west

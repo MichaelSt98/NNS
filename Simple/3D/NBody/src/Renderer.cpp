@@ -4,29 +4,32 @@
 
 #include "../include/Renderer.h"
 
-Renderer::Renderer(const int _width, const int _height, const double _renderScale, const double _maxVelocityColor,
+Renderer::Renderer(const int _numParticles, const int _width, const int _height, const double _renderScale, const double _maxVelocityColor,
                    const double _minVelocityColor, const double _particleBrightness, const double _particleSharpness,
                    const int _dotSize, const double _systemSize, const int _renderInterval) :
-            width { _width }, height { _height }, renderScale { _renderScale },
-            maxVelocityColor { _maxVelocityColor }, minVelocityColor { _minVelocityColor },
-            particleBrightness { _particleBrightness },
-            particleSharpness { _particleSharpness }, dotSize { _dotSize },
-            systemSize { _systemSize }, renderInterval { _renderInterval } {
+                    numParticles { _numParticles },
+                    width { _width }, height { _height }, renderScale { _renderScale },
+                    maxVelocityColor { _maxVelocityColor }, minVelocityColor { _minVelocityColor },
+                    particleBrightness { _particleBrightness },
+                    particleSharpness { _particleSharpness }, dotSize { _dotSize },
+                    systemSize { _systemSize }, renderInterval { _renderInterval } {
 
-    if (DEBUG_INFO) {
-        std::cout << "RENDERING RELATED PARAMETERS" << std::endl;
-        std::cout << "--------------------------------------" << std::endl;
-        std::cout << "width:              " << width << std::endl;
-        std::cout << "height:             " << height << std::endl;
-        std::cout << "renderScale:        " << renderScale << std::endl;
-        std::cout << "maxVelocityColor:   " << maxVelocityColor << std::endl;
-        std::cout << "minVelocityColor:   " << minVelocityColor << std::endl;
-        std::cout << "particleBrightness: " << particleBrightness << std::endl;
-        std::cout << "particleSharpness:  " << particleSharpness << std::endl;
-        std::cout << "dotSize:            " << dotSize << std::endl;
-        std::cout << "systemSize:         " << systemSize << std::endl;
-        std::cout << "renderInterval:     " << renderInterval << std::endl;
-    }
+    LOGCFG.headers = true;
+    LOGCFG.level = INFO;
+
+    Logger(INFO) << "RENDERING RELATED PARAMETERS";
+    Logger(INFO) << "--------------------------------------";
+    Logger(INFO) << "width:              " << width;
+    Logger(INFO) << "height:             " << height;
+    Logger(INFO) << "renderScale:        " << renderScale;
+    Logger(INFO) << "maxVelocityColor:   " << maxVelocityColor;
+    Logger(INFO) << "minVelocityColor:   " << minVelocityColor;
+    Logger(INFO) << "particleBrightness: " << particleBrightness;
+    Logger(INFO) << "particleSharpness:  " << particleSharpness;
+    Logger(INFO) << "dotSize:            " << dotSize;
+    Logger(INFO) << "systemSize:         " << systemSize;
+    Logger(INFO) << "renderInterval:     " << renderInterval;
+
 }
 
 int Renderer::getRenderInterval() {
@@ -35,21 +38,18 @@ int Renderer::getRenderInterval() {
 
 void Renderer::createFrame(char* image, double* hdImage, Body* b, int step)
 {
-    std::cout << "Writing frame " << step << std::endl;
+    Logger(INFO) <<  "Writing frame " << step;
 
-    if (DEBUG_INFO)	{
-        std::cout << "Clearing Pixels..." << std::endl << std::flush;
-    }
+
+    Logger(DEBUG) << "Clearing Pixels ...";
     renderClear(image, hdImage);
 
-    if (DEBUG_INFO) {
-        std::cout << "Rendering Particles..." << std::endl << std::flush;
-    }
+
+    Logger(DEBUG) << "Rendering Particles ...";
     renderBodies(b, hdImage);
 
-    if (DEBUG_INFO) {
-        std::cout << "Writing frame to file..." << std::endl << std::flush;
-    }
+
+    Logger(DEBUG) << "Writing frame to file ...";
     writeRender(image, hdImage, step);
 }
 
@@ -65,7 +65,7 @@ void Renderer::renderBodies(Body* b, double* hdImage)
 #ifdef PARALLEL_RENDER
     #pragma omp parallel for
 #endif
-    for(int index=0; index<NUM_BODIES; index++)
+    for(int index=0; index<numParticles; index++)
     {
         Body *current = &b[index];
 

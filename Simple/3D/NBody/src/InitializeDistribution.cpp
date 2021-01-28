@@ -4,6 +4,11 @@
 
 #include "../include/InitializeDistribution.h"
 
+InitializeDistribution::InitializeDistribution() {
+    LOGCFG.headers = true;
+    LOGCFG.level = DEBUG;
+}
+
 void InitializeDistribution::starParticleDisk(Body* bods)
 {
     using std::uniform_real_distribution;
@@ -16,7 +21,6 @@ void InitializeDistribution::starParticleDisk(Body* bods)
     double velocity;
     Body *current;
 
-    //STAR
     current = &bods[0];
     current->position.x = 0.0;
     current->position.y = 0.0;
@@ -44,9 +48,9 @@ void InitializeDistribution::starParticleDisk(Body* bods)
         current->mass = (EXTRA_MASS*SOLAR_MASS)/NUM_BODIES;
         totalExtraMass += (EXTRA_MASS*SOLAR_MASS)/NUM_BODIES;
     }
-    std::cout   << std::endl
-                << "Star mass:       " << SOLAR_MASS << std::endl
-                << "Particle weight: " << (EXTRA_MASS*SOLAR_MASS)/NUM_BODIES
-                << "Total disk mass: " << totalExtraMass << std::endl
-                << "______________________________" << std::endl;
+
+    Logger(DEBUG) << "Star mass:       " << SOLAR_MASS;
+    Logger(DEBUG) << "Particle weight: " << (EXTRA_MASS*SOLAR_MASS)/NUM_BODIES;
+    Logger(DEBUG) << "Total disk mass: " << totalExtraMass;
+    Logger(DEBUG) << "______________________________";
 }

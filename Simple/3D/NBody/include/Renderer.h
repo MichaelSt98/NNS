@@ -11,7 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <random>
-#include "Constants.h"
+//#include "Constants.h"
+#include "Logger.h"
 #include "Body.h"
 #include "Vector3D.h"
 
@@ -25,6 +26,7 @@ struct color
 class Renderer {
 
 private:
+    const int numParticles;
     const int width;
     const int height;
     const double renderScale;
@@ -47,7 +49,7 @@ private:
 
 public:
 
-    Renderer(const int _width, const int _height, const double _renderScale, const double _maxVelocityColor,
+    Renderer(const int _numParticles, const int _width, const int _height, const double _renderScale, const double _maxVelocityColor,
              const double _minVelocityColor, const double _particleBrightness, const double _particleSharpness,
              const int _dotSize, const double _systemSize, const int _renderInterval);
 

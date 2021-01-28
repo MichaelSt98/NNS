@@ -8,11 +8,15 @@
 #include <random>
 #include "Constants.h"
 #include "Body.h"
+#include "Logger.h"
 #include <iostream>
 
 
 class InitializeDistribution {
+
 public:
+    InitializeDistribution();
+
     static void starParticleDisk(Body *bods);
 };
 
