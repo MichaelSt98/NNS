@@ -38,23 +38,23 @@ bool Octant::contains(const Vector3D &particle) const {
 // LNW = 4 // LNE = 5 // LSW = 6 // LSE = 7
 int Octant::getSubOctant(const Vector3D &particle) const {
     if (particle.z <= center.z) { // Lower
-        if (particle.y <= center.y) { // West
-            if (particle.x <= center.x) { return 4; } // (North) return getLNW(); }
-            else { return 6; } // (South) return getLSW(); }
+        if (particle.y <= center.y) { // South
+            if (particle.x <= center.x) { return 6; } // (West) return getLNW(); }
+            else { return 7; } // (East) return getLSW(); }
         }
         else {
-            if (particle.x <= center.x) { return 5; } // (East) return getLNE(); }
-            else { return 7; } // (South) return getLSE(); }
+            if (particle.x <= center.x) { return 4; } // (East) return getLNE(); }
+            else { return 5; } // (South) return getLSE(); }
         }
     }
     else { // Upper
         if (particle.y <= center.y) { // West
-            if (particle.x <= center.x) { return 0; } // (North) return getUNW(); }
-            else { return 2; } // (South) return getUSW();}
+            if (particle.x <= center.x) { return 2; } // (North) return getUNW(); }
+            else { return 3; } // (South) return getUSW();}
         }
         else {
-            if (particle.x <= center.x) { return 1; } // (East) return getUNE(); }
-            else { return 3; } // (South) return getUSE(); }
+            if (particle.x <= center.x) { return 0; } // (East) return getUNE(); }
+            else { return 1; } // (South) return getUSE(); }
         }
     }
 }

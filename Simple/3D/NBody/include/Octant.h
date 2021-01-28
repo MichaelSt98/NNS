@@ -40,7 +40,7 @@ public:
 
     /**!
      * (- + +) or upper-north-west
-     * 
+     *
      * @return upper-north-west octant
      */
     Octant getUNW() const;

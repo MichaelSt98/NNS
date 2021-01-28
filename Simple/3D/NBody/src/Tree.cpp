@@ -70,7 +70,7 @@ bool Tree::isExternal() {
 
 void Tree::insert(Body *body) {
 
-    int version = 3;
+    int version = 1;
 
     if (centerOfMass.mass == 0.0) {
         centerOfMass = *body;
