@@ -17,7 +17,9 @@ class InitializeDistribution {
 public:
     InitializeDistribution();
 
-    static void starParticleDisk(Body *bods);
+    static void starParticleDisk(Body *suns, Body *bods);
+
+    static void binaryParticleDisk(Body* suns, Body* bods);
 };
 
 

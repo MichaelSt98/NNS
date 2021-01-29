@@ -84,16 +84,23 @@ void Interaction::treeInteraction(Tree *tree, Body *body) {
 }
 
 
-void Interaction::interactBodies(Body* bods)
+void Interaction::interactBodies(Body* suns, Body* bods)
 {
 
     Logger(DEBUG) << "Calculating force from star(s) ...";
 
-    Body *sun = &bods[0];
-    //#pragma omp parallel for
-    for (int bIndex=1; bIndex<NUM_BODIES; bIndex++)
+    for (int sIndex=0; sIndex<NUM_SUNS; sIndex++)
     {
-        singleInteraction(sun, &bods[bIndex], true);
+        if (NUM_SUNS > 1) {
+            for (int ssIndex = sIndex+1; ssIndex<NUM_SUNS; ssIndex++) {
+                singleInteraction(&suns[sIndex], &suns[ssIndex], true);
+            }
+        }
+        //#pragma omp parallel for
+        for (int bIndex=0; bIndex<NUM_BODIES; bIndex++)
+        {
+            singleInteraction(&suns[sIndex], &bods[bIndex], true);
+        }
     }
 
     Logger(DEBUG) << "Building Octree ...";
@@ -105,7 +112,7 @@ void Interaction::interactBodies(Body* bods)
 
     Tree *tree = new Tree(std::move(proot));
 
-    for (int bIndex=1; bIndex<NUM_BODIES; bIndex++)
+    for (int bIndex=0; bIndex<NUM_BODIES; bIndex++)
     {
         if (tree->getOctant().contains(bods[bIndex].position))
         {
@@ -118,8 +125,10 @@ void Interaction::interactBodies(Body* bods)
     //ProgressBar progressBar = ProgressBar(50);
 
     //#pragma omp parallel for
-    for (int bIndex=1; bIndex<NUM_BODIES; bIndex++)
+    for (int bIndex=0; bIndex<NUM_BODIES; bIndex++)
     {
+        //std::cout << "x (" << bIndex << ") = " << bods[bIndex].position.x << std::endl;
+
         if (tree->getOctant().contains(bods[bIndex].position))
         {
             treeInteraction(tree, &bods[bIndex]);
@@ -129,13 +138,29 @@ void Interaction::interactBodies(Body* bods)
 
     delete tree;
 
-    updateBodies(bods);
+    updateBodies(suns, bods);
 }
 
 
-void Interaction::updateBodies(Body* bods)
+void Interaction::updateBodies(Body* suns, Body* bods)
 {
     Logger(DEBUG) << "Updating particle positions ...";
+
+    #pragma omp for
+    for (int sIndex=0; sIndex<NUM_SUNS; sIndex++)
+    {
+        Body *currentSun = &suns[sIndex];
+
+        currentSun->velocity.x += currentSun->acceleration.x;
+        currentSun->velocity.y += currentSun->acceleration.y;
+        currentSun->velocity.z += currentSun->acceleration.z;
+        currentSun->acceleration.x = 0.0;
+        currentSun->acceleration.y = 0.0;
+        currentSun->acceleration.z = 0.0;
+        currentSun->position.x += TIME_STEP*currentSun->velocity.x/TO_METERS;
+        currentSun->position.y += TIME_STEP*currentSun->velocity.y/TO_METERS;
+        currentSun->position.z += TIME_STEP*currentSun->velocity.z/TO_METERS;
+    }
 
     #pragma omp for
     for (int bIndex=0; bIndex<NUM_BODIES; bIndex++)

@@ -22,7 +22,7 @@
 #include <random>
 #include <omp.h>
 
-Renderer renderer { NUM_BODIES, WIDTH, HEIGHT, RENDER_SCALE, MAX_VEL_COLOR, MIN_VEL_COLOR,
+Renderer renderer { NUM_SUNS, NUM_BODIES, WIDTH, HEIGHT, RENDER_SCALE, MAX_VEL_COLOR, MIN_VEL_COLOR,
                     PARTICLE_BRIGHTNESS, PARTICLE_SHARPNESS, DOT_SIZE,
                     SYSTEM_SIZE, RENDER_INTERVAL};
 
@@ -30,25 +30,25 @@ Interaction interactionHandler { false };
 
 structlog LOGCFG = {};
 
-void runSimulation(Body* b, char* image, double* hdImage);
+void runSimulation(Body* s, Body* b, char* image, double* hdImage);
 
-void runSimulation(Body* b, char* image, double* hdImage)
+void runSimulation(Body* s, Body* b, char* image, double* hdImage)
 {
     double stepDurations [STEP_COUNT];
     Timer stepTimer;
 
-    renderer.createFrame(image, hdImage, b, 1);
+    renderer.createFrame(image, hdImage, s, b, 0);
     for (int step=1; step<STEP_COUNT; step++)
     {
         stepTimer.reset();
 
         Logger(INFO) << "Timestep: " << step;
 
-        interactionHandler.interactBodies(b);
+        interactionHandler.interactBodies(s, b);
 
         if (step%renderer.getRenderInterval()==0)
         {
-            renderer.createFrame(image, hdImage, b, step + 1);
+            renderer.createFrame(image, hdImage, s, b, step);
         }
         double elapsedTime = stepTimer.elapsed();
         stepDurations[step] = elapsedTime;
@@ -67,21 +67,28 @@ void runSimulation(Body* b, char* image, double* hdImage)
 int main()
 {
     LOGCFG.headers = true;
-    LOGCFG.level = INFO;
+    LOGCFG.level = DEBUG; //INFO;
 
     Logger(INFO) << SYSTEM_THICKNESS << "AU thick disk";
 
     char *image = new char[WIDTH*HEIGHT*3];
     double *hdImage = new double[WIDTH*HEIGHT*3];
 
+    Body *suns = new Body [NUM_SUNS];
     Body *bodies = new Body[NUM_BODIES];
 
-    InitializeDistribution::starParticleDisk(bodies);
+    if (!BINARY) {
+        InitializeDistribution::starParticleDisk(suns, bodies);
+    }
+    else {
+        InitializeDistribution::binaryParticleDisk(suns, bodies);
+    }
 
-    runSimulation(bodies, image, hdImage);
+    runSimulation(suns, bodies, image, hdImage);
 
     Logger(INFO) << "FINISHED!";
 
+    delete[] suns;
     delete[] bodies;
     delete[] image;
 

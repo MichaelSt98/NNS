@@ -40,7 +40,7 @@ private:
      *
      * @param bods Body instances
      */
-    void updateBodies(Body* bods);
+    void updateBodies(Body* suns, Body* bods);
 
 public:
 
@@ -66,7 +66,7 @@ public:
      *
      * @param b Body instances.
      */
-    void interactBodies(Body* b);
+    void interactBodies(Body* suns, Body* bods);
 
 };
 
