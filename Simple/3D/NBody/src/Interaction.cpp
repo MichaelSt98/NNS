@@ -90,7 +90,7 @@ void Interaction::interactBodies(Body* bods)
     Logger(DEBUG) << "Calculating force from star(s) ...";
 
     Body *sun = &bods[0];
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for (int bIndex=1; bIndex<NUM_BODIES; bIndex++)
     {
         singleInteraction(sun, &bods[bIndex], true);
@@ -117,7 +117,7 @@ void Interaction::interactBodies(Body* bods)
 
     //ProgressBar progressBar = ProgressBar(50);
 
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for (int bIndex=1; bIndex<NUM_BODIES; bIndex++)
     {
         if (tree->getOctant().contains(bods[bIndex].position))
