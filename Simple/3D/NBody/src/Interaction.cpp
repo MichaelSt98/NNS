@@ -14,12 +14,16 @@ Interaction::Interaction(bool _frictionEnabled) : frictionEnabled { _frictionEna
     LOGCFG.level = INFO;
 }
 
-void Interaction::singleInteraction(Body* body1, Body* body2, bool symmetric) {
+void Interaction::singleInteraction(Body* body1, Body* body2, bool symmetric, bool debug) {
     Vector3D positionDifference;
     positionDifference.x = (body1->position.x - body2->position.x) * TO_METERS;
     positionDifference.y = (body1->position.y - body2->position.y) * TO_METERS;
     positionDifference.z = (body1->position.z - body2->position.z) * TO_METERS;
     double distance = positionDifference.magnitude();
+
+    if (debug) {
+        Logger(DEBUG) << "positionDiffMag: " << distance;
+    }
 
     if (distance == 0) {
         return;
@@ -28,9 +32,19 @@ void Interaction::singleInteraction(Body* body1, Body* body2, bool symmetric) {
     double force = TIME_STEP * (G * body1->mass * body2->mass) /
                     ((distance*distance + SOFTENING*SOFTENING) * distance);
 
+    if (debug) {
+        Logger(DEBUG) << "Force: " << force;
+    }
+
     body1->acceleration.x -= force * positionDifference.x / body1->mass;
     body1->acceleration.y -= force * positionDifference.y / body1->mass;
     body1->acceleration.z -= force * positionDifference.z / body1->mass;
+
+    if (debug) {
+        Logger(DEBUG) << "\tAcceleration x: " << body1->acceleration.x;
+        Logger(DEBUG) << "\tAcceleration y: " << body1->acceleration.y;
+        Logger(DEBUG) << "\tAcceleration z: " << body1->acceleration.z;
+    }
 
     if (symmetric) {
         body2->acceleration.x += force * positionDifference.x / body2->mass;
@@ -91,11 +105,13 @@ void Interaction::interactBodies(Body* suns, Body* bods)
 
     for (int sIndex=0; sIndex<NUM_SUNS; sIndex++)
     {
-        if (NUM_SUNS > 1) {
-            for (int ssIndex = sIndex+1; ssIndex<NUM_SUNS; ssIndex++) {
-                singleInteraction(&suns[sIndex], &suns[ssIndex], true);
+        for (int ssIndex = 0; ssIndex<NUM_SUNS; ssIndex++) {
+            if (sIndex != ssIndex) {
+                singleInteraction(&suns[sIndex], &suns[ssIndex], false, false);
             }
         }
+
+
         //#pragma omp parallel for
         for (int bIndex=0; bIndex<NUM_BODIES; bIndex++)
         {
@@ -122,23 +138,19 @@ void Interaction::interactBodies(Body* suns, Body* bods)
 
     Logger(DEBUG) << "Calculating particle-particle interactions ...";
 
-    //ProgressBar progressBar = ProgressBar(50);
-
-    //#pragma omp parallel for
+    #pragma omp parallel for
     for (int bIndex=0; bIndex<NUM_BODIES; bIndex++)
     {
-        //std::cout << "x (" << bIndex << ") = " << bods[bIndex].position.x << std::endl;
-
         if (tree->getOctant().contains(bods[bIndex].position))
         {
             treeInteraction(tree, &bods[bIndex]);
         }
-        //progressBar.show_progress(bIndex / NUM_BODIES);
     }
 
     delete tree;
 
     updateBodies(suns, bods);
+
 }
 
 
@@ -146,7 +158,7 @@ void Interaction::updateBodies(Body* suns, Body* bods)
 {
     Logger(DEBUG) << "Updating particle positions ...";
 
-    #pragma omp for
+    //#pragma omp for
     for (int sIndex=0; sIndex<NUM_SUNS; sIndex++)
     {
         Body *currentSun = &suns[sIndex];
@@ -162,9 +174,9 @@ void Interaction::updateBodies(Body* suns, Body* bods)
         currentSun->position.z += TIME_STEP*currentSun->velocity.z/TO_METERS;
     }
 
-    #pragma omp for
-    for (int bIndex=0; bIndex<NUM_BODIES; bIndex++)
-    {
+    //#pragma omp for
+    for (int bIndex=0; bIndex<NUM_BODIES; bIndex++) {
+
         Body *current = &bods[bIndex];
 
         current->velocity.x += current->acceleration.x;

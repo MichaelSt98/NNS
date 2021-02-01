@@ -73,7 +73,7 @@ void InitializeDistribution::binaryParticleDisk(Body* suns, Body* bods)
     velocity = 0.67*sqrt((G*SOLAR_MASS)/(4*BINARY_SEPARATION*TO_METERS));
     //STAR 1
     currentSun = &suns[0];
-    currentSun->position.x = BINARY_SEPARATION;
+    currentSun->position.x = -BINARY_SEPARATION;
     currentSun->position.y = 0.0;
     currentSun->position.z = 0.0;
     currentSun->velocity.x = 0.0;
@@ -94,7 +94,7 @@ void InitializeDistribution::binaryParticleDisk(Body* suns, Body* bods)
 
     ///STARTS AT NUMBER OF STARS///
     double totalExtraMass = 0.0;
-    for (int index=1; index<NUM_BODIES; index++)
+    for (int index=0; index<NUM_BODIES; index++)
     {
         angle = randAngle(gen);
         radius = sqrt(SYSTEM_SIZE)*sqrt(randRadius(gen));
@@ -113,4 +113,77 @@ void InitializeDistribution::binaryParticleDisk(Body* suns, Body* bods)
     std::cout << "\nTotal Disk Mass: " << totalExtraMass;
     std::cout << "\nEach Particle weight: " << (EXTRA_MASS*SOLAR_MASS)/NUM_BODIES
               << "\n______________________________\n";
+}
+
+void InitializeDistribution::binary(Body* suns, Body* bods)
+{
+    //using std::uniform_real_distribution;
+    //uniform_real_distribution<double> randAngle (0.0, 200.0*PI);
+    //uniform_real_distribution<double> randRadius (INNER_BOUND, SYSTEM_SIZE);
+    //uniform_real_distribution<double> randHeight (0.0, SYSTEM_THICKNESS);
+    //std::default_random_engine gen (0);
+    //double angle;
+    //double radius;
+
+    double velocity;
+    Body *currentSun;
+
+    //STARS
+    //velocity = 10*sqrt((G*SOLAR_MASS)/(BINARY_SEPARATION*TO_METERS));
+    velocity = 0.67*sqrt((G*SOLAR_MASS)/(4*BINARY_SEPARATION*TO_METERS));
+    //STAR 1
+    currentSun = &suns[0];
+    currentSun->position.x = -BINARY_SEPARATION;
+    currentSun->position.y = 0.0;
+    currentSun->position.z = 0.0;
+    currentSun->velocity.x = 0.0;
+    currentSun->velocity.y = velocity;
+    currentSun->velocity.z = 0.0;
+    currentSun->mass = SOLAR_MASS;
+    //STAR 2
+    currentSun = suns + 1;
+    currentSun->position.x = BINARY_SEPARATION;
+    currentSun->position.y = 0.0;
+    currentSun->position.z = 0.0;
+    currentSun->velocity.x = 0.0;
+    currentSun->velocity.y = -velocity;
+    currentSun->velocity.z = 0.0;
+    currentSun->mass = SOLAR_MASS;
+}
+
+void InitializeDistribution::binary2(Body* suns, Body* bods)
+{
+    //using std::uniform_real_distribution;
+    //uniform_real_distribution<double> randAngle (0.0, 200.0*PI);
+    //uniform_real_distribution<double> randRadius (INNER_BOUND, SYSTEM_SIZE);
+    //uniform_real_distribution<double> randHeight (0.0, SYSTEM_THICKNESS);
+    //std::default_random_engine gen (0);
+    //double angle;
+    //double radius;
+
+    double velocity;
+    Body *currentSun;
+
+    //STARS
+    //velocity = 10*sqrt((G*SOLAR_MASS)/(BINARY_SEPARATION*TO_METERS));
+    velocity = 0.67*sqrt((G*SOLAR_MASS)/(4*BINARY_SEPARATION*TO_METERS));
+    //STAR 1
+    currentSun = &suns[0];
+    currentSun->position.x = -BINARY_SEPARATION;
+    currentSun->position.y = 0.0;
+    currentSun->position.z = 0.0;
+    currentSun->velocity.x = 0.0;
+    currentSun->velocity.y = velocity;
+    currentSun->velocity.z = 0.0;
+    currentSun->mass = SOLAR_MASS;
+    //STAR 2
+
+    Body *current = &bods[0];
+    current->position.x = BINARY_SEPARATION;
+    current->position.y = 0.0;
+    current->position.z = 0.0;
+    current->velocity.x = 0.0;
+    current->velocity.y = -velocity;
+    current->velocity.z = 0.0;
+    current->mass = SOLAR_MASS;
 }

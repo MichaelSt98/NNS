@@ -25,7 +25,7 @@ private:
      * @param body2 Body instance
      * @param bool, symmetric apply force/acceleration on both bodies
      */
-    void singleInteraction(Body* body1, Body* body2, bool symmetric);
+    void singleInteraction(Body* body1, Body* body2, bool symmetric, bool debug=false);
 
     /**!
      * Gravitational interaction from Octree (recursive).

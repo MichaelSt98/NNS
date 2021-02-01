@@ -64,6 +64,7 @@ void Renderer::renderClear(char* image, double* hdImage)
 
 void Renderer::renderBodies(Body* s, Body* b, double* hdImage)
 {
+
     for(int index=0; index<numSuns; index++)
     {
         Body *currentSun = &s[index];
@@ -75,7 +76,6 @@ void Renderer::renderBodies(Body* s, Body* b, double* hdImage)
             y>dotSize && y<height-dotSize)
         {
             double vMag = currentSun->velocity.magnitude(); //magnitude(current->velocity);
-            Logger(ERROR) << "vMag Sun = " << vMag;
             colorDot(currentSun->position.x, currentSun->position.y, vMag, hdImage);
 
             for (int i_x = int(currentSun->position.x*100 - ((renderScale*systemSize)*100)/200); i_x < int(currentSun->position.x*100 + ((renderScale*systemSize)*100)/200); i_x++) {
@@ -83,9 +83,6 @@ void Renderer::renderBodies(Body* s, Body* b, double* hdImage)
                     colorDot(i_x/100.0, i_y/100.0, vMag, hdImage);
                 }
             }
-
-            Logger(ERROR)  << "sun x = " << currentSun->position.x
-                                << "sun y = " << currentSun->position.y;
         }
     }
 
@@ -104,6 +101,14 @@ void Renderer::renderBodies(Body* s, Body* b, double* hdImage)
         {
             double vMag = current->velocity.magnitude(); //magnitude(current->velocity);
             colorDot(current->position.x, current->position.y, vMag, hdImage);
+
+            /**
+            for (int i_x = int(current->position.x*100 - ((renderScale*systemSize)*100)/200); i_x < int(current->position.x*100 + ((renderScale*systemSize)*100)/200); i_x++) {
+                for (int i_y = int(current->position.x*100 - ((renderScale*systemSize)*100)/200); i_y < int(current->position.x*100 + ((renderScale*systemSize)*100)/200); i_y++) {
+                    colorDot(i_x/100.0, i_y/100.0, vMag, hdImage);
+                }
+            }
+            **/
         }
     }
 }

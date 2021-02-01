@@ -23,10 +23,10 @@ const double SOLAR_MASS = 2.0e30;                   //! Solar mass (in kg)
 const double EXTRA_MASS = 1.5;                      //! Disk mass as portion of center star mass
 const double MAX_DISTANCE = 0.75;                   //! Barnes-Hut parameter (approximation factor)
 const int TIME_STEP = (3*32*1024); //(3*3*10);                //! time step in seconds
-const int STEP_COUNT = 1000; //16000;                       //! amount of (simulation) steps
+const int STEP_COUNT = 500; //16000;                       //! amount of (simulation) steps
 
 const bool BINARY = false;
-const double BINARY_SEPARATION = 0.07;
+const double BINARY_SEPARATION = 0.07; //0.07;
 
 //#define PARALLEL_RENDER // Renders faster, but can have inaccuracies (especially when many particles occupy a small space)
 #define DEBUG_INFO true // Print lots of info to the console

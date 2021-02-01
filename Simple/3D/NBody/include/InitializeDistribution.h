@@ -20,6 +20,10 @@ public:
     static void starParticleDisk(Body *suns, Body *bods);
 
     static void binaryParticleDisk(Body* suns, Body* bods);
+
+    static void binary(Body* suns, Body* bods);
+
+    static void binary2(Body* suns, Body* bods);
 };
 
 

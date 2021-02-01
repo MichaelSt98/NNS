@@ -46,12 +46,14 @@ void runSimulation(Body* s, Body* b, char* image, double* hdImage)
 
         interactionHandler.interactBodies(s, b);
 
+        double elapsedTime = stepTimer.elapsed();
+        stepDurations[step] = elapsedTime;
+
         if (step%renderer.getRenderInterval()==0)
         {
             renderer.createFrame(image, hdImage, s, b, step);
         }
-        double elapsedTime = stepTimer.elapsed();
-        stepDurations[step] = elapsedTime;
+
         Logger(INFO) << "-------------- finished timestep: " << step << " in " << elapsedTime << " s";
     }
 
@@ -82,6 +84,7 @@ int main()
     }
     else {
         InitializeDistribution::binaryParticleDisk(suns, bodies);
+        //InitializeDistribution::binary(suns, bodies);
     }
 
     runSimulation(suns, bodies, image, hdImage);
