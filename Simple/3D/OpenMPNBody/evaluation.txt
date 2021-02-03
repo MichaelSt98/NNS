@@ -1,0 +1,17 @@
+___________________________________________
+Version 1:
+	Total elapsed time:     1488.36
+	Averaged time per step: 1.48836
+
+Using OpenMP:
+	Total elapsed time:     979.663
+	Averaged time per step: 0.979663
+
+____________________________________________
+Version 3:
+	Total elapsed time:     1442.12
+	Averaged time per step: 1.44212
+
+Using OpenMP:
+	Total elapsed time:     964.222
+	Averaged time per step: 0.964222

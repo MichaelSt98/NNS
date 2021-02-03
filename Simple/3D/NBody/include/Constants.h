@@ -13,8 +13,8 @@ const double G = 6.67408e-11;               //! Gravitational constant
 
 
 
-const int NUM_BODIES = (1024*32);                   //! Number of small particles
-const int NUM_SUNS = 1; //1
+const int NUM_BODIES = 1000;//(1024*32);                   //! Number of small particles
+const int NUM_SUNS = 2; //1
 const double SYSTEM_SIZE = 3.5;                     //! Farthest particle (in AU)
 const double SYSTEM_THICKNESS = 0.08;               //! Disk thicknes (in AU)
 const double INNER_BOUND = 0.3;                     //! Closest particle to the center (in AU)
@@ -25,7 +25,7 @@ const double MAX_DISTANCE = 0.75;                   //! Barnes-Hut parameter (ap
 const int TIME_STEP = (3*32*1024); //(3*3*10);                //! time step in seconds
 const int STEP_COUNT = 500; //16000;                       //! amount of (simulation) steps
 
-const bool BINARY = false;
+const bool BINARY = true;
 const double BINARY_SEPARATION = 0.07; //0.07;
 
 //#define PARALLEL_RENDER // Renders faster, but can have inaccuracies (especially when many particles occupy a small space)

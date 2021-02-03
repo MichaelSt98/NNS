@@ -54,7 +54,6 @@ void Interaction::singleInteraction(Body* body1, Body* body2, bool symmetric, bo
 
 }
 
-
 void Interaction::treeInteraction(Tree *tree, Body *body) {
 
     if (tree->isExternal()) {
@@ -112,7 +111,6 @@ void Interaction::interactBodies(Body* suns, Body* bods)
         }
 
 
-        //#pragma omp parallel for
         for (int bIndex=0; bIndex<NUM_BODIES; bIndex++)
         {
             singleInteraction(&suns[sIndex], &bods[bIndex], true);
@@ -136,9 +134,23 @@ void Interaction::interactBodies(Body* suns, Body* bods)
         }
     }
 
+    int max_depth = 0;
+    int depth = 0;
+    for (int bIndex=0; bIndex<NUM_BODIES; bIndex++)
+    {
+        depth = 0;
+        tree->getDepth(&bods[bIndex], depth);
+        //std::cout << "depth[" << bIndex << "]: " << depth << std::endl;
+        if (depth > max_depth) {
+            max_depth = depth;
+        }
+    }
+
+    //std::cout << "DEPTH:     " << max_depth << std::endl;
+    //std::cout << "MAX DEPTH: " << tree->getMaxDepth() << std::endl;
+
     Logger(DEBUG) << "Calculating particle-particle interactions ...";
 
-    #pragma omp parallel for
     for (int bIndex=0; bIndex<NUM_BODIES; bIndex++)
     {
         if (tree->getOctant().contains(bods[bIndex].position))
@@ -158,7 +170,6 @@ void Interaction::updateBodies(Body* suns, Body* bods)
 {
     Logger(DEBUG) << "Updating particle positions ...";
 
-    //#pragma omp for
     for (int sIndex=0; sIndex<NUM_SUNS; sIndex++)
     {
         Body *currentSun = &suns[sIndex];
@@ -174,7 +185,6 @@ void Interaction::updateBodies(Body* suns, Body* bods)
         currentSun->position.z += TIME_STEP*currentSun->velocity.z/TO_METERS;
     }
 
-    //#pragma omp for
     for (int bIndex=0; bIndex<NUM_BODIES; bIndex++) {
 
         Body *current = &bods[bIndex];

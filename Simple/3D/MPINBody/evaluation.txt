@@ -1,0 +1,13 @@
+NP = 1
+_________________________________
+Total elapsed time:     484.973
+Averaged time per step: 1.61658
+
+
+NP = 2
+__________________________________
+
+Total elapsed time:     291.274
+Averaged time per step: 0.970914
+
+

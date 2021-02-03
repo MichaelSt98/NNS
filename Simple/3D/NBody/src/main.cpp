@@ -20,7 +20,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <random>
-#include <omp.h>
 
 Renderer renderer { NUM_SUNS, NUM_BODIES, WIDTH, HEIGHT, RENDER_SCALE, MAX_VEL_COLOR, MIN_VEL_COLOR,
                     PARTICLE_BRIGHTNESS, PARTICLE_SHARPNESS, DOT_SIZE,
