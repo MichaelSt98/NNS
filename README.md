@@ -20,7 +20,7 @@ Centered binary star and > 30000 particles in a disk.
 
 #### CollisionFreeQuadTree
 
-![](2D/CollisionFreeQuadTree/resources/Sample.png)
+![](2D/CollisionFreeQuadTree/resources/CollisionFreeQuadTreeSample.gif)
 
 #### CollisionQuadTree
 
