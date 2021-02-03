@@ -1,3 +1,8 @@
 **/images/
+
+**/build/
+**/bin/
+
 **/.idea/
+
 *.mp4
