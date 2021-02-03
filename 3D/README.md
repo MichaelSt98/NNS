@@ -29,6 +29,12 @@ Use the `Makefile` for compiling the project and find the binary in *bin/* calle
 
 > Note: Only tested for MacOS yet.
 
+## Other scripts
+
+* **deleteImages** script to delete images within *image/*
+* **createMP4** script to generate a movie (`*.mp4`) using the images in *image/*
+* **createGifFromMP4.sh** script to generate a GIF using a movie (`*.mp4`)
+
 
 ## Examples
 
