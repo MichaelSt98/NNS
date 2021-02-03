@@ -36,4 +36,4 @@ g++ -std=c++17 src/Rectangle.cpp src/Particle.cpp src/QuadTree.cpp src/main.cpp 
 
 #### Sample output
 
-![NBodyQuadTree sample picture](resources/Sample.png)
+![NBodyQuadTree sample picture](resources/NBodyQuadTreeSample.gif)

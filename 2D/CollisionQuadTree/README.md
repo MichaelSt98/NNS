@@ -35,4 +35,4 @@ g++ -std=c++17 src/Rectangle.cpp src/Particle.cpp src/QuadTree.cpp src/main.cpp 
 
 #### Sample output
 
-![CollisionQuadTree sample picture](resources/Sample.png)  
+![CollisionQuadTree sample picture](resources/CollisionQuadTreeSample.gif)  

@@ -24,11 +24,11 @@ Centered binary star and > 30000 particles in a disk.
 
 #### CollisionQuadTree
 
-![](2D/CollisionQuadTree/resources/Sample.png)
+![](2D/CollisionQuadTree/resources/CollisionQuadTreeSample.gif)
 
 #### NBodyQuadTree
 
-![](2D/NBodyQuadTree/resources/Sample.png)
+![](2D/NBodyQuadTree/resources/NBodyQuadTreeSample.gif)
 
 
 
