@@ -56,6 +56,8 @@ At the end of each iteration the **processors exchange the relevant information*
 Use the method of orthogonal recursive bisection (as described above) by recursively decompose the system into sub-volumes in such a way that equal number of particles lie on either side of the division. The decomposition continues for as many levels as necessary resulting in a **well balanced tree**.  
 Each of the processors is then assigned to one (or more) subvolume(s), handling (almost) the same number of particles.
 
+![ORB example](resources/ORB.png)
+
 #### Update tree instead of discarding and regenerating tree
 
 For small time steps particles are moving very small distances for each iteration. By not discarding the entire tree in every iteration, but **regenerating** those **parts of the tree** whose corresponding particles have moved outside the cell, a significant computation time can be saved (for large particle numbers).
