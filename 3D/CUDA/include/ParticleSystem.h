@@ -63,10 +63,10 @@ private:
 
 public:
 
-    BarnesHutParticleSystem(const SimulationParameters p, const int n);
-    BarnesHutParticleSystem(const BarnesHutParticleSystem &system);
-    BarnesHutParticleSystem& operator=(const BarnesHutParticleSystem &system);
-    ~BarnesHutParticleSystem();
+    ParticleSystem(const SimulationParameters p, const int n);
+    ParticleSystem(const ParticleSystem &system);
+    ParticleSystem& operator=(const ParticleSystem &system);
+    ~ParticleSystem();
 
     int getNumParticles();
     void update();

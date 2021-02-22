@@ -143,7 +143,7 @@ int main(int argc, char** argv)
     displayDeviceProperties();
 
 
-    BarnesHutParticleSystem *particles = new BarnesHutParticleSystem(parameters, numbodies);
+    ParticleSystem *particles = new ParticleSystem(parameters, numbodies);
     particles->reset();
 
     for(int i = 0 ; i < parameters.iterations ; i++){
