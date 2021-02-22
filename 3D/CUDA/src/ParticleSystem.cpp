@@ -4,7 +4,7 @@
 
 #include "../include/ParticleSystem.h"
 #include "../include/Particle.cuh"
-#include "../include/debug.h"
+#include "../include/Debug.h"
 
 #include <iostream>
 #include <stdlib.h>

@@ -6,7 +6,7 @@
 #include <string.h>
 #include <bits/stdc++.h>
 #include "../include/Parameters.h"
-#include "../include/BarnesHutParticleSystem.h"
+#include "../include/ParticleSystem.h"
 
 using namespace std;
 
