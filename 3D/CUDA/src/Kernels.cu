@@ -3,6 +3,8 @@
 //
 
 #include "../include/Kernels.cuh"
+#include "../include/Debug.h"
+#include <stdio.h>
 
 __device__ const int blockSize = 256;
 __device__ const int warp = 32;
@@ -446,7 +448,7 @@ __global__ void computeForcesKernel(float* x, float *y, float *vx, float *vy, fl
 
 
 // Kernel 6: updates the bodies
-__global__ void updateKernel(float *x, float *y, float *vx, float *vy, float *ax, float *ay, int n, float dt, float d {
+__global__ void updateKernel(float *x, float *y, float *vx, float *vy, float *ax, float *ay, int n, float dt, float d) {
 
     int bodyIndex = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = blockDim.x * gridDim.x;
