@@ -11,6 +11,72 @@ __device__ const int stackSize = 64;
 __device__ const float eps_squared = 0.025;
 __device__ const float theta = 0.5;
 
+void kernel::setDrawArray(dim3 gridSize, dim3 blockSize, float *ptr, float *x, float *y, float *z, int n) {
+
+    setDrawArrayKernel<<< gridSize, blockSize>>>(ptr, x, y, z, n);
+
+}
+
+void kernel::resetArrays(dim3 gridSize, dim3 blockSize, int *mutex, float *x, float *y, float *z, float *mass, int *count,
+                 int *start, int *sorted, int *child, int *index, float *maxX, float *minY, float *maxY,
+                 float *minZ, float *maxZ  float *top, int n, int m) {
+
+    resetArraysKernel<<< gridSize, blockSize >>>(mutex, x, y, z, mass, count, start, sorted, child, index,
+                                                 maxX, minY, maxY, minZ, maxZ  top, n, m);
+
+}
+
+void kernel::computeBoundingBox(dim3 gridSize, dim3 blockSize, int *mutex, float *x, float *y, float *z,
+                        float *maxX, float *minY, float *maxY, float *minZ, float *maxZ float *top, int n) {
+
+    computeBoundingBox<<< gridSize, blockSize >>>(mutex, x, y, z, maxX, minY, maxY, minZ, maxZ top, n);
+
+}
+
+void kernel::buildTree(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *mass, int *count, int *start,
+               int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
+               float *minZ, float *maxZ int n, int m) {
+
+    buildTreeKernel<<< gridSize, blockSize >>>(x, y, z, mass, count, start, child, index,
+                                               minX, maxX, minY, maxY, minZ, maxZ n, m);
+
+}
+
+void kernel::centreOfMass(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *mass, int *count, int *start,
+                  int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
+                  float *minZ, float *maxZ int n, int m) {
+
+    centreOfMassKernel<<< gridSize, blockSize >>>(x, y, z, mass, count, start, child, index,
+                                                  minX, maxX, minY, maxY, minZ, maxZ n, m);
+
+}
+
+void kernel::sort(dim3 gridSize, dim3 blockSize, int *count, int *start, int *sorted, int *child, int *index, int n) {
+
+    sortKernel<<< gridSize, blockSize>>>(count, start, sorted, child, index, n);
+
+}
+
+void kernel::computeForces(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *vx, float *vy, float *vz,
+                   float *ax, float *ay, float *az, float *mass, int *sorted, int *child,
+                   float *minX, float *maxX, int n, float g) {
+
+    computeForcesKernel<<<gridSize, blockSize>>>(x, y, z, vx, vy, vz, ax, ay, az,
+                                                 mass, sorted, child, minX, maxX, n, g);
+
+}
+
+void kernel::update(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *vx, float *vy, float *vz,
+            float *ax, float *ay, float *az, int n, float dt, float d) {
+
+    updateKernel<<< gridSize, blockSize >>>(x, y, z, vx, vy, vz, ax, ay, az, n, dt, d);
+
+}
+
+void kernel::copy(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *out, int n) {
+    copyKernel<<< gridSize, blockSize >>>(x, y, z, out, n);
+}
+
 
 __global__ void setDrawArrayKernel(float *ptr, float *x, float *y, float *z, int n)
 {
