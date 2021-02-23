@@ -86,9 +86,7 @@ float kernel::buildTree(float *x, float *y, float *z, float *mass, int *count, i
 
 }
 
-float kernel::centreOfMass(float *x, float *y, float *z, float *mass, int *count, int *start,
-                           int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
-                           float *minZ, float *maxZ, int n, int m) {
+float kernel::centreOfMass(float *x, float *y, float *z, float *mass, int *index, int n) {
 
     float elapsedTime;
     cudaEventCreate(&start);
@@ -96,8 +94,7 @@ float kernel::centreOfMass(float *x, float *y, float *z, float *mass, int *count
     cudaEventRecord(start, 0);
 
     std::cout << "centreOfMassKernel<<< " << gridSize << ", " << blockSize << " >>>" << std::endl;
-    centreOfMassKernel<<< gridSize, blockSize >>>(x, y, z, mass, count, start, child, index,
-            minX, maxX, minY, maxY, minZ, maxZ, n, m);
+    centreOfMassKernel<<< gridSize, blockSize >>>(x, y, z, mass, index, n);
 
     cudaEventRecord(stop,0);
     cudaEventSynchronize(stop);

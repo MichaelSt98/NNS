@@ -4,7 +4,7 @@
 
 #include "../include/InitDistribution.cuh"
 
-void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+void gpuAssert(cudaError_t code, const char *file, int line, bool abort)
 {
     if (code != cudaSuccess)
     {

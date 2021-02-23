@@ -28,9 +28,7 @@ namespace kernel {
                     int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
                     float *minZ, float *maxZ, int n, int m);
 
-    float centreOfMass(float *x, float *y, float *z, float *mass, int *count, int *start,
-                       int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
-                       float *minZ, float *maxZ, int n, int m);
+    float centreOfMass(float *x, float *y, float *z, float *mass, int *index, int n);
 
     float sort(int *count, int *start, int *sorted, int *child, int *index, int n);
 
