@@ -9,7 +9,7 @@
 #include "Constants.h"
 #include "Body.h"
 #include "Logger.h"
-#include "KernelsWrapper.h"
+#include "KernelsWrapper.cuh"
 
 #include <iostream>
 #include <cuda.h>

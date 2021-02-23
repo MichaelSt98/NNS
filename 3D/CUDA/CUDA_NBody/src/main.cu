@@ -13,7 +13,8 @@
 #include "../include/Logger.h"
 #include "../include/Timer.h"
 #include "../include/InitializeDistribution.h"
-#include "../include/Kernels.cuh"
+#include "../include/KernelsWrapper.cuh"
+#include "../include/InitDistribution.cuh"
 
 #include <fenv.h>
 #include <iostream>
