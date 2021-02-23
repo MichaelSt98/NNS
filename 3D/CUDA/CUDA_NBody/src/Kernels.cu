@@ -180,7 +180,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
             min_z = *minZ;
             max_z = *maxZ;
 
-            temp = 0;
+            temp = 2*n; //0
             childPath = 0;
 
             // x direction
@@ -256,7 +256,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
 
         if (childIndex != -2) {
 
-            int locked = temp*8 + childPath;
+            int locked = temp * 8 + childPath;
 
             if (atomicCAS(&child[locked], childIndex, -2) == childIndex) {
 
@@ -354,7 +354,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
                 newBody = true;
             }
         }
-        
+
         __syncthreads(); // needed?
     }
 }
