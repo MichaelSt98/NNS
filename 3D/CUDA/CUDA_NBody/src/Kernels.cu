@@ -150,7 +150,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
                                 int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
                                 float *minZ, float *maxZ, int n, int m) {
 
-    printf("1");
+    //printf("1");
 
     int bodyIndex = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = blockDim.x * gridDim.x;
@@ -165,7 +165,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
     float min_z;
     float max_z;
 
-    printf("2");
+    //printf("2");
 
     int childPath;
     int temp_i = 0;
@@ -174,7 +174,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
 
     while ((bodyIndex + offset) < n) {
 
-        printf("3: %d", temp_i);
+        //printf("3: %d", temp_i);
         temp_i++;
 
         if (newBody) {
@@ -355,7 +355,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
             }
         }
 
-        printf("4");
+        //printf("4");
 
         __syncthreads(); // needed?
     }
