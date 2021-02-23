@@ -180,7 +180,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
             min_z = *minZ;
             max_z = *maxZ;
 
-            temp = 2*n; //0
+            temp = 0; //m; //2*n; //0
             childPath = 0;
 
             // x direction
@@ -266,8 +266,8 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
 
                 else {
 
-                    int patch = 8*n; //4*n
-                    while(childIndex >= 0 && childIndex < n){
+                    int patch = 8*n; //4*n //-1
+                    while (childIndex >= 0 && childIndex < n) {
 
                         int cell = atomicAdd(index, 1);
                         patch = min(patch, cell);
@@ -327,19 +327,20 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
                             min_z =  0.5 * (min_z + max_z);
                         }
 
-			if (cell >= m) {
-				printf("cell index to large!\ncell: %d (> %d)\n", cell, m);
-			}
+                        if (cell >= m) {
+                            printf("cell index to large!\ncell: %d (> %d)\n", cell, m);
+                        }
 
-			//printf("cell: %d \n", cell);
-			//printf("bodyIndex + offset: %d \n", bodyIndex + offset);
+                        //printf("cell: %d \n", cell);
+                        //printf("bodyIndex + offset: %d \n", bodyIndex + offset);
 
-			x[cell] += mass[bodyIndex + offset] * x[bodyIndex + offset];
+                        x[cell] += mass[bodyIndex + offset] * x[bodyIndex + offset];
                         y[cell] += mass[bodyIndex + offset] * y[bodyIndex + offset];
                         z[cell] += mass[bodyIndex + offset] * z[bodyIndex + offset];
                         mass[cell] += mass[bodyIndex + offset];
                         count[cell] += count[bodyIndex + offset];
                         childIndex = child[8*temp + childPath];
+
                     }
 
                     child[8*temp + childPath] = bodyIndex + offset;
