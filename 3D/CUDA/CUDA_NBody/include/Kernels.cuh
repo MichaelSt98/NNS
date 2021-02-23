@@ -46,7 +46,7 @@ namespace kernel {
 __global__ void setDrawArrayKernel(float *ptr, float *x, float *y, float *z, int n);
 __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, float *mass, int *count, int *start,
                                   int *sorted, int *child, int *index, float *maxX, float *minY, float *maxY,
-                                  float *minZ, float *maxZ  float *top, int n, int m);
+                                  float *minZ, float *maxZ, float *top, int n, int m);
 
 // Kernel 1: computes bounding box around all bodies
 __global__ void computeBoundingBoxKernel(int *mutex, float *x, float *y, float *z, float *maxX, float *minY,

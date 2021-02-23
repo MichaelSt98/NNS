@@ -347,15 +347,15 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
 
                         // insert old particle
                         childPath = 0;
-                        if(x[childIndex] < 0.5 * (x_min+x_max)) {
+                        if(x[childIndex] < 0.5 * (min_x+max_x)) {
                             childPath += 1;
                         }
 
-                        if (y[childIndex] < 0.5 * (y_min+y_max)) {
+                        if (y[childIndex] < 0.5 * (min_y+max_y)) {
                             childPath += 2;
                         }
 
-                        if (z[childIndex] < 0.5 * (z_min+z_max)) {
+                        if (z[childIndex] < 0.5 * (min_z+max_z)) {
                             childPath += 4;
                         }
 
