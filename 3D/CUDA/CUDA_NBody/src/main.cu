@@ -71,6 +71,7 @@ void runSimulation(Body* s, Body* b, char* image, double* hdImage)
 
 int main()
 {
+    SimulationParameters parameters;
 
     parameters.iterations = 50;
     parameters.timestep = 0.001;

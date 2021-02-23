@@ -29,7 +29,7 @@ class InitDistribution {
 
 private:
 
-    SimulationParamters parameters;
+    SimulationParameters parameters;
 
     int step;
     int numParticles;
@@ -102,7 +102,7 @@ private:
 
 public:
 
-    InitDistribution();
+    InitDistribution(const SimulationParameters p);
     ~InitDistribution();
 
     void update();
