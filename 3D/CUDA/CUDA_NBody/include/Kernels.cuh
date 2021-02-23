@@ -55,7 +55,7 @@ __global__ void computeBoundingBoxKernel(int *mutex, float *x, float *y, float *
 // Kernel 2: hierarchically subdivides the root cells
 __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *count, int *start,
                                 int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
-                                float *minZ, float *maxZ int n, int m);
+                                float *minZ, float *maxZ, int n, int m);
 
 // Kernel 3: computes the COM for each cell
 __global__ void centreOfMassKernel(float *x, float *y, float *z, float *mass, int *index, int n);

@@ -218,8 +218,8 @@ __global__ void computeBoundingBoxKernel(int *mutex, float *x, float *y, float *
 // Kernel 2: hierachically subdivides the root cells
 __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *count, int *start,
                                 int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
-                                float *minZ, float *maxZ int n, int m)
-{
+                                float *minZ, float *maxZ, int n, int m) {
+
     int bodyIndex = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = blockDim.x * gridDim.x;
     int offset;
