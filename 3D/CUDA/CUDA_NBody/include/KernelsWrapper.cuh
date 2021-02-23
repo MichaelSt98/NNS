@@ -10,8 +10,6 @@
 
 #include "Kernels.cuh"
 
-dim3 gridSize  = 512;
-dim3 blockSize = 256;
 
 namespace kernel {
 

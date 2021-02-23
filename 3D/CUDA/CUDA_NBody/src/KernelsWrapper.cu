@@ -4,6 +4,9 @@
 
 #include "../include/KernelsWrapper.cuh"
 
+dim3 gridSize  = 512;
+dim3 blockSize = 256;
+
 float kernel::setDrawArray(float *ptr, float *x, float *y, float *z, int n) {
 
     float elapsedTime;
