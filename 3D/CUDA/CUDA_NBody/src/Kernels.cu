@@ -333,8 +333,13 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
                         else {
                             min_z =  0.5 * (min_z + max_z);
                         }
-
-                        x[cell] += mass[bodyIndex + offset] * x[bodyIndex + offset];
+			if(cell >= m){
+				printf("%s\n", "error cell index is too large!!");
+				printf("cell: %d > %d \n", cell, m);
+			}
+			//printf("cell: %d \n", cell);
+                        //printf("bodyIndex + offset: %d \n", bodyIndex + offset);
+			x[cell] += mass[bodyIndex + offset] * x[bodyIndex + offset];
                         y[cell] += mass[bodyIndex + offset] * y[bodyIndex + offset];
                         z[cell] += mass[bodyIndex + offset] * z[bodyIndex + offset];
                         mass[cell] += mass[bodyIndex + offset];
@@ -348,7 +353,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
                     child[locked] = patch;
                 }
 
-                // __threadfence();
+                __threadfence();
 
                 offset += stride;
                 newBody = true;

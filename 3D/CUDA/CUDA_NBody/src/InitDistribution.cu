@@ -18,7 +18,7 @@ InitDistribution::InitDistribution(const SimulationParameters p) {
     parameters = p;
     step = 0;
     numParticles = NUM_BODIES;
-    numNodes = 10 * numParticles + 12000; //2 * numParticles + 12000;
+    numNodes = 100 * numParticles + 12000; //2 * numParticles + 12000;
 
     // allocate host data
     h_min_x = new float;
