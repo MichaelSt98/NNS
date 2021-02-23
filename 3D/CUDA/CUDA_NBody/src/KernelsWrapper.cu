@@ -2,7 +2,7 @@
 // Created by Michael Staneker on 23.02.21.
 //
 
-#include "../include/KernelsWrapper.h"
+#include "../include/KernelsWrapper.cuh"
 
 float kernel::setDrawArray(float *ptr, float *x, float *y, float *z, int n) {
 
