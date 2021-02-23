@@ -50,7 +50,7 @@ __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, floa
 
 // Kernel 1: computes bounding box around all bodies
 __global__ void computeBoundingBoxKernel(int *mutex, float *x, float *y, float *z, float *maxX, float *minY,
-                                         float *maxY, float *minZ, float *maxZ float *top, int n);
+                                         float *maxY, float *minZ, float *maxZ, float *top, int n);
 
 // Kernel 2: hierarchically subdivides the root cells
 __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *count, int *start,
