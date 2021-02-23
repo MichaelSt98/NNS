@@ -74,7 +74,7 @@ cleaner: clean
 -include $(OBJECTS:.$(OBJEXT)=.$(DEPEXT)) #$(INCDIR)/matplotlibcpp.h
 
 #link
-$(TARGET): $(OBJECTS)
+$(TARGET): $(OBJECTS) $(CUDA_OBJECTS)
 	@echo "Linking ..."
 	@$(NVCC) $(GPU_ARCH) $(LFLAGS) $(INC) -o $(TARGETDIR)/$(TARGET) $^ $(LIB)
 
