@@ -26,7 +26,7 @@ float kernel::setDrawArray(float *ptr, float *x, float *y, float *z, int n) {
 
 float kernel::resetArrays(int *mutex, float *x, float *y, float *z, float *mass, int *count,
                           int *start, int *sorted, int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
-                          float *minZ, float *maxZ, float *top, int n, int m) {
+                          float *minZ, float *maxZ, int n, int m) {
 
     float elapsedTime;
     cudaEvent_t start_t, stop_t; // used for timing
@@ -48,7 +48,7 @@ float kernel::resetArrays(int *mutex, float *x, float *y, float *z, float *mass,
 }
 
 float kernel::computeBoundingBox(int *mutex, float *x, float *y, float *z, float *minX,
-                                 float *maxX, float *minY, float *maxY, float *minZ, float *maxZ, float *top, int n) {
+                                 float *maxX, float *minY, float *maxY, float *minZ, float *maxZ, int n) {
 
     float elapsedTime;
     cudaEvent_t start_t, stop_t; // used for timing
