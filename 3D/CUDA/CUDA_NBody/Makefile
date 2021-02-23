@@ -1,38 +1,47 @@
 #Compiler/Linker
-CXX         := g++
+CXX            := g++
+NVCC           := /usr/local/cuda-10.1/bin/nvcc #nvcc
 
 #Target binary
-TARGET      := runner
+TARGET         := runner
 
 #Directories
-SRCDIR      := ./src
-INCDIR      := ./include
-BUILDDIR    := ./build
-TARGETDIR   := ./bin
-RESDIR      := ./resources
-IDEASDIR    := ./ideas
-TESTDIR     := ./test
-DOCDIR      := ./doc
-DOCUMENTSDIR:= ./documents
+SRCDIR         := ./src
+INCDIR         := ./include
+BUILDDIR       := ./build
+TARGETDIR      := ./bin
+RESDIR         := ./resources
+IDEASDIR       := ./ideas
+TESTDIR        := ./test
+DOCDIR         := ./doc
+DOCUMENTSDIR   := ./documents
+CUDADIR        := /usr/local/cuda-10.1/bin/
 
-SRCEXT      := cpp
-DEPEXT      := d
-OBJEXT      := o
+SRCEXT         := cpp
+CUDASRCEXT     := cu
+DEPEXT         := d
+OBJEXT         := o
 
 #Flags, Libraries and Includes
-CXXFLAGS    += -std=c++11 -g #-Wno-conversion -g3 #-std=c++17 -O3 -Wall -pedantic -Wno-vla-extension -I/usr/local/include/ -I/usr/local/include/eigen3/ -I./include -I./src
-LFLAGS      := -std=c++11 -lomp #-O3 -Wall -Wno-deprecated -Werror -pedantic -L/usr/local/lib/
-LIB         := -Xpreprocessor -fopenmp #-lomp
-INC         := -I$(INCDIR) #-I/usr/local/include
-INCDEP      := -I$(INCDIR)
+CXXFLAGS       += -std=c++11 -g #-Wno-conversion -g3 #-std=c++17 -O3 -Wall -pedantic -Wno-vla-extension -I/usr/local/include/ -I/usr/local/include/eigen3/ -I./include -I./src
+NVFLAGS        := -x cu -c -dc -O3  -Xcompiler "-O3 -pthread" -Wno-deprecated-gpu-targets
+LFLAGS         := -lm -lcudart -lpthread -lconfig #-O3 -Wall -Wno-deprecated -Werror -pedantic -L/usr/local/lib/
+GPU_ARCH       := -arch=sm_52
+CUDALFLAGS     := -dlink
+CUDALINKOBJ    := cuLink.o #needed?
+LIB            :=
+INC            := -I$(INCDIR) #-I/usr/local/include
+INCDEP         := -I$(INCDIR)
 
 #Source and Object files
-SOURCES     := $(shell find $(SRCDIR) -type f -name "*.$(SRCEXT)")
-OBJECTS     := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
+SOURCES        := $(shell find $(SRCDIR) -type f -name "*.$(SRCEXT)")
+CUDA_SOURCES   := $(shell find $(SRCDIR) -type f -name "*.$(CUDASRCEXT)")
+OBJECTS        := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
+CUDA_OBJECTS   := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(CUDA_SOURCES:.$(CUDASRCEXT)=.$(OBJEXT)))
 
 #Documentation (Doxygen)
-DOXY        := /usr/local/Cellar/doxygen/1.8.20/bin/doxygen
-DOXYFILE    := $(DOCDIR)/Doxyfile
+DOXY           := /usr/local/Cellar/doxygen/1.8.20/bin/doxygen
+DOXYFILE       := $(DOCDIR)/Doxyfile
 
 #default make (all)
 all: resources tester ideas $(TARGET)
@@ -49,6 +58,7 @@ resources: directories
 
 #make directories
 directories:
+	@mkdir -p $(RESDIR)
 	@mkdir -p $(TARGETDIR)
 	@mkdir -p $(BUILDDIR)
 
@@ -79,6 +89,10 @@ $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@sed -e 's/.*://' -e 's/\\$$//' < $(BUILDDIR)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(BUILDDIR)/$*.$(DEPEXT)
 	@rm -f $(BUILDDIR)/$*.$(DEPEXT).tmp
 
+$(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(CUDASRCEXT)
+	@echo "  compiling: " $(SRCDIR)/$*
+	@mkdir -p $(dir $@)
+	$(NVCC) $(GPU_ARCH) $(NVFLAGS) -I$(CUDADIR) $<
 
 #compile test files
 tester: directories
