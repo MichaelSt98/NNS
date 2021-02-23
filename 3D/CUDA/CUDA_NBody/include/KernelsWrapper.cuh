@@ -22,7 +22,7 @@ namespace kernel {
                       float *minZ, float *maxZ,  float *top, int n, int m);
 
     float computeBoundingBox(int *mutex, float *x, float *y, float *z,
-                             float *maxX, float *minY, float *maxY, float *minZ, float *maxZ float *top, int n);
+                             float *maxX, float *minY, float *maxY, float *minZ, float *maxZ, float *top, int n);
 
     float buildTree(float *x, float *y, float *z, float *mass, int *count, int *start,
                     int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
