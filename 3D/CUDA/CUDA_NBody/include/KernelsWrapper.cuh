@@ -10,35 +10,38 @@
 
 #include "Kernels.cuh"
 
+dim3 gridSize  = 512;
+dim3 blockSize = 256;
+
 namespace kernel {
 
-    float setDrawArray(dim3 gridSize, dim3 blockSize, float *ptr, float *x, float *y, float *z, int n);
+    float setDrawArray(float *ptr, float *x, float *y, float *z, int n);
 
-    float resetArrays(dim3 gridSize, dim3 blockSize, int *mutex, float *x, float *y, float *z, float *mass, int *count,
+    float resetArrays(int *mutex, float *x, float *y, float *z, float *mass, int *count,
                       int *start, int *sorted, int *child, int *index, float *maxX, float *minY, float *maxY,
-                      float *minZ, float *maxZ  float *top, int n, int m);
+                      float *minZ, float *maxZ,  float *top, int n, int m);
 
-    float computeBoundingBox(dim3 gridSize, dim3 blockSize, int *mutex, float *x, float *y, float *z,
+    float computeBoundingBox(int *mutex, float *x, float *y, float *z,
                              float *maxX, float *minY, float *maxY, float *minZ, float *maxZ float *top, int n);
 
-    float buildTree(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *mass, int *count, int *start,
+    float buildTree(float *x, float *y, float *z, float *mass, int *count, int *start,
                     int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
-                    float *minZ, float *maxZ int n, int m);
+                    float *minZ, float *maxZ, int n, int m);
 
-    float centreOfMass(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *mass, int *count, int *start,
+    float centreOfMass(float *x, float *y, float *z, float *mass, int *count, int *start,
                        int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
-                       float *minZ, float *maxZ int n, int m);
+                       float *minZ, float *maxZ, int n, int m);
 
-    float sort(dim3 gridSize, dim3 blockSize, int *count, int *start, int *sorted, int *child, int *index, int n);
+    float sort(int *count, int *start, int *sorted, int *child, int *index, int n);
 
-    float computeForces(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *vx, float *vy, float *vz,
+    float computeForces(float *x, float *y, float *z, float *vx, float *vy, float *vz,
                         float *ax, float *ay, float *az, float *mass, int *sorted, int *child,
                         float *minX, float *maxX, int n, float g);
 
-    float update(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *vx, float *vy, float *vz,
+    float update(float *x, float *y, float *z, float *vx, float *vy, float *vz,
                  float *ax, float *ay, float *az, int n, float dt, float d);
 
-    float copy(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *out, int n);
+    float copy(float *x, float *y, float *z, float *out, int n);
 
 }
 
