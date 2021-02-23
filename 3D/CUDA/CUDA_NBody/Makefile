@@ -15,7 +15,7 @@ IDEASDIR       := ./ideas
 TESTDIR        := ./test
 DOCDIR         := ./doc
 DOCUMENTSDIR   := ./documents
-CUDADIR        := /usr/local/cuda-10.1/bin/
+CUDADIR        := /usr/local/cuda-10.1
 
 SRCEXT         := cpp
 CUDASRCEXT     := cu
@@ -30,7 +30,7 @@ GPU_ARCH       := -arch=sm_52
 CUDALFLAGS     := -dlink
 CUDALINKOBJ    := cuLink.o #needed?
 LIB            :=
-INC            := -I$(INCDIR) -I$(CUDADIR) #-I/usr/local/include
+INC            := -I$(INCDIR) -I$(CUDADIR)/include #-I/usr/local/include
 INCDEP         := -I$(INCDIR)
 
 #Source and Object files
@@ -76,14 +76,14 @@ cleaner: clean
 #link
 $(TARGET): $(OBJECTS)
 	@echo "Linking ..."
-	@$(CXX) $(LFLAGS) $(INC) -o $(TARGETDIR)/$(TARGET) $^ $(LIB)
+	@$(NVCC) $(LFLAGS) $(INC) -o $(TARGETDIR)/$(TARGET) $^ $(LIB)
 
 #compile
 $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@echo "  compiling: " $(SRCDIR)/$*
 	@mkdir -p $(dir $@)
-	@$(CXX) $(CXXFLAGS) $(INC) -c -o $@ $< $(LIB)
-	@$(CXX) $(CXXFLAGS) $(INC) $(INCDEP) -MM $(SRCDIR)/$*.$(SRCEXT) > $(BUILDDIR)/$*.$(DEPEXT)
+	$(NVCC) $(CXXFLAGS) $(INC) -c -o $@ $< $(LIB)
+	$(NVCC) $(CXXFLAGS) $(INC) $(INCDEP) -MM $(SRCDIR)/$*.$(SRCEXT) > $(BUILDDIR)/$*.$(DEPEXT)
 	@cp -f $(BUILDDIR)/$*.$(DEPEXT) $(BUILDDIR)/$*.$(DEPEXT).tmp
 	@sed -e 's|.*:|$(BUILDDIR)/$*.$(OBJEXT):|' < $(BUILDDIR)/$*.$(DEPEXT).tmp > $(BUILDDIR)/$*.$(DEPEXT)
 	@sed -e 's/.*://' -e 's/\\$$//' < $(BUILDDIR)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(BUILDDIR)/$*.$(DEPEXT)
