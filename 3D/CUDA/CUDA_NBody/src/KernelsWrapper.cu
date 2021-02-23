@@ -20,7 +20,8 @@ float kernel::setDrawArray(float *ptr, float *x, float *y, float *z, int n) {
     cudaEventElapsedTime(&elapsedTime, start, stop);
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-    return elapsedTime
+    return elapsedTime;
+
 }
 
 float kernel::resetArrays(int *mutex, float *x, float *y, float *z, float *mass, int *count,
@@ -42,7 +43,7 @@ float kernel::resetArrays(int *mutex, float *x, float *y, float *z, float *mass,
     cudaEventElapsedTime(&elapsedTime, start, stop);
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-    return elapsedTime
+    return elapsedTime;
 
 }
 
@@ -63,7 +64,7 @@ float kernel::computeBoundingBox(int *mutex, float *x, float *y, float *z,
     cudaEventElapsedTime(&elapsedTime, start, stop);
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-    return elapsedTime
+    return elapsedTime;
 
 }
 
@@ -86,7 +87,7 @@ float kernel::buildTree(float *x, float *y, float *z, float *mass, int *count, i
     cudaEventElapsedTime(&elapsedTime, start, stop);
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-    return elapsedTime
+    return elapsedTime;
 
 }
 
@@ -106,7 +107,7 @@ float kernel::centreOfMass(float *x, float *y, float *z, float *mass, int *index
     cudaEventElapsedTime(&elapsedTime, start, stop);
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-    return elapsedTime
+    return elapsedTime;
 
 }
 
@@ -126,7 +127,7 @@ float kernel::sort(int *count, int *start, int *sorted, int *child, int *index, 
     cudaEventElapsedTime(&elapsedTime, start, stop);
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-    return elapsedTime
+    return elapsedTime;
 
 }
 
@@ -149,7 +150,7 @@ float kernel::computeForces(float *x, float *y, float *z, float *vx, float *vy, 
     cudaEventElapsedTime(&elapsedTime, start, stop);
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-    return elapsedTime
+    return elapsedTime;
 
 }
 
@@ -170,7 +171,7 @@ float kernel::update(float *x, float *y, float *z, float *vx, float *vy, float *
     cudaEventElapsedTime(&elapsedTime, start, stop);
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-    return elapsedTime
+    return elapsedTime;
 
 }
 
@@ -190,6 +191,6 @@ float kernel::copy(float *x, float *y, float *z, float *out, int n) {
     cudaEventElapsedTime(&elapsedTime, start, stop);
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-    return elapsedTime
+    return elapsedTime;
 
 }
