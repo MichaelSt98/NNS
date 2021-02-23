@@ -96,16 +96,16 @@ InitDistribution::InitDistribution(const SimulationParameters p) {
 
     // copy data to GPU device
     //Changed 2*numParticles*sizeof(float) -> 3*numParticles*sizeof(float)
-    cudaMemcpy(d_mass, h_mass, 3*numParticles*sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_x, h_x, 3*numParticles*sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_y, h_y, 3*numParticles*sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_z, h_z, 3*numParticles*sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_vx, h_vx, 3*numParticles*sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_vy, h_vy, 3*numParticles*sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_vz, h_vz, 3*numParticles*sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_ax, h_ax, 3*numParticles*sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_ay, h_ay, 3*numParticles*sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_az, h_az, 3*numParticles*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_mass, h_mass, 2*numParticles*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_x, h_x, 2*numParticles*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_y, h_y, 2*numParticles*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_z, h_z, 2*numParticles*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_vx, h_vx, 2*numParticles*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_vy, h_vy, 2*numParticles*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_vz, h_vz, 2*numParticles*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_ax, h_ax, 2*numParticles*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_ay, h_ay, 2*numParticles*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_az, h_az, 2*numParticles*sizeof(float), cudaMemcpyHostToDevice);
 
 }
 

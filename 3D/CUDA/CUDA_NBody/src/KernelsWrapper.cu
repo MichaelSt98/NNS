@@ -75,21 +75,22 @@ float kernel::buildTree(float *x, float *y, float *z, float *mass, int *count, i
                         int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
                         float *minZ, float *maxZ, int n, int m) {
 
-    float elapsedTime;
+    float elapsedTime = 0.0;
+    /*
     cudaEvent_t start_t, stop_t; // used for timing
     cudaEventCreate(&start_t);
     cudaEventCreate(&stop_t);
-    cudaEventRecord(start_t, 0);
+    cudaEventRecord(start_t, 0);*/
 
     std::cout << "buildTreeKernel<<< " /*<< gridSize << ", " << blockSize */ << " >>>" << std::endl;
     buildTreeKernel<<< gridSize, blockSize >>>(x, y, z, mass, count, start, child, index,
             minX, maxX, minY, maxY, minZ, maxZ, n, m);
 
-    cudaEventRecord(stop_t,0);
+    /*cudaEventRecord(stop_t, 0);
     cudaEventSynchronize(stop_t);
     cudaEventElapsedTime(&elapsedTime, start_t, stop_t);
     cudaEventDestroy(start_t);
-    cudaEventDestroy(stop_t);
+    cudaEventDestroy(stop_t);*/
     return elapsedTime;
 
 }
