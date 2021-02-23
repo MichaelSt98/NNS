@@ -25,7 +25,7 @@ OBJEXT         := o
 #Flags, Libraries and Includes
 CXXFLAGS       += -std=c++11 -g #-Wno-conversion -g3 #-std=c++17 -O3 -Wall -pedantic -Wno-vla-extension -I/usr/local/include/ -I/usr/local/include/eigen3/ -I./include -I./src
 NVFLAGS        := -x cu -c -dc -O3  -Xcompiler "-O3 -pthread" -Wno-deprecated-gpu-targets
-LFLAGS         := -lm #-lcudart -lpthread -lconfig #-O3 -Wall -Wno-deprecated -Werror -pedantic -L/usr/local/lib/
+LFLAGS         := -lm -L$(CUDADIR)/lib64 #-lcudart -lpthread -lconfig #-O3 -Wall -Wno-deprecated -Werror -pedantic -L/usr/local/lib/
 GPU_ARCH       := -arch=sm_52
 CUDALFLAGS     := -dlink
 CUDALINKOBJ    := cuLink.o #needed?
@@ -76,7 +76,7 @@ cleaner: clean
 #link
 $(TARGET): $(OBJECTS)
 	@echo "Linking ..."
-	@$(NVCC) $(LFLAGS) $(INC) -o $(TARGETDIR)/$(TARGET) $^ $(LIB)
+	@$(NVCC) $(GPU_ARCH) $(LFLAGS) $(INC) -o $(TARGETDIR)/$(TARGET) $^ $(LIB)
 
 #compile
 $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
