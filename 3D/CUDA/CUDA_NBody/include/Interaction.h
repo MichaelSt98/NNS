@@ -12,8 +12,6 @@
 #include "Logger.h"
 #include "Utils.h"
 
-structlog LOGCFG = {};
-
 class Interaction {
 
 private:
