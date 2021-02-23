@@ -11,6 +11,7 @@ __device__ const int stackSize = 64;
 __device__ const float eps_squared = 0.025;
 __device__ const float theta = 0.5;
 
+/*
 void kernel::setDrawArray(dim3 gridSize, dim3 blockSize, float *ptr, float *x, float *y, float *z, int n) {
 
     setDrawArrayKernel<<< gridSize, blockSize>>>(ptr, x, y, z, n);
@@ -76,6 +77,7 @@ void kernel::update(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z,
 void kernel::copy(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *out, int n) {
     copyKernel<<< gridSize, blockSize >>>(x, y, z, out, n);
 }
+ */
 
 
 __global__ void setDrawArrayKernel(float *ptr, float *x, float *y, float *z, int n)

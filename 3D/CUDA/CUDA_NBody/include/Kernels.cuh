@@ -9,6 +9,7 @@
 #ifndef CUDA_NBODY_KERNELS_CUH
 #define CUDA_NBODY_KERNELS_CUH
 
+/*
 namespace kernel {
 
     void setDrawArray(dim3 gridSize, dim3 blockSize, float *ptr, float *x, float *y, float *z, int n);
@@ -40,6 +41,7 @@ namespace kernel {
     void copy(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *out, int n);
 
 }
+ */
 
 __global__ void setDrawArrayKernel(float *ptr, float *x, float *y, float *z, int n);
 __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, float *mass, int *count, int *start,
