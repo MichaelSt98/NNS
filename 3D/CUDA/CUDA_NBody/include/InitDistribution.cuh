@@ -12,6 +12,7 @@
 #include "KernelsWrapper.cuh"
 
 #include <iostream>
+#include <stdio.h>
 #include <cuda.h>
 
 #define gpuErrorcheck(ans) { gpuAssert((ans), __FILE__, __LINE__); }
