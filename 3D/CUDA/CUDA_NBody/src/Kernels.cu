@@ -150,8 +150,6 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
                                 int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
                                 float *minZ, float *maxZ, int n, int m) {
 
-    //printf("1");
-
     int bodyIndex = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = blockDim.x * gridDim.x;
     int offset;
@@ -165,19 +163,14 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
     float min_z;
     float max_z;
 
-    //printf("2");
-
     int childPath;
-    //int temp_i = 0;
     int temp;
     offset = 0;
 
     while ((bodyIndex + offset) < n) {
 
-        //printf("3: %d", temp_i);
-        //temp_i++;
-
         if (newBody) {
+
             newBody = false;
 
             min_x = *minX;
@@ -200,7 +193,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
             }
             // y direction
             if (y[bodyIndex + offset] < 0.5 * (min_y + max_y)) {
-                childPath += 1;
+                childPath += 2;
                 max_y = 0.5 * (min_y + max_y);
             }
             else {
@@ -208,7 +201,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
             }
             // z direction
             if (z[bodyIndex + offset] < 0.5 * (min_z + max_z)) {
-                childPath += 1;
+                childPath += 4;
                 max_z = 0.5 * (min_z + max_z);
             }
             else {
@@ -234,7 +227,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
             }
             // y direction
             if (y[bodyIndex + offset] < 0.5 * (min_y + max_y)) {
-                childPath += 1;
+                childPath += 2;
                 max_y = 0.5 * (min_y + max_y);
             }
             else {
@@ -243,7 +236,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
 
             // z direction
             if (z[bodyIndex + offset] < 0.5 * (min_z + max_z)) {
-                childPath += 1;
+                childPath += 4;
                 max_z = 0.5 * (min_z + max_z);
             }
             else {
@@ -333,12 +326,14 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
                         else {
                             min_z =  0.5 * (min_z + max_z);
                         }
-			if(cell >= m){
-				printf("%s\n", "error cell index is too large!!");
-				printf("cell: %d > %d \n", cell, m);
+
+			if (cell >= m) {
+				printf("cell index to large!\ncell: %d (> %d)\n", cell, m);
 			}
+
 			//printf("cell: %d \n", cell);
-                        //printf("bodyIndex + offset: %d \n", bodyIndex + offset);
+			//printf("bodyIndex + offset: %d \n", bodyIndex + offset);
+
 			x[cell] += mass[bodyIndex + offset] * x[bodyIndex + offset];
                         y[cell] += mass[bodyIndex + offset] * y[bodyIndex + offset];
                         z[cell] += mass[bodyIndex + offset] * z[bodyIndex + offset];
@@ -353,15 +348,13 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
                     child[locked] = patch;
                 }
 
-                __threadfence();
+                //__threadfence();
 
                 offset += stride;
                 newBody = true;
             }
         }
-
-        //printf("4");
-
+        
         __syncthreads(); // needed?
     }
 }
