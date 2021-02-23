@@ -13,8 +13,9 @@ void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
     }
 }
 
-InitDistribution::InitDistribution() {
+InitDistribution::InitDistribution(const SimulationParameters p) {
 
+    parameters = p;
     step = 0;
     numParticles = NUM_BODIES;
     numNodes = 2 * numParticles + 12000;
@@ -176,13 +177,41 @@ void InitDistribution::update()
     cudaEventCreate(&stop_global);
     cudaEventRecord(start_global, 0);
 
-    kernel::resetArrays(d_mutex, d_x, d_y, d_z, d_mass, d_count, d_start, d_sorted, d_child, d_index, d_min_x, d_max_x, d_min_y, d_max_y, d_min_z, d_max_z, numParticles, numNodes);
-    kernel::computeBoundingBox(d_mutex, d_x, d_y, d_z, d_min_x, d_max_x, d_min_y, d_max_y, d_min_z, d_max_z, numParticles);
-    kernel::buildTree(d_x, d_y, d_z, d_mass, d_count, d_start, d_child, d_index, d_min_x, d_max_x, d_min_y, d_max_y, d_min_z, d_max_z, numParticles, numNodes);
-    kernel::centreOfMass(d_x, d_y, d_z, d_mass, d_index, numParticles);
-    kernel::sort(d_count, d_start, d_sorted, d_child, d_index, numParticles);
-    kernel::computeForces(d_x, d_y, d_z, d_vx, d_vy, d_vz, d_ax, d_ay, d_az, d_mass, d_sorted, d_child, d_min_x, d_max_x, numParticles, parameters.gravity);
-    kernel::update(d_x, d_y, d_z, d_vx, d_vy, d_vz, d_ax, d_ay, d_az, numParticles, parameters.timestep, parameters.dampening);
+    float elapsedTimeKernel;
+
+    elapsedTimeKernel = kernel::resetArrays(d_mutex, d_x, d_y, d_z, d_mass, d_count, d_start, d_sorted, d_child, d_index,
+                        d_min_x, d_max_x, d_min_y, d_max_y, d_min_z, d_max_z, numParticles, numNodes);
+
+    std::cout << "\tElapsed time: " << elapsedTimeKernel << std::endl;
+
+    elapsedTimeKernel = kernel::computeBoundingBox(d_mutex, d_x, d_y, d_z, d_min_x, d_max_x, d_min_y, d_max_y,
+                               d_min_z, d_max_z, numParticles);
+
+    std::cout << "\tElapsed time: " << elapsedTimeKernel << std::endl;
+
+    elapsedTimeKernel = kernel::buildTree(d_x, d_y, d_z, d_mass, d_count, d_start, d_child, d_index, d_min_x, d_max_x, d_min_y, d_max_y,
+                      d_min_z, d_max_z, numParticles, numNodes);
+
+    std::cout << "\tElapsed time: " << elapsedTimeKernel << std::endl;
+
+    elapsedTimeKernel = kernel::centreOfMass(d_x, d_y, d_z, d_mass, d_index, numParticles);
+
+    std::cout << "\tElapsed time: " << elapsedTimeKernel << std::endl;
+
+    elapsedTimeKernel = kernel::sort(d_count, d_start, d_sorted, d_child, d_index, numParticles);
+
+    std::cout << "\tElapsed time: " << elapsedTimeKernel << std::endl;
+
+    elapsedTimeKernel = kernel::computeForces(d_x, d_y, d_z, d_vx, d_vy, d_vz, d_ax, d_ay, d_az, d_mass, d_sorted, d_child,
+                          d_min_x, d_max_x, numParticles, parameters.gravity);
+
+    std::cout << "\tElapsed time: " << elapsedTimeKernel << std::endl;
+
+    elapsedTimeKernel = kernel::update(d_x, d_y, d_z, d_vx, d_vy, d_vz, d_ax, d_ay, d_az, numParticles,
+                   parameters.timestep, parameters.dampening);
+
+    std::cout << "\tElapsed time: " << elapsedTimeKernel << std::endl;
+
     //FillOutputArray(d_x, d_y, d_output, numNodes);
 
     cudaEventRecord(stop_global, 0);

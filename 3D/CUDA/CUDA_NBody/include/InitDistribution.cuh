@@ -28,6 +28,9 @@ void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
 class InitDistribution {
 
 private:
+
+    SimulationParamters parameters;
+
     int step;
     int numParticles;
     int numNodes;
@@ -99,7 +102,7 @@ private:
 
 public:
 
-    InitDistribution(Body *bods);
+    InitDistribution();
     ~InitDistribution();
 
     void update();

@@ -3,6 +3,20 @@
 
 //#define NULL 0
 
+typedef struct SimulationParameters
+{
+
+    bool opengl;
+    bool debug;
+    bool benchmark;
+    bool fullscreen;
+    float iterations;
+    float timestep;
+    float gravity;
+    float dampening;
+
+} SimulationParameters;
+
 /// Physical constants
 const double PI = 3.14159265358979323846;   //! Pi
 const double TO_METERS = 1.496e11;          //! AU to meters

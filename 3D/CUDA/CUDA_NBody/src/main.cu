@@ -31,6 +31,7 @@ Interaction interactionHandler { false };
 
 structlog LOGCFG = {};
 
+/*
 void runSimulation(Body* s, Body* b, char* image, double* hdImage);
 
 void runSimulation(Body* s, Body* b, char* image, double* hdImage)
@@ -65,10 +66,17 @@ void runSimulation(Body* s, Body* b, char* image, double* hdImage)
     Logger(INFO) << "Total elapsed time:     " << totalElapsedTime;
     Logger(INFO) << "Averaged time per step: " << totalElapsedTime/STEP_COUNT;
 }
+ */
 
 
 int main()
 {
+
+    parameters.iterations = 50;
+    parameters.timestep = 0.001;
+    parameters.gravity = 1.0;
+    parameters.dampening = 1.0;
+
     LOGCFG.headers = true;
     LOGCFG.level = DEBUG; //INFO;
 
@@ -77,23 +85,16 @@ int main()
     char *image = new char[WIDTH*HEIGHT*3];
     double *hdImage = new double[WIDTH*HEIGHT*3];
 
-    Body *suns = new Body [NUM_SUNS];
-    Body *bodies = new Body[NUM_BODIES];
+    //Body *suns = new Body [NUM_SUNS];
+    //Body *bodies = new Body[NUM_BODIES];
 
-    if (!BINARY) {
-        InitializeDistribution::starParticleDisk(suns, bodies);
+    InitDistribution *particles = new InitDistribution(parameters);
+    //particles->reset();
+
+    for(int i = 0 ; i < parameters.iterations ; i++){
+        particles->update();
     }
-    else {
-        InitializeDistribution::binaryParticleDisk(suns, bodies);
-        //InitializeDistribution::binary(suns, bodies);
-    }
 
-    runSimulation(suns, bodies, image, hdImage);
-
-    Logger(INFO) << "FINISHED!";
-
-    delete[] suns;
-    delete[] bodies;
     delete[] image;
 
     return 0;
