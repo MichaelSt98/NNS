@@ -9,39 +9,9 @@
 #ifndef CUDA_NBODY_KERNELS_CUH
 #define CUDA_NBODY_KERNELS_CUH
 
-/*
-namespace kernel {
-
-    void setDrawArray(dim3 gridSize, dim3 blockSize, float *ptr, float *x, float *y, float *z, int n);
-
-    void resetArrays(dim3 gridSize, dim3 blockSize, int *mutex, float *x, float *y, float *z, float *mass, int *count,
-                     int *start, int *sorted, int *child, int *index, float *maxX, float *minY, float *maxY,
-                     float *minZ, float *maxZ  float *top, int n, int m);
-
-    void computeBoundingBox(dim3 gridSize, dim3 blockSize, int *mutex, float *x, float *y, float *z,
-                            float *maxX, float *minY, float *maxY, float *minZ, float *maxZ float *top, int n);
-
-    void buildTree(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *mass, int *count, int *start,
-                   int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
-                   float *minZ, float *maxZ int n, int m);
-
-    void centreOfMass(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *mass, int *count, int *start,
-                      int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
-                      float *minZ, float *maxZ int n, int m);
-
-    void sort(dim3 gridSize, dim3 blockSize, int *count, int *start, int *sorted, int *child, int *index, int n);
-
-    void computeForces(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *vx, float *vy, float *vz,
-                       float *ax, float *ay, float *az, float *mass, int *sorted, int *child,
-                       float *minX, float *maxX, int n, float g);
-
-    void update(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *vx, float *vy, float *vz,
-                float *ax, float *ay, float *az, int n, float dt, float d);
-
-    void copy(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *out, int n);
-
-}
- */
+#include <iostream>
+#include <stdio.h>
+#include <cuda.h>
 
 __global__ void setDrawArrayKernel(float *ptr, float *x, float *y, float *z, int n);
 __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, float *mass, int *count, int *start,

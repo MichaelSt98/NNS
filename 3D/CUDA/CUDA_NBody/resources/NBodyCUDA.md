@@ -1,5 +1,14 @@
 # NBody CUDA
 
+## TODO
+
+* check whether Kernels are working as expected
+* mechanism to copy data from GPU to CPU in order to visualize after every iteration
+	* position 
+	* velocity (for colouring)
+* convert CPU representation to GPU representation of Bodies
+	* class to array structure  
+
 ## Links
 
 * [An Efficient CUDA Implementation of the Tree-Based Barnes Hut n-Body Algorithm](https://iss.oden.utexas.edu/Publications/Papers/burtscher11.pdf)

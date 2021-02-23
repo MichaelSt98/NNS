@@ -1,0 +1,189 @@
+//
+// Created by Michael Staneker on 23.02.21.
+//
+
+#include "../include/KernelsWrapper.h"
+
+float kernel::setDrawArray(dim3 gridSize, dim3 blockSize, float *ptr, float *x, float *y, float *z, int n) {
+
+    float elapsedTime;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start, 0);
+
+    std::cout << "setDrawArrayKernel<<< " << gridSize << ", " << blockSize << " >>>" << std::endl;
+    setDrawArrayKernel<<< gridSize, blockSize>>>(ptr, x, y, z, n);
+
+    cudaEventRecord(stop,0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+    return elapsedTime
+}
+
+float kernel::resetArrays(dim3 gridSize, dim3 blockSize, int *mutex, float *x, float *y, float *z, float *mass, int *count,
+                          int *start, int *sorted, int *child, int *index, float *maxX, float *minY, float *maxY,
+                          float *minZ, float *maxZ  float *top, int n, int m) {
+
+    float elapsedTime;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start, 0);
+
+    std::cout << "resetArraysKernel<<< " << gridSize << ", " << blockSize << " >>>" << std::endl;
+    resetArraysKernel<<< gridSize, blockSize >>>(mutex, x, y, z, mass, count, start, sorted, child, index,
+            maxX, minY, maxY, minZ, maxZ  top, n, m);
+
+    cudaEventRecord(stop,0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+    return elapsedTime
+
+}
+
+float kernel::computeBoundingBox(dim3 gridSize, dim3 blockSize, int *mutex, float *x, float *y, float *z,
+                                 float *maxX, float *minY, float *maxY, float *minZ, float *maxZ float *top, int n) {
+
+    float elapsedTime;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start, 0);
+
+    std::cout << "computeBoundingBoxKernel<<< " << gridSize << ", " << blockSize << " >>>" << std::endl;
+    computeBoundingBoxKernel<<< gridSize, blockSize >>>(mutex, x, y, z, maxX, minY, maxY, minZ, maxZ top, n);
+
+    cudaEventRecord(stop,0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+    return elapsedTime
+
+}
+
+float kernel::buildTree(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *mass, int *count, int *start,
+                        int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
+                        float *minZ, float *maxZ int n, int m) {
+
+    float elapsedTime;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start, 0);
+
+    std::cout << "buildTreeKernel<<< " << gridSize << ", " << blockSize << " >>>" << std::endl;
+    buildTreeKernel<<< gridSize, blockSize >>>(x, y, z, mass, count, start, child, index,
+            minX, maxX, minY, maxY, minZ, maxZ n, m);
+
+    cudaEventRecord(stop,0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+    return elapsedTime
+
+}
+
+float kernel::centreOfMass(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *mass, int *count, int *start,
+                           int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
+                           float *minZ, float *maxZ int n, int m) {
+
+    float elapsedTime;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start, 0);
+
+    std::cout << "centreOfMassKernel<<< " << gridSize << ", " << blockSize << " >>>" << std::endl;
+    centreOfMassKernel<<< gridSize, blockSize >>>(x, y, z, mass, count, start, child, index,
+            minX, maxX, minY, maxY, minZ, maxZ n, m);
+
+    cudaEventRecord(stop,0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+    return elapsedTime
+
+}
+
+float kernel::sort(dim3 gridSize, dim3 blockSize, int *count, int *start, int *sorted, int *child, int *index, int n) {
+
+    float elapsedTime;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start, 0);
+
+    std::cout << "sortKernel<<< " << gridSize << ", " << blockSize << " >>>" << std::endl;
+    sortKernel<<< gridSize, blockSize>>>(count, start, sorted, child, index, n);
+
+    cudaEventRecord(stop,0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+    return elapsedTime
+
+}
+
+float kernel::computeForces(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *vx, float *vy, float *vz,
+                            float *ax, float *ay, float *az, float *mass, int *sorted, int *child,
+                            float *minX, float *maxX, int n, float g) {
+
+    float elapsedTime;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start, 0);
+
+    std::cout << "computeForcesKernel<<< " << gridSize << ", " << blockSize << " >>>" << std::endl;
+    computeForcesKernel<<<gridSize, blockSize>>>(x, y, z, vx, vy, vz, ax, ay, az,
+            mass, sorted, child, minX, maxX, n, g);
+
+    cudaEventRecord(stop,0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+    return elapsedTime
+
+}
+
+void kernel::update(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *vx, float *vy, float *vz,
+                    float *ax, float *ay, float *az, int n, float dt, float d) {
+
+    float elapsedTime;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start, 0);
+
+    std::cout << "updateKernel<<< " << gridSize << ", " << blockSize << " >>>" << std::endl;
+    updateKernel<<< gridSize, blockSize >>>(x, y, z, vx, vy, vz, ax, ay, az, n, dt, d);
+
+    cudaEventRecord(stop,0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+    return elapsedTime
+
+}
+
+void kernel::copy(dim3 gridSize, dim3 blockSize, float *x, float *y, float *z, float *out, int n) {
+
+    float elapsedTime;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start, 0);
+
+    std::cout << "copyKernel<<< " << gridSize << ", " << blockSize << " >>>" << std::endl;
+    copyKernel<<< gridSize, blockSize >>>(x, y, z, out, n);
+
+    cudaEventRecord(stop,0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+    return elapsedTime
+
+}
