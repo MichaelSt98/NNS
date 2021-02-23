@@ -168,14 +168,14 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
     //printf("2");
 
     int childPath;
-    int temp_i = 0;
+    //int temp_i = 0;
     int temp;
     offset = 0;
 
     while ((bodyIndex + offset) < n) {
 
         //printf("3: %d", temp_i);
-        temp_i++;
+        //temp_i++;
 
         if (newBody) {
             newBody = false;
@@ -273,7 +273,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
 
                 else {
 
-                    int patch = 4*n; //4*n
+                    int patch = 8*n; //4*n
                     while(childIndex >= 0 && childIndex < n){
 
                         int cell = atomicAdd(index, 1);
