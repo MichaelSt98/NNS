@@ -25,7 +25,7 @@ float kernel::setDrawArray(float *ptr, float *x, float *y, float *z, int n) {
 }
 
 float kernel::resetArrays(int *mutex, float *x, float *y, float *z, float *mass, int *count,
-                          int *start, int *sorted, int *child, int *index, float *maxX, float *minY, float *maxY,
+                          int *start, int *sorted, int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
                           float *minZ, float *maxZ, float *top, int n, int m) {
 
     float elapsedTime;
@@ -36,7 +36,7 @@ float kernel::resetArrays(int *mutex, float *x, float *y, float *z, float *mass,
 
     std::cout << "resetArraysKernel<<< " /*<< gridSize << ", " << blockSize*/ << " >>>" << std::endl;
     resetArraysKernel<<< gridSize, blockSize >>>(mutex, x, y, z, mass, count, start, sorted, child, index,
-            maxX, minY, maxY, minZ, maxZ, n, m);
+            minX, maxX, minY, maxY, minZ, maxZ, n, m);
 
     cudaEventRecord(stop_t,0);
     cudaEventSynchronize(stop_t);
@@ -47,7 +47,7 @@ float kernel::resetArrays(int *mutex, float *x, float *y, float *z, float *mass,
 
 }
 
-float kernel::computeBoundingBox(int *mutex, float *x, float *y, float *z,
+float kernel::computeBoundingBox(int *mutex, float *x, float *y, float *z, float *minX,
                                  float *maxX, float *minY, float *maxY, float *minZ, float *maxZ, float *top, int n) {
 
     float elapsedTime;
@@ -57,7 +57,7 @@ float kernel::computeBoundingBox(int *mutex, float *x, float *y, float *z,
     cudaEventRecord(start_t, 0);
 
     std::cout << "computeBoundingBoxKernel<<< " /*<< gridSize << ", " << blockSize*/ << " >>>" << std::endl;
-    computeBoundingBoxKernel<<< gridSize, blockSize >>>(mutex, x, y, z, maxX, minY, maxY, minZ, maxZ, n);
+    computeBoundingBoxKernel<<< gridSize, blockSize >>>(mutex, x, y, z, minX, maxX, minY, maxY, minZ, maxZ, n);
 
     cudaEventRecord(stop_t,0);
     cudaEventSynchronize(stop_t);

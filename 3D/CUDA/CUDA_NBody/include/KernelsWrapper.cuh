@@ -18,10 +18,10 @@ namespace kernel {
     float setDrawArray(float *ptr, float *x, float *y, float *z, int n);
 
     float resetArrays(int *mutex, float *x, float *y, float *z, float *mass, int *count,
-                      int *start, int *sorted, int *child, int *index, float *maxX, float *minY, float *maxY,
+                      int *start, int *sorted, int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
                       float *minZ, float *maxZ,  float *top, int n, int m);
 
-    float computeBoundingBox(int *mutex, float *x, float *y, float *z,
+    float computeBoundingBox(int *mutex, float *x, float *y, float *z, float *minX,
                              float *maxX, float *minY, float *maxY, float *minZ, float *maxZ, float *top, int n);
 
     float buildTree(float *x, float *y, float *z, float *mass, int *count, int *start,
