@@ -42,7 +42,7 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
 __global__ void updateKernel(float *x, float *y, float *z, float *vx, float *vy, float *vz,
                              float *ax, float *ay, float *az, int n, float dt, float d);
 
-__global__ void copyKernel(float *x, float *y, float *z, float *out, int n);
+__global__ void copyKernel(float *d_x, float *d_y, float *d_z, float *h_x, float *h_y, float *h_z, int n);
 
 
 #endif //CUDA_NBODY_KERNELS_CUH

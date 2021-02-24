@@ -18,7 +18,7 @@ InitDistribution::InitDistribution(const SimulationParameters p) {
     parameters = p;
     step = 0;
     numParticles = NUM_BODIES;
-    numNodes = 10 * numParticles + 12000; //2 * numParticles + 12000;
+    numNodes = 3 * numParticles + 12000; //2 * numParticles + 12000;
 
     // allocate host data
     h_min_x = new float;
@@ -173,6 +173,8 @@ InitDistribution::~InitDistribution() {
 
 void InitDistribution::update()
 {
+
+    bool timeKernels = false;
     float elapsedTime;
     cudaEventCreate(&start_global);
     cudaEventCreate(&stop_global);
@@ -183,37 +185,70 @@ void InitDistribution::update()
     elapsedTimeKernel = kernel::resetArrays(d_mutex, d_x, d_y, d_z, d_mass, d_count, d_start, d_sorted, d_child, d_index,
                         d_min_x, d_max_x, d_min_y, d_max_y, d_min_z, d_max_z, numParticles, numNodes);
 
-    std::cout << "\tElapsed time: " << elapsedTimeKernel << std::endl;
+    if (timeKernels) {
+        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
+    }
 
     elapsedTimeKernel = kernel::computeBoundingBox(d_mutex, d_x, d_y, d_z, d_min_x, d_max_x, d_min_y, d_max_y,
                                d_min_z, d_max_z, numParticles);
 
-    std::cout << "\tElapsed time: " << elapsedTimeKernel << std::endl;
+    if (timeKernels) {
+        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms"  << std::endl;
+    }
 
     elapsedTimeKernel = kernel::buildTree(d_x, d_y, d_z, d_mass, d_count, d_start, d_child, d_index, d_min_x, d_max_x, d_min_y, d_max_y,
                       d_min_z, d_max_z, numParticles, numNodes);
 
-    std::cout << "\tElapsed time: " << elapsedTimeKernel << std::endl;
+    if (timeKernels) {
+        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms"  << std::endl;
+    }
 
     elapsedTimeKernel = kernel::centreOfMass(d_x, d_y, d_z, d_mass, d_index, numParticles);
 
-    std::cout << "\tElapsed time: " << elapsedTimeKernel << std::endl;
+    if (timeKernels) {
+        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms"  << std::endl;
+    }
 
     elapsedTimeKernel = kernel::sort(d_count, d_start, d_sorted, d_child, d_index, numParticles);
 
-    std::cout << "\tElapsed time: " << elapsedTimeKernel << std::endl;
+    if (timeKernels) {
+        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
+    }
 
     elapsedTimeKernel = kernel::computeForces(d_x, d_y, d_z, d_vx, d_vy, d_vz, d_ax, d_ay, d_az, d_mass, d_sorted, d_child,
                           d_min_x, d_max_x, numParticles, parameters.gravity);
 
-    std::cout << "\tElapsed time: " << elapsedTimeKernel << std::endl;
+    if (timeKernels) {
+        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
+    }
 
     elapsedTimeKernel = kernel::update(d_x, d_y, d_z, d_vx, d_vy, d_vz, d_ax, d_ay, d_az, numParticles,
                    parameters.timestep, parameters.dampening);
 
-    std::cout << "\tElapsed time: " << elapsedTimeKernel << std::endl;
+    if (timeKernels) {
+        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
+    }
 
-    //FillOutputArray(d_x, d_y, d_output, numNodes);
+    if (timeKernels) {
+        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
+    }
+
+    cudaMemcpy(h_x, d_x, 2*numParticles*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_y, d_y, 2*numParticles*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_z, d_z, 2*numParticles*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_vx, d_vx, 2*numParticles*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_vy, d_vy, 2*numParticles*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_vz, d_vz, 2*numParticles*sizeof(float), cudaMemcpyDeviceToHost);
+
+    cudaDeviceSynchronize();
+
+    if (timeKernels) {
+        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
+    }
+
+    std::cout << "x[0]: " << h_x[0] << std::endl;
+    std::cout << "v[0]: " << h_vx[0] << std::endl;
+
 
     cudaEventRecord(stop_global, 0);
     cudaEventSynchronize(stop_global);
@@ -221,7 +256,7 @@ void InitDistribution::update()
     cudaEventDestroy(start_global);
     cudaEventDestroy(stop_global);
 
-    std::cout << "Elapsed time for step " << step << " : " << elapsedTime << std::endl;
+    std::cout << "Elapsed time for step " << step << " : " << elapsedTime << " ms" << std::endl;
 
     step++;
 }
@@ -239,6 +274,13 @@ void InitDistribution::plummerModel(float *mass, float *x, float* y, float *z,
     std::uniform_real_distribution<float> distribution_phi(0.0, 2 * pi);
     std::uniform_real_distribution<float> distribution_theta(-1.0, 1.0);
 
+    float check_x_min = 1000;
+    float check_x_max = -1000;
+    float check_y_min = 1000;
+    float check_y_max = -1000;
+    float check_z_min = 1000;
+    float check_z_max = -1000;
+
     // loop through all particles
     for (int i = 0; i < n; i++){
         float phi = distribution_phi(generator);
@@ -249,7 +291,31 @@ void InitDistribution::plummerModel(float *mass, float *x, float* y, float *z,
         mass[i] = 1.0;
         x[i] = r*cos(phi);
         y[i] = r*sin(phi);
-        z[i] = 0.0;
+        if (i%2==0) {
+            z[i] = i*0.001;
+        }
+        else {
+            z[i] = i*-0.001;
+        }
+
+        if (x[i] < check_x_min) {
+            check_x_min = x[i];
+        }
+        if (x[i] > check_x_max) {
+            check_x_max = x[i];
+        }
+        if (y[i] < check_y_min) {
+            check_y_min = y[i];
+        }
+        if (y[i] > check_y_max) {
+            check_y_max = y[i];
+        }
+        if (z[i] < check_z_min) {
+            check_z_min = z[i];
+        }
+        if (z[i] > check_z_max) {
+            check_z_max = z[i];
+        }
 
         // set velocity of particle
         float s = 0.0;
@@ -269,7 +335,18 @@ void InitDistribution::plummerModel(float *mass, float *x, float* y, float *z,
         x_acc[i] = 0.0;
         y_acc[i] = 0.0;
         z_acc[i] = 0.0;
+
+        if (i%100==0) {
+            std::cout << i << ": (" << x[i] << ", " << y[i] << ", " << z[i] << ")"<<std::endl;
+        }
     }
+
+    std::cout << "x_max: " << check_x_max << std::endl;
+    std::cout << "x_min: " << check_x_min << std::endl;
+    std::cout << "y_max: " << check_y_max << std::endl;
+    std::cout << "y_min: " << check_y_min << std::endl;
+    std::cout << "z_max: " << check_z_max << std::endl;
+    std::cout << "z_min: " << check_z_min << std::endl;
 }
 
 

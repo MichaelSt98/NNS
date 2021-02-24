@@ -24,7 +24,7 @@ OBJEXT         := o
 
 #Flags, Libraries and Includes
 CXXFLAGS       += -std=c++11 -g #-Wno-conversion -g3 #-std=c++17 -O3 -Wall -pedantic -Wno-vla-extension -I/usr/local/include/ -I/usr/local/include/eigen3/ -I./include -I./src
-NVFLAGS        := -g -x cu -c -dc -Xcompiler "-pthread" -lineinfo -Wno-deprecated-gpu-targets
+NVFLAGS        := -g -G -x cu -c -dc -Xcompiler "-pthread" -lineinfo -Wno-deprecated-gpu-targets
 LFLAGS         += -g -lm -L$(CUDADIR)/lib64 -lcudart -lpthread -lconfig #-O3 -Wall -Wno-deprecated -Werror -pedantic -L/usr/local/lib/
 GPU_ARCH       := -arch=sm_52
 CUDALFLAGS     := -dlink

@@ -31,7 +31,7 @@ __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, floa
     int offset = 0;
 
     // reset quadtree arrays
-    while(bodyIndex + offset < m){
+    while(bodyIndex + offset < m) {
     #pragma unroll 8
         for (int i=0; i<8; i++) {
             child[(bodyIndex + offset)*8 + i] = -1;
@@ -51,7 +51,7 @@ __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, floa
         offset += stride;
     }
 
-    if(bodyIndex == 0){
+    if (bodyIndex == 0) {
         *mutex = 0;
         *index = n;
         *minX = 0;
@@ -102,6 +102,15 @@ __global__ void computeBoundingBoxKernel(int *mutex, float *x, float *y, float *
         offset += stride;
     }
 
+    /*if (threadIdx.x == 0) {
+        printf("minX: %d\n", x_min);
+        printf("maxX: %d\n", x_max);
+        printf("minY: %d\n", y_min);
+        printf("maxY: %d\n", y_max);
+        printf("minZ: %d\n", z_min);
+        printf("maxZ: %d\n", z_max);
+    }*/
+
     // save value in corresponding buffer
     x_min_buffer[threadIdx.x] = x_min;
     x_max_buffer[threadIdx.x] = x_max;
@@ -131,17 +140,22 @@ __global__ void computeBoundingBoxKernel(int *mutex, float *x, float *y, float *
 
     // global reduction
     if (threadIdx.x == 0) {
-        while (atomicCAS(mutex, 0 ,1) != 0) {
-            // lock
-        }
+        while (atomicCAS(mutex, 0 ,1) != 0); // lock
         *minX = fminf(*minX, x_min_buffer[0]);
-        *maxX = fminf(*maxX, x_max_buffer[0]);
+        *maxX = fmaxf(*maxX, x_max_buffer[0]);
         *minY = fminf(*minY, y_min_buffer[0]);
-        *maxY = fminf(*maxY, y_max_buffer[0]);
+        *maxY = fmaxf(*maxY, y_max_buffer[0]);
         *minZ = fminf(*minZ, z_min_buffer[0]);
-        *maxZ = fminf(*maxZ, z_max_buffer[0]);
+        *maxZ = fmaxf(*maxZ, z_max_buffer[0]);
 
         atomicExch(mutex, 0); // unlock
+
+        /*printf("minX: %d\n", *minX);
+        printf("maxX: %d\n", *maxX);
+        printf("minY: %d\n", *minY);
+        printf("maxY: %d\n", *maxY);
+        printf("minZ: %d\n", *minZ);
+        printf("maxZ: %d\n", *maxZ);*/
     }
 }
 
@@ -165,6 +179,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
 
     int childPath;
     int temp;
+
     offset = 0;
 
     while ((bodyIndex + offset) < n) {
@@ -180,7 +195,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
             min_z = *minZ;
             max_z = *maxZ;
 
-            temp = 0; //m; //2*n; //0
+            temp = 0; //m //2*n; //0
             childPath = 0;
 
             // x direction
@@ -263,7 +278,6 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
                 if (childIndex == -1) {
                     child[locked] = bodyIndex + offset;
                 }
-
                 else {
 
                     int patch = 8*n; //4*n //-1
@@ -327,9 +341,9 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
                             min_z =  0.5 * (min_z + max_z);
                         }
 
-                        if (cell >= m) {
-                            printf("cell index to large!\ncell: %d (> %d)\n", cell, m);
-                        }
+                        //if (cell >= m) {
+                        //    printf("cell index to large!\ncell: %d (> %d)\n", cell, m);
+                        //}
 
                         //printf("cell: %d \n", cell);
                         //printf("bodyIndex + offset: %d \n", bodyIndex + offset);
@@ -442,10 +456,10 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
     int stride = blockDim.x*gridDim.x;
     int offset = 0;
 
-    __shared__ float depth[stackSize*blockSize/warp];
-    __shared__ int stack[stackSize*blockSize/warp];  // stack controlled by one thread per warp
+    __shared__ float depth[stackSize * blockSize/warp];
+    __shared__ int   stack[stackSize * blockSize/warp];  // stack controlled by one thread per warp
 
-    float radius = 0.5*(*minX - (*maxX));
+    float radius = 0.5*(*maxX - (*minX));
 
     // need this in case some of the first eight entries of child are -1 (otherwise jj = 7)
     int jj = -1;
@@ -477,7 +491,7 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
             
             int temp = 0;
             
-            for (int i=0;i<4;i++) {
+            for (int i=0;i<8;i++) {
                 if (child[i] != -1) {
                     stack[stackStartIndex + temp] = child[i];
                     depth[stackStartIndex + temp] = radius*radius/theta;
@@ -566,7 +580,9 @@ __global__ void updateKernel(float *x, float *y, float *z, float *vx, float *vy,
 
 
 
-__global__ void copyKernel(float *x, float *y, float *z, float *out, int n) {
+__global__ void copyKernel(float *d_x, float *d_y, float *d_z, float *h_x, float *h_y, float *h_z, int n) {
+
+    /*
     int bodyIndex = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = blockDim.x * gridDim.x;
     int offset = 0;
@@ -579,4 +595,12 @@ __global__ void copyKernel(float *x, float *y, float *z, float *out, int n) {
 
         offset += stride;
     }
+
+
+    cudaMemcpy(h_x, d_x, 2*n*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_y, d_y, 2*n*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_z, d_z, 2*n*sizeof(float), cudaMemcpyDeviceToHost);
+
+    cudaDeviceSynchronize();
+     */
 }

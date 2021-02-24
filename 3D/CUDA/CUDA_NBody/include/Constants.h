@@ -27,8 +27,8 @@ const double G = 6.67408e-11;               //! Gravitational constant
 
 
 
-const int NUM_BODIES = 512*256;//(1024*32);                   //! Number of small particles
-const int NUM_SUNS = 2; //1
+const int NUM_BODIES = 512*256; //512*256;//(1024*32);                   //! Number of small particles
+const int NUM_SUNS = 0; //1
 const double SYSTEM_SIZE = 3.5;                     //! Farthest particle (in AU)
 const double SYSTEM_THICKNESS = 0.08;               //! Disk thicknes (in AU)
 const double INNER_BOUND = 0.3;                     //! Closest particle to the center (in AU)

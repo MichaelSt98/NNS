@@ -38,13 +38,13 @@ private:
 
     float *h_mass;
 
-    float *h_x;
+    /*float *h_x;
     float *h_y;
     float *h_z;
 
     float *h_vx;
     float *h_vy;
-    float *h_vz;
+    float *h_vz;*/
 
     float *h_ax;
     float *h_ay;
@@ -95,6 +95,14 @@ private:
                       float *x_acc, float *y_acc, float *z_acc, int n);
 
 public:
+
+    float *h_x;
+    float *h_y;
+    float *h_z;
+
+    float *h_vx;
+    float *h_vy;
+    float *h_vz;
 
     InitDistribution(const SimulationParameters p);
     ~InitDistribution();

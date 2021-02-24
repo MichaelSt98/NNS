@@ -37,7 +37,7 @@ namespace kernel {
     float update(float *x, float *y, float *z, float *vx, float *vy, float *vz,
                  float *ax, float *ay, float *az, int n, float dt, float d);
 
-    float copy(float *x, float *y, float *z, float *out, int n);
+    float copy(float *x, float *y, float *z, float *h_x, float *h_y, float *h_z, int n);
 
 }
 
