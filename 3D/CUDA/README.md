@@ -47,6 +47,8 @@ int main() {
 
 ### CUDA Debugging
 
+[NVIDIA: CUDA Debugging](https://on-demand.gputechconf.com/gtc/2014/presentations/S4578-cuda-debugging-command-line-tools.pdf)
+
 Flags:
 
 * no optimization flags for debugging
