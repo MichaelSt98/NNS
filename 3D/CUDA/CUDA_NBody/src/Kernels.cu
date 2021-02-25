@@ -1,25 +1,14 @@
-//
-// Created by Michael Staneker on 22.02.21.
-//
+/**
+ * CUDA Kernel functions.
+ */
 
 #include "../include/Kernels.cuh"
 
-__device__ const int blockSize = 256;
-__device__ const int warp = 32;
-__device__ const int stackSize = 64;
+__device__ const int   blockSize = 256;
+__device__ const int   warp = 32;
+__device__ const int   stackSize = 64;
 __device__ const float eps_squared = 0.025;
-__device__ const float theta = 0.5;
-
-__global__ void setDrawArrayKernel(float *ptr, float *x, float *y, float *z, int n)
-{
-    int index = threadIdx.x + blockDim.x*blockIdx.x;
-
-    if(index < n){
-        ptr[2*index+0] = x[index];
-        ptr[2*index+1] = y[index];
-        ptr[2*index+2] = z[index];
-    }
-}
+__device__ const float theta = 0.75; //0.5;
 
 
 __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, float *mass, int *count, int *start,
@@ -43,6 +32,7 @@ __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, floa
             x[bodyIndex + offset] = 0;
             y[bodyIndex + offset] = 0;
             z[bodyIndex + offset] = 0;
+
             mass[bodyIndex + offset] = 0;
             count[bodyIndex + offset] = 0;
         }
@@ -566,9 +556,9 @@ __global__ void updateKernel(float *x, float *y, float *z, float *vx, float *vy,
 
     while (bodyIndex + offset < n) {
 
-        vx[bodyIndex + offset] += dt * ax[bodyIndex + offset];
-        vy[bodyIndex + offset] += dt * ay[bodyIndex + offset];
-        vz[bodyIndex + offset] += dt * az[bodyIndex + offset];
+        vx[bodyIndex + offset] += dt * ax[bodyIndex + offset]; //*0.5f
+        vy[bodyIndex + offset] += dt * ay[bodyIndex + offset]; //*0.5f
+        vz[bodyIndex + offset] += dt * az[bodyIndex + offset]; //*0.5f
 
         x[bodyIndex + offset] += d * dt * vx[bodyIndex + offset];
         y[bodyIndex + offset] += d * dt * vy[bodyIndex + offset];
@@ -576,31 +566,4 @@ __global__ void updateKernel(float *x, float *y, float *z, float *vx, float *vy,
 
         offset += stride;
     }
-}
-
-
-
-__global__ void copyKernel(float *d_x, float *d_y, float *d_z, float *h_x, float *h_y, float *h_z, int n) {
-
-    /*
-    int bodyIndex = threadIdx.x + blockIdx.x * blockDim.x;
-    int stride = blockDim.x * gridDim.x;
-    int offset = 0;
-
-    while (bodyIndex + offset < n) {
-
-        out[2 * (bodyIndex + offset) + 0] = x[bodyIndex + offset];
-        out[2 * (bodyIndex + offset) + 1] = y[bodyIndex + offset];
-        out[2 * (bodyIndex + offset) + 2] = z[bodyIndex + offset];
-
-        offset += stride;
-    }
-
-
-    cudaMemcpy(h_x, d_x, 2*n*sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(h_y, d_y, 2*n*sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(h_z, d_z, 2*n*sizeof(float), cudaMemcpyDeviceToHost);
-
-    cudaDeviceSynchronize();
-     */
 }

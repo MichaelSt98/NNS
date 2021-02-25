@@ -1,9 +1,9 @@
-//
-// Created by Michael Staneker on 22.02.21.
-//
-
 /**
- * See [Summary: An Efficient CUDA Implementation of the Tree-Based Barnes Hut n-Body Algorithm](../resources/NBodyCUDA.md)
+ * CUDA Kernel functions
+ *
+ * See
+ * * [Summary: An Efficient CUDA Implementation of the Tree-Based Barnes Hut n-Body Algorithm](../resources/NBodyCUDA.md)
+ * * [An Efficient CUDA Implementation of the Tree-Based Barnes Hut n-Body Algorithm](https://iss.oden.utexas.edu/Publications/Papers/burtscher11.pdf)
  */
 
 #ifndef CUDA_NBODY_KERNELS_CUH
@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <cuda.h>
 
-__global__ void setDrawArrayKernel(float *ptr, float *x, float *y, float *z, int n);
+
 __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, float *mass, int *count, int *start,
                                   int *sorted, int *child, int *index, float *maxX, float *minY, float *maxY,
                                   float *minZ, float *maxZ, float *top, int n, int m);
@@ -41,8 +41,6 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
 // Kernel 6: updates the bodies
 __global__ void updateKernel(float *x, float *y, float *z, float *vx, float *vy, float *vz,
                              float *ax, float *ay, float *az, int n, float dt, float d);
-
-__global__ void copyKernel(float *d_x, float *d_y, float *d_z, float *h_x, float *h_y, float *h_z, int n);
 
 
 #endif //CUDA_NBODY_KERNELS_CUH

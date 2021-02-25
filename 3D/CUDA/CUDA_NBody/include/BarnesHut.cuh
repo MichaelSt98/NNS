@@ -2,8 +2,8 @@
 // Created by Michael Staneker on 23.02.21.
 //
 
-#ifndef CUDA_NBODY_INITDISTRIBUTION_H
-#define CUDA_NBODY_INITDISTRIBUTION_H
+#ifndef CUDA_NBODY_BARNESHUT_H
+#define CUDA_NBODY_BARNESHUT_H
 
 #include <random>
 #include "Constants.h"
@@ -19,7 +19,7 @@
 
 void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true);
 
-class InitDistribution {
+class BarnesHut {
 
 private:
 
@@ -94,6 +94,10 @@ private:
                       float *x_vel, float *y_vel, float *z_vel,
                       float *x_acc, float *y_acc, float *z_acc, int n);
 
+    void diskModel(float *mass, float *x, float* y, float* z,
+                   float *x_vel, float *y_vel, float *z_vel,
+                   float *x_acc, float *y_acc, float *z_acc, int n);
+
 public:
 
     float *h_x;
@@ -104,8 +108,8 @@ public:
     float *h_vy;
     float *h_vz;
 
-    InitDistribution(const SimulationParameters p);
-    ~InitDistribution();
+    BarnesHut(const SimulationParameters p);
+    ~BarnesHut();
 
     void update();
     void reset();
@@ -113,4 +117,4 @@ public:
 };
 
 
-#endif //CUDA_NBODY_INITDISTRIBUTION_H
+#endif //CUDA_NBODY_BARNESHUT_H

@@ -4,17 +4,14 @@
 
 #include "../include/Body.h"
 #include "../include/Constants.h"
-#include "../include/Interaction.h"
-#include "../include/Octant.h"
 #include "../include/Renderer.h"
-#include "../include/Tree.h"
+
 #include "../include/Vector3D.h"
 #include "../include/Utils.h"
 #include "../include/Logger.h"
 #include "../include/Timer.h"
-#include "../include/InitializeDistribution.h"
 #include "../include/KernelsWrapper.cuh"
-#include "../include/InitDistribution.cuh"
+#include "../include/BarnesHut.cuh"
 
 #include <fenv.h>
 #include <iostream>
@@ -27,47 +24,7 @@ Renderer renderer { NUM_SUNS, NUM_BODIES, WIDTH, HEIGHT, RENDER_SCALE, MAX_VEL_C
                     PARTICLE_BRIGHTNESS, PARTICLE_SHARPNESS, DOT_SIZE,
                     SYSTEM_SIZE, RENDER_INTERVAL};
 
-Interaction interactionHandler { false };
-
 structlog LOGCFG = {};
-
-/*
-void runSimulation(Body* s, Body* b, char* image, double* hdImage);
-
-void runSimulation(Body* s, Body* b, char* image, double* hdImage)
-{
-    double stepDurations [STEP_COUNT];
-    Timer stepTimer;
-
-    renderer.createFrame(image, hdImage, s, b, 0);
-    for (int step=1; step<STEP_COUNT; step++)
-    {
-        stepTimer.reset();
-
-        Logger(INFO) << "Timestep: " << step;
-
-        interactionHandler.interactBodies(s, b);
-
-        double elapsedTime = stepTimer.elapsed();
-        stepDurations[step] = elapsedTime;
-
-        if (step%renderer.getRenderInterval()==0)
-        {
-            renderer.createFrame(image, hdImage, s, b, step);
-        }
-
-        Logger(INFO) << "-------------- finished timestep: " << step << " in " << elapsedTime << " s";
-    }
-
-    double totalElapsedTime = 0.0;
-    for(auto& num : stepDurations)
-        totalElapsedTime += num;
-
-    Logger(INFO) << "Total elapsed time:     " << totalElapsedTime;
-    Logger(INFO) << "Averaged time per step: " << totalElapsedTime/STEP_COUNT;
-}
- */
-
 
 int main()
 {
@@ -89,10 +46,10 @@ int main()
     Body *suns = new Body [NUM_SUNS];
     Body *bodies = new Body[NUM_BODIES];
 
-    InitDistribution *particles = new InitDistribution(parameters);
-    //particles->reset();
+    BarnesHut *particles = new BarnesHut(parameters);
 
     for(int i = 0 ; i < parameters.iterations ; i++){
+
         particles->update();
 
         for (int i_body = 0; i_body < NUM_BODIES; i_body++) {
@@ -107,7 +64,6 @@ int main()
         }
         renderer.createFrame(image, hdImage, suns, bodies, i);
     }
-
 
     delete[] image;
 

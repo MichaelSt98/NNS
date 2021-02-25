@@ -2,7 +2,7 @@
 // Created by Michael Staneker on 23.02.21.
 //
 
-#include "../include/InitDistribution.cuh"
+#include "../include/BarnesHut.cuh"
 
 void gpuAssert(cudaError_t code, const char *file, int line, bool abort)
 {
@@ -13,7 +13,7 @@ void gpuAssert(cudaError_t code, const char *file, int line, bool abort)
     }
 }
 
-InitDistribution::InitDistribution(const SimulationParameters p) {
+BarnesHut::BarnesHut(const SimulationParameters p) {
 
     parameters = p;
     step = 0;
@@ -92,7 +92,9 @@ InitDistribution::InitDistribution(const SimulationParameters p) {
 
     gpuErrorcheck(cudaMalloc((void**)&d_output, 2*numNodes*sizeof(float)));
 
-    plummerModel(h_mass, h_x, h_y, h_z, h_vx, h_vy, h_vz, h_ax, h_ay, h_az, numParticles);
+    //plummerModel(h_mass, h_x, h_y, h_z, h_vx, h_vy, h_vz, h_ax, h_ay, h_az, numParticles);
+    diskModel(h_mass, h_x, h_y, h_z, h_vx, h_vy, h_vz, h_ax, h_ay, h_az, numParticles);
+
 
     // copy data to GPU device
     //Changed 2*numParticles*sizeof(float) -> 3*numParticles*sizeof(float)
@@ -109,7 +111,7 @@ InitDistribution::InitDistribution(const SimulationParameters p) {
 
 }
 
-InitDistribution::~InitDistribution() {
+BarnesHut::~BarnesHut() {
     delete h_min_x;
     delete h_max_x;
     delete h_min_y;
@@ -171,7 +173,7 @@ InitDistribution::~InitDistribution() {
     cudaDeviceSynchronize();
 }
 
-void InitDistribution::update()
+void BarnesHut::update()
 {
 
     bool timeKernels = false;
@@ -262,7 +264,7 @@ void InitDistribution::update()
 }
 
 
-void InitDistribution::plummerModel(float *mass, float *x, float* y, float *z,
+void BarnesHut::plummerModel(float *mass, float *x, float* y, float *z,
                                     float *x_vel, float *y_vel, float *z_vel,
                                     float *x_acc, float *y_acc, float *z_acc, int n)
 {
@@ -298,25 +300,6 @@ void InitDistribution::plummerModel(float *mass, float *x, float* y, float *z,
             z[i] = i*-0.001;
         }
 
-        if (x[i] < check_x_min) {
-            check_x_min = x[i];
-        }
-        if (x[i] > check_x_max) {
-            check_x_max = x[i];
-        }
-        if (y[i] < check_y_min) {
-            check_y_min = y[i];
-        }
-        if (y[i] > check_y_max) {
-            check_y_max = y[i];
-        }
-        if (z[i] < check_z_min) {
-            check_z_min = z[i];
-        }
-        if (z[i] > check_z_max) {
-            check_z_max = z[i];
-        }
-
         // set velocity of particle
         float s = 0.0;
         float t = 0.1;
@@ -336,18 +319,69 @@ void InitDistribution::plummerModel(float *mass, float *x, float* y, float *z,
         y_acc[i] = 0.0;
         z_acc[i] = 0.0;
 
-        if (i%100==0) {
-            std::cout << i << ": (" << x[i] << ", " << y[i] << ", " << z[i] << ")"<<std::endl;
-        }
     }
 
-    std::cout << "x_max: " << check_x_max << std::endl;
-    std::cout << "x_min: " << check_x_min << std::endl;
-    std::cout << "y_max: " << check_y_max << std::endl;
-    std::cout << "y_min: " << check_y_min << std::endl;
-    std::cout << "z_max: " << check_z_max << std::endl;
-    std::cout << "z_min: " << check_z_min << std::endl;
 }
+
+void BarnesHut::diskModel(float *mass, float *x, float* y, float* z, float *x_vel, float *y_vel, float *z_vel,
+                                 float *x_acc, float *y_acc, float *z_acc, int n)
+{
+    float a = 1.0;
+    float pi = 3.14159265;
+    std::default_random_engine generator;
+    std::uniform_real_distribution<float> distribution(1.5, 12.0);
+    std::uniform_real_distribution<float> distribution_theta(0.0, 2 * pi);
+
+    // loop through all particles
+    for (int i = 0; i < n; i++){
+
+        float theta = distribution_theta(generator);
+        float r = distribution(generator);
+
+        // set mass and position of particle
+        if (i==0) {
+            mass[i] = 100000;
+            x[i] = 0;
+            y[i] = 0;
+            z[i] = 0;
+        }
+        else {
+            mass[i] = 1.0;
+            x[i] = r*cos(theta);
+            y[i] = r*sin(theta);
+
+            if (i%2 == 0) {
+                z[i] = i*0.001;
+            }
+            else {
+                z[i] = i*-0.001;
+            }
+        }
+
+
+        // set velocity of particle
+        float rotation = 1;  // 1: clockwise   -1: counter-clockwise
+        float v = sqrt(parameters.gravity*100000.0 / (r*r*r));
+
+        if (i == 0) {
+            x_vel[0] = 0.0;
+            y_vel[0] = 0.0;
+            z_vel[0] = 0.0;
+        }
+        else{
+            x_vel[i] = rotation*v*sin(theta);
+            y_vel[i] = -rotation*v*cos(theta);
+            z_vel[i] = 0.0;
+        }
+
+        // set acceleration to zero
+        x_acc[i] = 0.0;
+        y_acc[i] = 0.0;
+        z_acc[i] = 0.0;
+    }
+
+}
+
 
 
 
