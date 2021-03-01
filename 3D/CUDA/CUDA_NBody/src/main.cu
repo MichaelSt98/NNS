@@ -93,32 +93,32 @@ int main()
     }
 
     Logger(INFO) << "Time to reset arrays: " << total_time_resetArrays << "ms";
-    Logger(INFO) << "\nper step: " << total_time_resetArrays/parameters.iterations << "ms";
+    Logger(INFO) << "\tper step: " << total_time_resetArrays/parameters.iterations << "ms";
 
     Logger(INFO) << "Time to compute bounding boxes: " << total_time_computeBoundingBox << "ms";
-    Logger(INFO) << "\nper step: " << total_time_computeBoundingBox/parameters.iterations << "ms";
+    Logger(INFO) << "\tper step: " << total_time_computeBoundingBox/parameters.iterations << "ms";
 
     Logger(INFO) << "Time to build tree: " << total_time_buildTree << "ms";
-    Logger(INFO) << "\nper step: " << total_time_buildTree/parameters.iterations << "ms";
+    Logger(INFO) << "\tper step: " << total_time_buildTree/parameters.iterations << "ms";
 
     Logger(INFO) << "Time to compute COM: " << total_time_centreOfMass << "ms";
-    Logger(INFO) << "\nper step: " << total_time_centreOfMass/parameters.iterations << "ms";
+    Logger(INFO) << "\tper step: " << total_time_centreOfMass/parameters.iterations << "ms";
 
     Logger(INFO) << "Time to sort: " << total_time_sort << "ms";
-    Logger(INFO) << "\nper step: " << total_time_sort/parameters.iterations << "ms";
+    Logger(INFO) << "\tper step: " << total_time_sort/parameters.iterations << "ms";
 
     Logger(INFO) << "Time to compute forces: " << total_time_computeForces << "ms";
-    Logger(INFO) << "\nper step: " << total_time_computeForces/parameters.iterations << "ms";
+    Logger(INFO) << "\tper step: " << total_time_computeForces/parameters.iterations << "ms";
 
     Logger(INFO) << "Time to update bodies: " << total_time_update << "ms";
-    Logger(INFO) << "\nper step: " << total_time_update/parameters.iterations << "ms";
+    Logger(INFO) << "\tper step: " << total_time_update/parameters.iterations << "ms";
 
     Logger(INFO) << "Time to copy from device to host: " << total_time_copyDeviceToHost << "ms";
-    Logger(INFO) << "\nper step: " << total_time_copyDeviceToHost/parameters.iterations << "ms";
+    Logger(INFO) << "\tper step: " << total_time_copyDeviceToHost/parameters.iterations << "ms";
 
     Logger(INFO) << "----------------------------------------------";
     Logger(INFO) << "TOTAL TIME: " << total_time_all << "ms";
-    Logger(INFO) << "\nper step: " << total_time_all/parameters.iterations << "ms";
+    Logger(INFO) << "\tper step: " << total_time_all/parameters.iterations << "ms";
     Logger(INFO) << "----------------------------------------------";
 
     /** Cleaning */
