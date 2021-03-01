@@ -1,7 +1,3 @@
-//
-// Created by Michael Staneker on 09.12.20.
-//
-
 #include "Timer.h"
 
 Timer::Timer() : m_beg(clock_t::now())

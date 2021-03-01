@@ -10,7 +10,7 @@ typedef struct SimulationParameters
     bool debug;
     bool benchmark;
     bool fullscreen;
-    float iterations;
+    int iterations;
     float timestep;
     float gravity;
     float dampening;

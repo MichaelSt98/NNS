@@ -1,7 +1,3 @@
-//
-// Created by Michael Staneker on 25.01.21.
-//
-
 #ifndef NBODY_BODY_H
 #define NBODY_BODY_H
 

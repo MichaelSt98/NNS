@@ -1,7 +1,3 @@
-//
-// Created by Michael Staneker on 18.12.20.
-//
-
 #include "../include/Logger.h"
 
 Logger::Logger(typelog type) {

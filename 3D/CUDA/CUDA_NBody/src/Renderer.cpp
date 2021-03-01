@@ -1,7 +1,3 @@
-//
-// Created by Michael Staneker on 25.01.21.
-//
-
 #include "../include/Renderer.h"
 
 Renderer::Renderer(const int _numSuns, const int _numParticles, const int _width, const int _height, const double _renderScale, const double _maxVelocityColor,

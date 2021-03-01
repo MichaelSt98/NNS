@@ -1,7 +1,3 @@
-//
-// Created by Michael Staneker on 25.01.21.
-//
-
 #include "../include/Vector3D.h"
 
 Vector3D::Vector3D() : x { 0.0 }, y { 0.0 }, z { 0.0 } {}

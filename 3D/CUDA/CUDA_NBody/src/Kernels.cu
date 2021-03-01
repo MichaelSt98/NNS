@@ -1,5 +1,11 @@
 /**
  * CUDA Kernel functions.
+ *
+ * Notes:
+ *
+ * * use `-1` as *null pointer*
+ * * last-level cell and then attempts to lock the appropriate child pointer (an array index) by writing an
+otherwise unused value (−2) to it using an atomic operation
  */
 
 #include "../include/Kernels.cuh"
@@ -21,10 +27,12 @@ __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, floa
 
     // reset quadtree arrays
     while(bodyIndex + offset < m) {
-    #pragma unroll 8
+
+        #pragma unroll 8
         for (int i=0; i<8; i++) {
             child[(bodyIndex + offset)*8 + i] = -1;
         }
+
         if (bodyIndex + offset < n) {
             count[bodyIndex + offset] = 1;
         }
@@ -41,6 +49,7 @@ __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, floa
         offset += stride;
     }
 
+    // reset quadtree pointers
     if (bodyIndex == 0) {
         *mutex = 0;
         *index = n;
@@ -57,7 +66,6 @@ __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, floa
 __global__ void computeBoundingBoxKernel(int *mutex, float *x, float *y, float *z, float *minX, float *maxX,
                                          float *minY, float *maxY, float *minZ, float *maxZ, int n)
 {
-    // assigning bodies (array indices) to thread(s)
     int index = threadIdx.x + blockDim.x * blockIdx.x;
     int stride = blockDim.x * gridDim.x;
 
@@ -92,15 +100,6 @@ __global__ void computeBoundingBoxKernel(int *mutex, float *x, float *y, float *
         offset += stride;
     }
 
-    /*if (threadIdx.x == 0) {
-        printf("minX: %d\n", x_min);
-        printf("maxX: %d\n", x_max);
-        printf("minY: %d\n", y_min);
-        printf("maxY: %d\n", y_max);
-        printf("minZ: %d\n", z_min);
-        printf("maxZ: %d\n", z_max);
-    }*/
-
     // save value in corresponding buffer
     x_min_buffer[threadIdx.x] = x_min;
     x_max_buffer[threadIdx.x] = x_max;
@@ -131,6 +130,7 @@ __global__ void computeBoundingBoxKernel(int *mutex, float *x, float *y, float *
     // global reduction
     if (threadIdx.x == 0) {
         while (atomicCAS(mutex, 0 ,1) != 0); // lock
+
         *minX = fminf(*minX, x_min_buffer[0]);
         *maxX = fmaxf(*maxX, x_max_buffer[0]);
         *minY = fminf(*minY, y_min_buffer[0]);
@@ -139,27 +139,20 @@ __global__ void computeBoundingBoxKernel(int *mutex, float *x, float *y, float *
         *maxZ = fmaxf(*maxZ, z_max_buffer[0]);
 
         atomicExch(mutex, 0); // unlock
-
-        /*printf("minX: %d\n", *minX);
-        printf("maxX: %d\n", *maxX);
-        printf("minY: %d\n", *minY);
-        printf("maxY: %d\n", *maxY);
-        printf("minZ: %d\n", *minZ);
-        printf("maxZ: %d\n", *maxZ);*/
     }
 }
 
-// Kernel 2: hierachically subdivides the root cells
+// Kernel 2: hierarchically subdivides the root cells
 __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *count, int *start,
                                 int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
                                 float *minZ, float *maxZ, int n, int m) {
 
     int bodyIndex = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = blockDim.x * gridDim.x;
+
     int offset;
     bool newBody = true;
 
-    // build quadtree
     float min_x;
     float max_x;
     float min_y;
@@ -185,7 +178,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
             min_z = *minZ;
             max_z = *maxZ;
 
-            temp = 0; //m //2*n; //0
+            temp = 0; //m
             childPath = 0;
 
             // x direction
@@ -352,15 +345,13 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
                     __threadfence();  // written to global memory arrays (child, x, y, mass) thus need to fence
                     child[locked] = patch;
                 }
-
                 //__threadfence();
 
                 offset += stride;
                 newBody = true;
             }
         }
-
-        __syncthreads(); // needed?
+        __syncthreads();
     }
 }
 
@@ -373,6 +364,7 @@ __global__ void centreOfMassKernel(float *x, float *y, float *z, float *mass, in
     int offset = 0;
 
     bodyIndex += n;
+
     while (bodyIndex + offset < *index) {
 
         x[bodyIndex + offset] /= mass[bodyIndex + offset];
@@ -394,15 +386,17 @@ __global__ void sortKernel(int *count, int *start, int *sorted, int *child, int 
     int s = 0;
     if (threadIdx.x == 0) {
         
-        for(int i=0;i<8;i++){
+        for(int i=0; i<8; i++){
             
             int node = child[i];
 
-            if (node >= n) {  // not a leaf node
+            // not a leaf node
+            if (node >= n) {
                 start[node] = s;
                 s += count[node];
             }
-            else if (node >= 0) {  // leaf node
+            // leaf node
+            else if (node >= 0) {
                 sorted[s] = node;
                 s++;
             }
@@ -418,15 +412,17 @@ __global__ void sortKernel(int *count, int *start, int *sorted, int *child, int 
 
         if (s >= 0) {
 
-            for(int i=0;i<8;i++) {
+            for(int i=0; i<8; i++) {
                 
                 int node = child[8*(cell+offset) + i];
 
-                if (node >= n) {  // not a leaf node
+                // not a leaf node
+                if (node >= n) {
                     start[node] = s;
                     s += count[node];
                 }
-                else if (node >= 0) {  // leaf node
+                // leaf node
+                else if (node >= 0) {
                     sorted[s] = node;
                     s++;
                 }
@@ -437,7 +433,7 @@ __global__ void sortKernel(int *count, int *start, int *sorted, int *child, int 
 }
 
 
-// Kernel 5: computes the forces
+// Kernel 5: computes the (gravitational) forces
 __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, float *vy, float *vz, 
                                     float *ax, float *ay, float *az, float *mass,
                                     int *sorted, int *child, float *minX, float *maxX, int n, float g)
@@ -447,11 +443,12 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
     int offset = 0;
 
     __shared__ float depth[stackSize * blockSize/warp];
-    __shared__ int   stack[stackSize * blockSize/warp];  // stack controlled by one thread per warp
+    // stack controlled by one thread per warp
+    __shared__ int   stack[stackSize * blockSize/warp];
 
     float radius = 0.5*(*maxX - (*minX));
 
-    // need this in case some of the first eight entries of child are -1 (otherwise jj = 7)
+    // in case that one of the first 8 children are a leaf
     int jj = -1;
     for (int i=0;i<8;i++) {
         if (child[i] != -1) {
@@ -481,7 +478,8 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
             
             int temp = 0;
             
-            for (int i=0;i<8;i++) {
+            for (int i=0; i<8; i++) {
+
                 if (child[i] != -1) {
                     stack[stackStartIndex + temp] = child[i];
                     depth[stackStartIndex + temp] = radius*radius/theta;
@@ -512,7 +510,7 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
                     
                     float r = dx*dx + dy*dy + dz*dz + eps_squared;
 
-                    if (ch < n /*is leaf node*/ || __all(dp <= r)/*meets criterion*/) {
+                    if (ch < n /*is leaf node*/ || __all(dp <= r)) {
                         r = rsqrt(r);
                         float f = mass[ch] * r * r * r;
 
@@ -520,13 +518,13 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
                         acc_y += f*dy;
                         acc_z += f*dz;
                     }
-                    else{
-                        if(counter == 0){
+                    else {
+                        if (counter == 0) {
                             stack[top] = ch;
-                            depth[top] = dp;
-                            // depth[top] = 0.25*dp;
+                            depth[top] = dp; // depth[top] = 0.25*dp;
                         }
                         top++;
+
                         //__threadfence();
                     }
                 }

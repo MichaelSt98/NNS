@@ -23,8 +23,8 @@ DEPEXT         := d
 OBJEXT         := o
 
 #Flags, Libraries and Includes
-CXXFLAGS       += -std=c++11 -g #-Wno-conversion -g3 #-std=c++17 -O3 -Wall -pedantic -Wno-vla-extension -I/usr/local/include/ -I/usr/local/include/eigen3/ -I./include -I./src
-NVFLAGS        := -g -G -x cu -c -dc -Xcompiler "-pthread" -lineinfo -Wno-deprecated-gpu-targets
+CXXFLAGS       += -std=c++11 -g -w #-Wno-conversion -g3 #-std=c++17 -O3 -Wall -pedantic -Wno-vla-extension -I/usr/local/include/ -I/usr/local/include/eigen3/ -I./include -I./src
+NVFLAGS        := -g -G -x cu -c -dc -w -Xcompiler "-pthread" -Wno-deprecated-gpu-targets #-lineinfo
 LFLAGS         += -g -lm -L$(CUDADIR)/lib64 -lcudart -lpthread -lconfig #-O3 -Wall -Wno-deprecated -Werror -pedantic -L/usr/local/lib/
 GPU_ARCH       := -arch=sm_52
 CUDALFLAGS     := -dlink
@@ -82,8 +82,8 @@ $(TARGET): $(OBJECTS) $(CUDA_OBJECTS)
 $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@echo "  compiling: " $(SRCDIR)/$*
 	@mkdir -p $(dir $@)
-	$(NVCC) $(CXXFLAGS) $(INC) -c -o $@ $< $(LIB)
-	$(NVCC) $(CXXFLAGS) $(INC) $(INCDEP) -MM $(SRCDIR)/$*.$(SRCEXT) > $(BUILDDIR)/$*.$(DEPEXT)
+	@$(NVCC) $(CXXFLAGS) $(INC) -c -o $@ $< $(LIB)
+	@$(NVCC) $(CXXFLAGS) $(INC) $(INCDEP) -MM $(SRCDIR)/$*.$(SRCEXT) > $(BUILDDIR)/$*.$(DEPEXT)
 	@cp -f $(BUILDDIR)/$*.$(DEPEXT) $(BUILDDIR)/$*.$(DEPEXT).tmp
 	@sed -e 's|.*:|$(BUILDDIR)/$*.$(OBJEXT):|' < $(BUILDDIR)/$*.$(DEPEXT).tmp > $(BUILDDIR)/$*.$(DEPEXT)
 	@sed -e 's/.*://' -e 's/\\$$//' < $(BUILDDIR)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(BUILDDIR)/$*.$(DEPEXT)
@@ -92,8 +92,8 @@ $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(CUDASRCEXT)
 	@echo "  compiling: " $(SRCDIR)/$*
 	@mkdir -p $(dir $@)
-	$(NVCC) $(GPU_ARCH) $(NVFLAGS) -I$(CUDADIR) -c -o $@ $<
-	$(NVCC) $(GPU_ARCH) $(NVFLAGS) -I$(CUDADIR) -MM $(SRCDIR)/$*.$(CUDASRCEXT) > $(BUILDDIR)/$*.$(DEPEXT)
+	@$(NVCC) $(GPU_ARCH) $(NVFLAGS) -I$(CUDADIR) -c -o $@ $<
+	@$(NVCC) $(GPU_ARCH) $(NVFLAGS) -I$(CUDADIR) -MM $(SRCDIR)/$*.$(CUDASRCEXT) > $(BUILDDIR)/$*.$(DEPEXT)
 
 #compile test files
 tester: directories

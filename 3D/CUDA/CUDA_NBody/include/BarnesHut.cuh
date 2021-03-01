@@ -1,7 +1,3 @@
-//
-// Created by Michael Staneker on 23.02.21.
-//
-
 #ifndef CUDA_NBODY_BARNESHUT_H
 #define CUDA_NBODY_BARNESHUT_H
 
@@ -100,6 +96,18 @@ private:
 
 public:
 
+    bool timeKernels;
+
+    float *time_resetArrays;
+    float *time_computeBoundingBox;
+    float *time_buildTree;
+    float *time_centreOfMass;
+    float *time_sort;
+    float *time_computeForces;
+    float *time_update;
+    float *time_copyDeviceToHost;
+    float *time_all;
+
     float *h_x;
     float *h_y;
     float *h_z;
@@ -111,7 +119,7 @@ public:
     BarnesHut(const SimulationParameters p);
     ~BarnesHut();
 
-    void update();
+    void update(int step);
     void reset();
 
 };

@@ -1,7 +1,3 @@
-//
-// Created by Michael Staneker on 18.12.20.
-//
-
 #ifndef NBODY_LOGGER_H
 #define NBODY_LOGGER_H
 

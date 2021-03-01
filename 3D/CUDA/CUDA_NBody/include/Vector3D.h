@@ -1,7 +1,3 @@
-//
-// Created by Michael Staneker on 25.01.21.
-//
-
 #ifndef NBODY_VECTOR3D_H
 #define NBODY_VECTOR3D_H
 

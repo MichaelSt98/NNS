@@ -1,7 +1,3 @@
-//
-// Created by Michael Staneker on 09.12.20.
-//
-
 #include <chrono> // for std::chrono functions
 
 #ifndef CPP_TEMPLATE_PROJECT_TIMER_H

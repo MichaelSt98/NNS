@@ -1,7 +1,3 @@
-//
-// Created by Michael Staneker on 23.02.21.
-//
-
 #include "../include/BarnesHut.cuh"
 
 void gpuAssert(cudaError_t code, const char *file, int line, bool abort)
@@ -19,6 +15,8 @@ BarnesHut::BarnesHut(const SimulationParameters p) {
     step = 0;
     numParticles = NUM_BODIES;
     numNodes = 3 * numParticles + 12000; //2 * numParticles + 12000;
+
+    timeKernels = true;
 
     // allocate host data
     h_min_x = new float;
@@ -48,6 +46,16 @@ BarnesHut::BarnesHut(const SimulationParameters p) {
     h_sorted = new int[numNodes];
     h_count = new int[numNodes];
     h_output = new float[2*numNodes];
+
+    time_resetArrays = new float[parameters.iterations];
+    time_computeBoundingBox = new float[parameters.iterations];
+    time_buildTree = new float[parameters.iterations];
+    time_centreOfMass = new float[parameters.iterations];
+    time_sort = new float[parameters.iterations];
+    time_computeForces = new float[parameters.iterations];
+    time_update = new float[parameters.iterations];
+    time_copyDeviceToHost = new float[parameters.iterations];
+    time_all = new float [parameters.iterations];
 
     // allocate device data
     gpuErrorcheck(cudaMalloc((void**)&d_min_x, sizeof(float)));
@@ -97,7 +105,6 @@ BarnesHut::BarnesHut(const SimulationParameters p) {
 
 
     // copy data to GPU device
-    //Changed 2*numParticles*sizeof(float) -> 3*numParticles*sizeof(float)
     cudaMemcpy(d_mass, h_mass, 2*numParticles*sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_x, h_x, 2*numParticles*sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_y, h_y, 2*numParticles*sizeof(float), cudaMemcpyHostToDevice);
@@ -139,6 +146,16 @@ BarnesHut::~BarnesHut() {
     delete [] h_count;
     delete [] h_output;
 
+    delete [] time_resetArrays;
+    delete [] time_computeBoundingBox;
+    delete [] time_buildTree;
+    delete [] time_centreOfMass;
+    delete [] time_sort;
+    delete [] time_computeForces;
+    delete [] time_update;
+    delete [] time_copyDeviceToHost;
+    delete [] time_all;
+
     gpuErrorcheck(cudaFree(d_min_x));
     gpuErrorcheck(cudaFree(d_max_x));
     gpuErrorcheck(cudaFree(d_min_y));
@@ -173,10 +190,9 @@ BarnesHut::~BarnesHut() {
     cudaDeviceSynchronize();
 }
 
-void BarnesHut::update()
+void BarnesHut::update(int step)
 {
 
-    bool timeKernels = false;
     float elapsedTime;
     cudaEventCreate(&start_global);
     cudaEventCreate(&stop_global);
@@ -185,55 +201,65 @@ void BarnesHut::update()
     float elapsedTimeKernel;
 
     elapsedTimeKernel = kernel::resetArrays(d_mutex, d_x, d_y, d_z, d_mass, d_count, d_start, d_sorted, d_child, d_index,
-                        d_min_x, d_max_x, d_min_y, d_max_y, d_min_z, d_max_z, numParticles, numNodes);
+                        d_min_x, d_max_x, d_min_y, d_max_y, d_min_z, d_max_z, numParticles, numNodes, timeKernels);
 
+    time_resetArrays[step] = elapsedTimeKernel;
     if (timeKernels) {
         std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
     }
 
     elapsedTimeKernel = kernel::computeBoundingBox(d_mutex, d_x, d_y, d_z, d_min_x, d_max_x, d_min_y, d_max_y,
-                               d_min_z, d_max_z, numParticles);
+                               d_min_z, d_max_z, numParticles, timeKernels);
 
+    time_computeBoundingBox[step] = elapsedTimeKernel;
     if (timeKernels) {
         std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms"  << std::endl;
     }
 
     elapsedTimeKernel = kernel::buildTree(d_x, d_y, d_z, d_mass, d_count, d_start, d_child, d_index, d_min_x, d_max_x, d_min_y, d_max_y,
-                      d_min_z, d_max_z, numParticles, numNodes);
+                      d_min_z, d_max_z, numParticles, numNodes, timeKernels);
 
+    time_buildTree[step] = elapsedTimeKernel;
     if (timeKernels) {
         std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms"  << std::endl;
     }
 
-    elapsedTimeKernel = kernel::centreOfMass(d_x, d_y, d_z, d_mass, d_index, numParticles);
+    elapsedTimeKernel = kernel::centreOfMass(d_x, d_y, d_z, d_mass, d_index, numParticles, timeKernels);
 
+    time_centreOfMass[step] = elapsedTimeKernel;
     if (timeKernels) {
         std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms"  << std::endl;
     }
 
-    elapsedTimeKernel = kernel::sort(d_count, d_start, d_sorted, d_child, d_index, numParticles);
+    elapsedTimeKernel = kernel::sort(d_count, d_start, d_sorted, d_child, d_index, numParticles, timeKernels);
 
+    time_sort[step] = elapsedTimeKernel;
     if (timeKernels) {
         std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
     }
 
     elapsedTimeKernel = kernel::computeForces(d_x, d_y, d_z, d_vx, d_vy, d_vz, d_ax, d_ay, d_az, d_mass, d_sorted, d_child,
-                          d_min_x, d_max_x, numParticles, parameters.gravity);
+                          d_min_x, d_max_x, numParticles, parameters.gravity, timeKernels);
 
+    time_computeForces[step] = elapsedTimeKernel;
     if (timeKernels) {
         std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
     }
 
     elapsedTimeKernel = kernel::update(d_x, d_y, d_z, d_vx, d_vy, d_vz, d_ax, d_ay, d_az, numParticles,
-                   parameters.timestep, parameters.dampening);
+                   parameters.timestep, parameters.dampening, timeKernels);
 
+
+    time_update[step] = elapsedTimeKernel;
     if (timeKernels) {
         std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
     }
 
-    if (timeKernels) {
-        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
-    }
+    // copy from device to host
+    cudaEvent_t start_t, stop_t; // used for timing
+    cudaEventCreate(&start_t);
+    cudaEventCreate(&stop_t);
+    cudaEventRecord(start_t, 0);
 
     cudaMemcpy(h_x, d_x, 2*numParticles*sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(h_y, d_y, 2*numParticles*sizeof(float), cudaMemcpyDeviceToHost);
@@ -244,12 +270,20 @@ void BarnesHut::update()
 
     cudaDeviceSynchronize();
 
+    cudaEventRecord(stop_t, 0);
+    cudaEventSynchronize(stop_t);
+    cudaEventElapsedTime(&elapsedTime, start_t, stop_t);
+    cudaEventDestroy(start_t);
+    cudaEventDestroy(stop_t);
+    // END copy from device to host
+
+    time_copyDeviceToHost[step] = elapsedTimeKernel;
     if (timeKernels) {
         std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
     }
 
-    std::cout << "x[0]: " << h_x[0] << std::endl;
-    std::cout << "v[0]: " << h_vx[0] << std::endl;
+    //std::cout << "x[0]: " << h_x[0] << std::endl;
+    //std::cout << "v[0]: " << h_vx[0] << std::endl;
 
 
     cudaEventRecord(stop_global, 0);
@@ -258,6 +292,7 @@ void BarnesHut::update()
     cudaEventDestroy(start_global);
     cudaEventDestroy(stop_global);
 
+    time_all[step] = elapsedTime;
     std::cout << "Elapsed time for step " << step << " : " << elapsedTime << " ms" << std::endl;
 
     step++;
@@ -275,13 +310,6 @@ void BarnesHut::plummerModel(float *mass, float *x, float* y, float *z,
     std::uniform_real_distribution<float> distribution2(0, 0.1);
     std::uniform_real_distribution<float> distribution_phi(0.0, 2 * pi);
     std::uniform_real_distribution<float> distribution_theta(-1.0, 1.0);
-
-    float check_x_min = 1000;
-    float check_x_max = -1000;
-    float check_y_min = 1000;
-    float check_y_max = -1000;
-    float check_z_min = 1000;
-    float check_z_max = -1000;
 
     // loop through all particles
     for (int i = 0; i < n; i++){
