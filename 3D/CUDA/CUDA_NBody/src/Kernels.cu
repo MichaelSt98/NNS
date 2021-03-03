@@ -10,11 +10,11 @@ otherwise unused value (−2) to it using an atomic operation
 
 #include "../include/Kernels.cuh"
 
-__device__ const int   blockSize = 256;
+__device__ const int   blockSize = 256; //256;
 __device__ const int   warp = 32;
 __device__ const int   stackSize = 64;
 __device__ const float eps_squared = 0.025;
-__device__ const float theta = 0.75; //0.5;
+__device__ const float theta = 0.5; //0.75;
 
 
 __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, float *mass, int *count, int *start,

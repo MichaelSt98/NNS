@@ -121,6 +121,7 @@ public:
 
     void update(int step);
     void reset();
+    float getSystemSize();
 
 };
 

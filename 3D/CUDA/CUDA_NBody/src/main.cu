@@ -15,10 +15,6 @@
 #include <string.h>
 #include <random>
 
-Renderer renderer { NUM_SUNS, NUM_BODIES, WIDTH, HEIGHT, RENDER_SCALE, MAX_VEL_COLOR, MIN_VEL_COLOR,
-                    PARTICLE_BRIGHTNESS, PARTICLE_SHARPNESS, DOT_SIZE,
-                    SYSTEM_SIZE, RENDER_INTERVAL};
-
 structlog LOGCFG = {};
 
 int main()
@@ -26,23 +22,29 @@ int main()
     /** Initialization */
     SimulationParameters parameters;
 
-    parameters.iterations = 500;
+    parameters.iterations = 10000;
+    parameters.numberOfParticles = 512*256*4;
     parameters.timestep = 0.001;
     parameters.gravity = 1.0;
     parameters.dampening = 1.0;
 
+
     LOGCFG.headers = true;
     LOGCFG.level = DEBUG; //INFO;
-
-    Logger(INFO) << SYSTEM_THICKNESS << "AU thick disk";
 
     char *image = new char[WIDTH*HEIGHT*3];
     double *hdImage = new double[WIDTH*HEIGHT*3];
 
-    Body *suns = new Body [NUM_SUNS];
-    Body *bodies = new Body[NUM_BODIES];
+    Body *suns = new Body [1];
+    Body *bodies = new Body[parameters.numberOfParticles];
 
     BarnesHut *particles = new BarnesHut(parameters);
+
+    Logger(ERROR) << "System size: " << particles->getSystemSize();
+
+    Renderer renderer { parameters.numberOfParticles, WIDTH, HEIGHT, RENDER_SCALE, MAX_VEL_COLOR, MIN_VEL_COLOR,
+                        PARTICLE_BRIGHTNESS, PARTICLE_SHARPNESS, DOT_SIZE,
+                        2*particles->getSystemSize(), RENDER_INTERVAL };
 
     /** Simulation */
     for(int i = 0 ; i < parameters.iterations ; i++){
@@ -53,7 +55,7 @@ int main()
          * Output
          * * optimize (not yet optimized for code structure)
          * */
-        for (int i_body = 0; i_body < NUM_BODIES; i_body++) {
+        for (int i_body = 0; i_body < parameters.numberOfParticles; i_body++) {
 
             Body *current;
             current = &bodies[i_body];
@@ -64,7 +66,9 @@ int main()
             current->velocity.y =  particles->h_vy[i_body];
             current->velocity.z =  particles->h_vz[i_body];
         }
-        //renderer.createFrame(image, hdImage, suns, bodies, i);
+        if (i % RENDER_INTERVAL == 0) {
+            renderer.createFrame(image, hdImage, bodies, i);
+        }
     }
 
     /** Postprocessing */
@@ -119,6 +123,8 @@ int main()
     Logger(INFO) << "----------------------------------------------";
     Logger(INFO) << "TOTAL TIME: " << total_time_all << "ms";
     Logger(INFO) << "\tper step: " << total_time_all/parameters.iterations << "ms";
+    Logger(INFO) << "TOTAL TIME (without copying): " << total_time_all-total_time_copyDeviceToHost << "ms";
+    Logger(INFO) << "\tper step: " << (total_time_all-total_time_copyDeviceToHost)/parameters.iterations << "ms";
     Logger(INFO) << "----------------------------------------------";
 
     /** Cleaning */

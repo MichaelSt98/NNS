@@ -4,8 +4,8 @@
 
 #include "../include/KernelsWrapper.cuh"
 
-dim3 gridSize  = 512;
-dim3 blockSize = 256;
+dim3 gridSize  = 2048; //1024; //512;
+dim3 blockSize = 256; //256;
 
 float kernel::resetArrays(int *mutex, float *x, float *y, float *z, float *mass, int *count,
                           int *start, int *sorted, int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,

@@ -13,8 +13,8 @@ BarnesHut::BarnesHut(const SimulationParameters p) {
 
     parameters = p;
     step = 0;
-    numParticles = NUM_BODIES;
-    numNodes = 3 * numParticles + 12000; //2 * numParticles + 12000;
+    numParticles = p.numberOfParticles; //NUM_BODIES;
+    numNodes = 4 * numParticles + 12000; //2 * numParticles + 12000;
 
     timeKernels = true;
 
@@ -102,6 +102,7 @@ BarnesHut::BarnesHut(const SimulationParameters p) {
 
     //plummerModel(h_mass, h_x, h_y, h_z, h_vx, h_vy, h_vz, h_ax, h_ay, h_az, numParticles);
     diskModel(h_mass, h_x, h_y, h_z, h_vx, h_vy, h_vz, h_ax, h_ay, h_az, numParticles);
+
 
 
     // copy data to GPU device
@@ -268,14 +269,14 @@ void BarnesHut::update(int step)
     cudaMemcpy(h_vy, d_vy, 2*numParticles*sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(h_vz, d_vz, 2*numParticles*sizeof(float), cudaMemcpyDeviceToHost);
 
-    cudaDeviceSynchronize();
-
     cudaEventRecord(stop_t, 0);
     cudaEventSynchronize(stop_t);
-    cudaEventElapsedTime(&elapsedTime, start_t, stop_t);
+    cudaEventElapsedTime(&elapsedTimeKernel, start_t, stop_t);
     cudaEventDestroy(start_t);
     cudaEventDestroy(stop_t);
     // END copy from device to host
+
+    cudaDeviceSynchronize();
 
     time_copyDeviceToHost[step] = elapsedTimeKernel;
     if (timeKernels) {
@@ -360,36 +361,38 @@ void BarnesHut::diskModel(float *mass, float *x, float* y, float* z, float *x_ve
     std::uniform_real_distribution<float> distribution(1.5, 12.0);
     std::uniform_real_distribution<float> distribution_theta(0.0, 2 * pi);
 
+    float solarMass = 100000;
+
     // loop through all particles
-    for (int i = 0; i < n; i++){
+    for (int i = 0; i < n; i++) {
 
         float theta = distribution_theta(generator);
         float r = distribution(generator);
 
         // set mass and position of particle
         if (i==0) {
-            mass[i] = 100000;
+            mass[i] = solarMass; //100000;
             x[i] = 0;
             y[i] = 0;
             z[i] = 0;
         }
         else {
-            mass[i] = 1.0;
+            mass[i] = 2*solarMass/numParticles;
             x[i] = r*cos(theta);
             y[i] = r*sin(theta);
 
             if (i%2 == 0) {
-                z[i] = i*0.001;
+                z[i] = i*1e-7;
             }
             else {
-                z[i] = i*-0.001;
+                z[i] = i*-1e-7;
             }
         }
 
 
         // set velocity of particle
         float rotation = 1;  // 1: clockwise   -1: counter-clockwise
-        float v = sqrt(parameters.gravity*100000.0 / (r*r*r));
+        float v = sqrt(solarMass / (r));
 
         if (i == 0) {
             x_vel[0] = 0.0;
@@ -407,6 +410,40 @@ void BarnesHut::diskModel(float *mass, float *x, float* y, float* z, float *x_ve
         y_acc[i] = 0.0;
         z_acc[i] = 0.0;
     }
+
+}
+
+float BarnesHut::getSystemSize() {
+
+    float x_max = 0;
+    float y_max = 0;
+    float z_max = 0;
+
+    for (int i = 0; i < numParticles; i++) {
+        if (abs(h_x[i]) > x_max) {
+            x_max = abs(h_x[i]);
+        }
+        if (abs(h_y[i]) > y_max) {
+            y_max = abs(h_y[i]);
+        }
+        if (abs(h_z[i]) > z_max) {
+            z_max = abs(h_z[i]);
+        }
+    }
+
+    std::cout << "system size x_max: " << x_max << std::endl;
+    std::cout << "system size y_max: " << y_max << std::endl;
+    std::cout << "system size z_max: " << z_max << std::endl;
+
+    float systemSize = x_max;
+    if (y_max > systemSize) {
+        systemSize = y_max;
+    }
+    if (z_max > systemSize) {
+        systemSize = z_max;
+    }
+
+    return systemSize;
 
 }
 

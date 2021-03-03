@@ -1,22 +1,20 @@
 #include "../include/Renderer.h"
 
-Renderer::Renderer(const int _numSuns, const int _numParticles, const int _width, const int _height, const double _renderScale, const double _maxVelocityColor,
+Renderer::Renderer(const int _numParticles, const int _width, const int _height, const double _renderScale, const double _maxVelocityColor,
                    const double _minVelocityColor, const double _particleBrightness, const double _particleSharpness,
                    const int _dotSize, const double _systemSize, const int _renderInterval) :
-                    numSuns { _numSuns },
-                    numParticles { _numParticles },
-                    width { _width }, height { _height }, renderScale { _renderScale },
-                    maxVelocityColor { _maxVelocityColor }, minVelocityColor { _minVelocityColor },
-                    particleBrightness { _particleBrightness },
-                    particleSharpness { _particleSharpness }, dotSize { _dotSize },
-                    systemSize { _systemSize }, renderInterval { _renderInterval } {
+                        numParticles { _numParticles },
+                        width { _width }, height { _height }, renderScale { _renderScale },
+                        maxVelocityColor { _maxVelocityColor }, minVelocityColor { _minVelocityColor },
+                        particleBrightness { _particleBrightness },
+                        particleSharpness { _particleSharpness }, dotSize { _dotSize },
+                        systemSize { _systemSize }, renderInterval { _renderInterval } {
 
     LOGCFG.headers = true;
     LOGCFG.level = INFO;
 
     Logger(INFO) << "RENDERING RELATED PARAMETERS";
     Logger(INFO) << "--------------------------------------";
-    Logger(INFO) << "num Suns:           " << numSuns;
     Logger(INFO) << "num Particles:      " << numParticles;
     Logger(INFO) << "width:              " << width;
     Logger(INFO) << "height:             " << height;
@@ -35,7 +33,7 @@ int Renderer::getRenderInterval() {
     return renderInterval;
 }
 
-void Renderer::createFrame(char* image, double* hdImage, Body* s, Body* b, int step)
+void Renderer::createFrame(char* image, double* hdImage, Body* b, int step)
 {
     Logger(INFO) <<  "Writing frame " << step;
 
@@ -45,7 +43,7 @@ void Renderer::createFrame(char* image, double* hdImage, Body* s, Body* b, int s
 
 
     Logger(DEBUG) << "Rendering Particles ...";
-    renderBodies(s, b, hdImage);
+    renderBodies(b, hdImage);
 
 
     Logger(DEBUG) << "Writing frame to file ...";
@@ -58,30 +56,8 @@ void Renderer::renderClear(char* image, double* hdImage)
     memset(hdImage, 0, width*height*3*sizeof(double));
 }
 
-void Renderer::renderBodies(Body* s, Body* b, double* hdImage)
+void Renderer::renderBodies(Body* b, double* hdImage)
 {
-
-    for(int index=0; index<numSuns; index++)
-    {
-        Body *currentSun = &s[index];
-
-        int x = toPixelSpace(currentSun->position.x, width);
-        int y = toPixelSpace(currentSun->position.y, height);
-
-        if (x>dotSize && x<width-dotSize &&
-            y>dotSize && y<height-dotSize)
-        {
-            double vMag = currentSun->velocity.magnitude(); //magnitude(current->velocity);
-            colorDot(currentSun->position.x, currentSun->position.y, vMag, hdImage);
-
-            for (int i_x = int(currentSun->position.x*100 - ((renderScale*systemSize)*100)/200); i_x < int(currentSun->position.x*100 + ((renderScale*systemSize)*100)/200); i_x++) {
-                for (int i_y = int(currentSun->position.x*100 - ((renderScale*systemSize)*100)/200); i_y < int(currentSun->position.x*100 + ((renderScale*systemSize)*100)/200); i_y++) {
-                    colorDot(i_x/100.0, i_y/100.0, vMag, hdImage);
-                }
-            }
-        }
-    }
-
     for(int index=0; index<numParticles; index++)
     {
         Body *current = &b[index];
