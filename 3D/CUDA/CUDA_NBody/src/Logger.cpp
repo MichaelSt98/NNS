@@ -1,5 +1,13 @@
 #include "../include/Logger.h"
 
+Color::Modifier::Modifier(Code pCode) : code(pCode) {}
+
+namespace Color {
+    std::ostream &operator<<(std::ostream &os, const Modifier &mod) {
+        return os << "\033[" << mod.code << "m";
+    }
+}
+
 Logger::Logger(typelog type) {
     msglevel = type;
     Color::Modifier def(Color::FG_DEFAULT);
