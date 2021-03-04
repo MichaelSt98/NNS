@@ -127,7 +127,7 @@ __global__ void computeBoundingBoxKernel(int *mutex, float *x, float *y, float *
         i /= 2;
     }
 
-    // global reduction
+    // combining the results and generate the root cell
     if (threadIdx.x == 0) {
         while (atomicCAS(mutex, 0 ,1) != 0); // lock
 
@@ -149,6 +149,9 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
 
     int bodyIndex = threadIdx.x + blockIdx.x * blockDim.x;
     int stride = blockDim.x * gridDim.x;
+
+    //note: -1 used as "null pointer"
+    //note: -2 used to lock a child (pointer)
 
     int offset;
     bool newBody = true;
@@ -181,6 +184,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
             temp = 0; //m
             childPath = 0;
 
+            // find insertion point for body
             // x direction
             if (x[bodyIndex + offset] < 0.5 * (min_x + max_x)) {
                 childPath += 1;
@@ -215,6 +219,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
             temp = childIndex;
             childPath = 0;
 
+            // find insertion point for body
             // x direction
             if (x[bodyIndex + offset] < 0.5 * (min_x + max_x)) {
                 childPath += 1;
@@ -252,20 +257,23 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
             childIndex = child[8*temp + childPath];
         }
 
+        // if child is not locked
         if (childIndex != -2) {
 
             int locked = temp * 8 + childPath;
 
             if (atomicCAS(&child[locked], childIndex, -2) == childIndex) {
 
+                // check whether body is already stored at the location
                 if (childIndex == -1) {
+                    //insert body and release lock
                     child[locked] = bodyIndex + offset;
                 }
                 else {
-
                     int patch = 8*n; //4*n //-1
                     while (childIndex >= 0 && childIndex < n) {
 
+                        //create a new cell (by atomically requesting the next unused array index)
                         int cell = atomicAdd(index, 1);
                         patch = min(patch, cell);
 
@@ -273,7 +281,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
                             child[8*temp + childPath] = cell;
                         }
 
-                        // insert old particle
+                        // insert old/original particle
                         childPath = 0;
                         if(x[childIndex] < 0.5 * (min_x+max_x)) {
                             childPath += 1;
@@ -302,6 +310,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
                         temp = cell;
                         childPath = 0;
 
+                        // find insertion point for body
                         if (x[bodyIndex + offset] < 0.5 * (min_x+max_x)) {
                             childPath += 1;
                             max_x = 0.5 * (min_x+max_x);
@@ -331,6 +340,7 @@ __global__ void buildTreeKernel(float *x, float *y, float *z, float *mass, int *
                         //printf("cell: %d \n", cell);
                         //printf("bodyIndex + offset: %d \n", bodyIndex + offset);
 
+                        // COM / preparing for calculation of COM
                         x[cell] += mass[bodyIndex + offset] * x[bodyIndex + offset];
                         y[cell] += mass[bodyIndex + offset] * y[bodyIndex + offset];
                         z[cell] += mass[bodyIndex + offset] * z[bodyIndex + offset];
@@ -362,6 +372,8 @@ __global__ void centreOfMassKernel(float *x, float *y, float *z, float *mass, in
     int bodyIndex = threadIdx.x + blockIdx.x*blockDim.x;
     int stride = blockDim.x*gridDim.x;
     int offset = 0;
+
+    //note: most of it already done within buildTreeKernel
 
     bodyIndex += n;
 
@@ -450,7 +462,7 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
 
     // in case that one of the first 8 children are a leaf
     int jj = -1;
-    for (int i=0;i<8;i++) {
+    for (int i=0; i<8; i++) {
         if (child[i] != -1) {
             jj++;
         }
@@ -479,7 +491,7 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
             int temp = 0;
             
             for (int i=0; i<8; i++) {
-
+                // if child is not locked
                 if (child[i] != -1) {
                     stack[stackStartIndex + temp] = child[i];
                     depth[stackStartIndex + temp] = radius*radius/theta;
@@ -490,7 +502,7 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
 
         __syncthreads();
 
-        // while stack is not empty
+        // while stack is not empty / more nodes to visit
         while (top >= stackStartIndex) {
             
             int node = stack[top];
@@ -499,7 +511,6 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
             for (int i=0; i<8; i++) {
                 
                 int ch = child[8*node + i];
-
                 //__threadfence();
 
                 if (ch >= 0) {
@@ -510,16 +521,12 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
                     
                     float r = dx*dx + dy*dy + dz*dz + eps_squared;
 
-                    unsigned activeMask = __activemask();
+                    //unsigned activeMask = __activemask();
 
-                    //__all_sync(activeMask, dp <= r);
-                    //printf("all_sync(dp <= r): %d\n", __all_sync(activeMask, dp <= r));
-
-                    //__all(dp <= r)
-                    if (ch < n /*is leaf node*/ || __all_sync(activeMask, dp <= r)) {
                     //if (ch < n /*is leaf node*/ || !__any_sync(activeMask, dp > r)) {
-                    //if (ch < n /*is leaf node*/ || 1) {
+                    if (ch < n /*is leaf node*/ || __all_sync(__activemask(), dp <= r)) {
 
+                        // calculate intraction force contribution
                         r = rsqrt(r);
                         float f = mass[ch] * r * r * r;
 
@@ -528,24 +535,21 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
                         acc_z += f*dz;
                     }
                     else {
-                        //top++;
+                        // if first thread in warp: push node's children onto iteration stack
                         if (counter == 0) {
                             stack[top] = ch;
                             depth[top] = dp; // depth[top] = 0.25*dp;
                         }
-                        top++;
-
+                        top++; // descend to next tree level
                         //__threadfence();
                     }
                 }
-                else {
-                    //top = max(stackStartIndex, top-1);
-                }
+                else { /*top = max(stackStartIndex, top-1); */}
             }
-
             top--;
         }
 
+        // update body data
         ax[sortedIndex] = acc_x;
         ay[sortedIndex] = acc_y;
         az[sortedIndex] = acc_z;
