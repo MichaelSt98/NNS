@@ -14,7 +14,7 @@ BarnesHut::BarnesHut(const SimulationParameters p) {
     parameters = p;
     step = 0;
     numParticles = p.numberOfParticles; //NUM_BODIES;
-    numNodes = 4 * numParticles + 12000; //2 * numParticles + 12000;
+    numNodes = 2 * numParticles + 12000; //2 * numParticles + 12000;
 
     timeKernels = true;
 

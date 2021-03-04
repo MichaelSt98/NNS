@@ -23,9 +23,9 @@ DEPEXT         := d
 OBJEXT         := o
 
 #Flags, Libraries and Includes
-CXXFLAGS       += -std=c++11 -g -w #-Wno-conversion -g3 #-std=c++17 -O3 -Wall -pedantic -Wno-vla-extension -I/usr/local/include/ -I/usr/local/include/eigen3/ -I./include -I./src
-NVFLAGS        := -g -G -x cu -c -dc -w -Xcompiler "-pthread" -Wno-deprecated-gpu-targets #-lineinfo
-LFLAGS         += -g -lm -L$(CUDADIR)/lib64 -lcudart -lpthread -lconfig #-O3 -Wall -Wno-deprecated -Werror -pedantic -L/usr/local/lib/
+CXXFLAGS       += -std=c++11 -O3 -w
+NVFLAGS        := -x cu -c -dc -w -Xcompiler "-pthread" -Wno-deprecated-gpu-targets -O3
+LFLAGS         += -g -lm -L$(CUDADIR)/lib64 -lcudart -lpthread -lconfig
 GPU_ARCH       := -arch=sm_52
 CUDALFLAGS     := -dlink
 CUDALINKOBJ    := cuLink.o #needed?
@@ -45,6 +45,10 @@ DOXYFILE       := $(DOCDIR)/Doxyfile
 
 #default make (all)
 all:  tester ideas $(TARGET)
+
+debug: CXXFLAGS += -g
+debug: NVFLAGS  += -g -G
+debug: tester ideas $(TARGET)
 
 #make regarding source files
 sources: resources $(TARGET)

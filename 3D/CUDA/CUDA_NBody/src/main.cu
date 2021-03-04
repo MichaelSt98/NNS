@@ -22,7 +22,7 @@ int main()
     /** Initialization */
     SimulationParameters parameters;
 
-    parameters.iterations = 10000;
+    parameters.iterations = 500;
     parameters.numberOfParticles = 512*256*4;
     parameters.timestep = 0.001;
     parameters.gravity = 1.0;

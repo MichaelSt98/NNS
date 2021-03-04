@@ -48,7 +48,7 @@ namespace Color {
     public:
         Code code;
         Modifier(Code pCode);
-        friend std::ostream& operator<<(std::ostream& os, const Color::Modifier& mod);
+        friend std::ostream& operator<<(std::ostream& os, const Modifier& mod);
     };
 }
 

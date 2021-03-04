@@ -13,8 +13,8 @@ otherwise unused value (−2) to it using an atomic operation
 __device__ const int   blockSize = 256; //256;
 __device__ const int   warp = 32;
 __device__ const int   stackSize = 64;
-__device__ const float eps_squared = 0.025;
-__device__ const float theta = 0.5; //0.75;
+__device__ const float eps_squared = 0.0025;
+__device__ const float theta = 1.5; //0.5;
 
 
 __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, float *mass, int *count, int *start,
@@ -510,7 +510,16 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
                     
                     float r = dx*dx + dy*dy + dz*dz + eps_squared;
 
-                    if (ch < n /*is leaf node*/ || __all(dp <= r)) {
+                    unsigned activeMask = __activemask();
+
+                    //__all_sync(activeMask, dp <= r);
+                    //printf("all_sync(dp <= r): %d\n", __all_sync(activeMask, dp <= r));
+
+                    //__all(dp <= r)
+                    if (ch < n /*is leaf node*/ || __all_sync(activeMask, dp <= r)) {
+                    //if (ch < n /*is leaf node*/ || !__any_sync(activeMask, dp > r)) {
+                    //if (ch < n /*is leaf node*/ || 1) {
+
                         r = rsqrt(r);
                         float f = mass[ch] * r * r * r;
 
@@ -519,6 +528,7 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
                         acc_z += f*dz;
                     }
                     else {
+                        //top++;
                         if (counter == 0) {
                             stack[top] = ch;
                             depth[top] = dp; // depth[top] = 0.25*dp;
@@ -527,6 +537,9 @@ __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, flo
 
                         //__threadfence();
                     }
+                }
+                else {
+                    //top = max(stackStartIndex, top-1);
                 }
             }
 

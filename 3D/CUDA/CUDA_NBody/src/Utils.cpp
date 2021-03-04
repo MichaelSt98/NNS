@@ -16,6 +16,12 @@ void ProgressBar::show_progress(float progress) {
 
 Color::Modifier::Modifier(Code pCode) : code(pCode) {}
 
-std::ostream& Color::operator<<(std::ostream& os, const Color::Modifier& mod) {
-    return os << "\033[" << mod.code << "m";
+namespace Color {
+    std::ostream &operator<<(std::ostream &os, const Modifier &mod) {
+        return os << "\033[" << mod.code << "m";
+    }
 }
+/*
+std::ostream& Color::Modifier::operator<<(std::ostream& os, const Color::Modifier& mod) {
+    return os << "\033[" << mod.code << "m";
+}*/

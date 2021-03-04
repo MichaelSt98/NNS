@@ -53,7 +53,7 @@ const double MIN_VEL_COLOR = 0;
 const double PARTICLE_BRIGHTNESS = 0.35;
 const double PARTICLE_SHARPNESS = 1.0;
 const int DOT_SIZE = 8;
-const int RENDER_INTERVAL = 2; // How many timesteps to simulate in between each frame rendered
+const int RENDER_INTERVAL = 10; // How many timesteps to simulate in between each frame rendered
 
 
 #endif /* CONSTANTS_H_ */
