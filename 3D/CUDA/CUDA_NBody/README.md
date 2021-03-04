@@ -6,6 +6,16 @@ Adopted from:
 * [Patistar/Nbody-Barnes-Hut-CUDA](https://github.com/Patistar/Nbody-Barnes-Hut-CUDA)
 * [bneukom/gpu-nbody](https://github.com/bneukom/gpu-nbody)
 
+![Example](resources/figures/output.gif)
+
+## Usage
+
+### Compilation
+
+* Use the `Makefile` to compile the code
+	* `make` for optimized compilation
+	* `make debug` for debug compilation 
+
 ## Implementation
 
 ### Theoretical
