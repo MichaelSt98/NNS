@@ -13,12 +13,16 @@ KernelsWrapper::KernelsWrapper() {
     gridSize = 0;
     blockSize = 0;
     blockSizeInt = 0;
+    warp = 0;
+    stackSize = 0;
 }
 
 KernelsWrapper::KernelsWrapper(SimulationParameters p) {
     gridSize = p.gridSize;
     blockSize = p.blockSize;
     blockSizeInt = p.blockSize;
+    warp = p.warp;
+    stackSize = p.stackSize;
 }
 
 float KernelsWrapper::resetArrays(int *mutex, float *x, float *y, float *z, float *mass, int *count,
@@ -161,8 +165,8 @@ float KernelsWrapper::computeForces(float *x, float *y, float *z, float *vx, flo
         cudaEventCreate(&stop_t);
         cudaEventRecord(start_t, 0);
 
-        computeForcesKernel<<<gridSize, blockSize, (sizeof(float)+sizeof(int))*64*blockSizeInt/32>>>(x, y, z, vx, vy, vz, ax, ay, az,
-                mass, sorted, child, minX, maxX, n, g, blockSizeInt);
+        computeForcesKernel<<<gridSize, blockSize, (sizeof(float)+sizeof(int))*stackSize*blockSizeInt/warp>>>(x, y, z, vx, vy, vz, ax, ay, az,
+                mass, sorted, child, minX, maxX, n, g, blockSizeInt, warp, stackSize);
 
         cudaEventRecord(stop_t, 0);
         cudaEventSynchronize(stop_t);
@@ -171,8 +175,8 @@ float KernelsWrapper::computeForces(float *x, float *y, float *z, float *vx, flo
         cudaEventDestroy(stop_t);
     }
     else {
-        computeForcesKernel<<<gridSize, blockSize, (sizeof(float)+sizeof(int))*64*blockSizeInt/32>>>(x, y, z, vx, vy, vz, ax, ay, az,
-                                                     mass, sorted, child, minX, maxX, n, g, blockSizeInt);
+        computeForcesKernel<<<gridSize, blockSize, (sizeof(float)+sizeof(int))*stackSize*blockSizeInt/warp>>>(x, y, z, vx, vy, vz, ax, ay, az,
+                                                     mass, sorted, child, minX, maxX, n, g, blockSizeInt, warp, stackSize);
     }
     return elapsedTime;
 

@@ -130,7 +130,7 @@ __global__ void sortKernel(int *count, int *start, int *sorted, int *child, int 
  */
 __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, float *vy, float *vz,
                                     float *ax, float *ay, float *az, float *mass, int *sorted, int *child,
-                                    float *minX, float *maxX, int n, float g, int blockSize);
+                                    float *minX, float *maxX, int n, float g, int blockSize, int warp, int stackSize);
 
 /**
  * Kernel 6: updates the bodies

@@ -19,6 +19,8 @@ public:
     dim3 gridSize;  //= 1024; //2048; //1024; //512;
     dim3 blockSize; //256; //256;
     int blockSizeInt;
+    int warp;
+    int stackSize;
 
     KernelsWrapper();
     KernelsWrapper(SimulationParameters p);

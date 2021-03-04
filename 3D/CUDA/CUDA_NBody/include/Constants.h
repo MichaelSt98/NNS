@@ -14,6 +14,8 @@ typedef struct SimulationParameters
     float dampening;
     int gridSize;
     int blockSize;
+    int warp;
+    int stackSize;
 
 } SimulationParameters;
 

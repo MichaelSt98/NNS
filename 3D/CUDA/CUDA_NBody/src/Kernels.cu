@@ -12,8 +12,8 @@ otherwise unused value (−2) to it using an atomic operation
 
 //__device__ const int   blockSize = 256; //256;
 //extern __shared__ float buffer[];
-__device__ const int   warp = 32;
-__device__ const int   stackSize = 64;
+//__device__ const int   warp = 32;
+//__device__ const int   stackSize = 64;
 __device__ const float eps_squared = 0.0025;
 __device__ const float theta = 1.5; //0.5;
 
@@ -459,7 +459,8 @@ __global__ void sortKernel(int *count, int *start, int *sorted, int *child, int 
 // Kernel 5: computes the (gravitational) forces
 __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, float *vy, float *vz, 
                                     float *ax, float *ay, float *az, float *mass,
-                                    int *sorted, int *child, float *minX, float *maxX, int n, float g, int blockSize)
+                                    int *sorted, int *child, float *minX, float *maxX, int n, float g, int blockSize,
+                                    int warp, int stackSize)
 {
     int bodyIndex = threadIdx.x + blockIdx.x*blockDim.x;
     int stride = blockDim.x*gridDim.x;

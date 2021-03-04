@@ -5,6 +5,7 @@
 #include "../include/Timer.h"
 #include "../include/KernelsWrapper.cuh"
 #include "../include/BarnesHut.cuh"
+#include "../include/cxxopts.h"
 
 #include <fenv.h>
 #include <iostream>
@@ -15,8 +16,20 @@
 
 structlog LOGCFG = {};
 
-int main()
+int main(int argc, char** argv)
 {
+
+    cxxopts::Options options("MyProgram", "One line description of MyProgram");
+
+    bool render = false;
+
+    options.add_options()
+            ("r,render", "render simulation", cxxopts::value<bool>(render));
+
+    auto result = options.parse(argc, argv);
+
+    //render = result["render"].as<bool>();
+
     /** Initialization */
     SimulationParameters parameters;
 
@@ -27,6 +40,9 @@ int main()
     parameters.dampening = 1.0;
     parameters.gridSize = 1024;
     parameters.blockSize = 256;
+    parameters.warp = 32;
+    parameters.stackSize = 64;
+
 
 
     LOGCFG.headers = true;
@@ -39,8 +55,6 @@ int main()
     Body *bodies = new Body[parameters.numberOfParticles];
 
     BarnesHut *particles = new BarnesHut(parameters);
-
-    Logger(ERROR) << "System size: " << particles->getSystemSize();
 
     Renderer renderer { parameters.numberOfParticles, WIDTH, HEIGHT, RENDER_SCALE, MAX_VEL_COLOR, MIN_VEL_COLOR,
                         PARTICLE_BRIGHTNESS, PARTICLE_SHARPNESS, DOT_SIZE,
@@ -55,19 +69,21 @@ int main()
          * Output
          * * optimize (not yet optimized for code structure)
          * */
-        for (int i_body = 0; i_body < parameters.numberOfParticles; i_body++) {
+        if (render) {
+            for (int i_body = 0; i_body < parameters.numberOfParticles; i_body++) {
 
-            Body *current;
-            current = &bodies[i_body];
-            current->position.x =  particles->h_x[i_body];
-            current->position.y =  particles->h_y[i_body];
-            current->position.z =  particles->h_z[i_body];
-            current->velocity.x =  particles->h_vx[i_body];
-            current->velocity.y =  particles->h_vy[i_body];
-            current->velocity.z =  particles->h_vz[i_body];
-        }
-        if (i % RENDER_INTERVAL == 0) {
-            renderer.createFrame(image, hdImage, bodies, i);
+                Body *current;
+                current = &bodies[i_body];
+                current->position.x = particles->h_x[i_body];
+                current->position.y = particles->h_y[i_body];
+                current->position.z = particles->h_z[i_body];
+                current->velocity.x = particles->h_vx[i_body];
+                current->velocity.y = particles->h_vy[i_body];
+                current->velocity.z = particles->h_vz[i_body];
+            }
+            if (i % RENDER_INTERVAL == 0) {
+                renderer.createFrame(image, hdImage, bodies, i);
+            }
         }
     }
 
