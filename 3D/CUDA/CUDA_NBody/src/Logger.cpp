@@ -43,6 +43,7 @@ inline Color::Modifier Logger::getColor(typelog type) {
         case INFO:  color.code = Color::FG_LIGHT_GREEN; break;
         case WARN:  color.code = Color::FG_YELLOW; break;
         case ERROR: color.code = Color::FG_RED; break;
+        case TIME:  color.code = Color::FG_BLUE; break;
     }
     return color;
 }

@@ -10,7 +10,6 @@
 //#include "Constants.h"
 #include "Logger.h"
 #include "Body.h"
-#include "Vector3D.h"
 
 struct color
 {
