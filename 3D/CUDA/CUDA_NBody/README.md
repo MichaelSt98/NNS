@@ -10,11 +10,15 @@ Adopted from:
 
 ## Usage
 
-### Compilation
-
-* Use the `Makefile` to compile the code
+* **Compilation:** Use the `Makefile` to compile the code
 	* `make` for optimized compilation
 	* `make debug` for debug compilation 
+* **Clean:**
+	* `make clean` to remove object files ...
+	* `make cleaner` to remove object files, binaries ...
+* **Running:** `./bin/runner`
+* **Visualization:** `./createMP4`
+	* result is *movie.mp4* 
 
 ## Implementation
 
