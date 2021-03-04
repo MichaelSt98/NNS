@@ -4,10 +4,24 @@
 
 #include "../include/KernelsWrapper.cuh"
 
+/*
 dim3 gridSize  = 1024; //2048; //1024; //512;
 dim3 blockSize = 256; //256;
+ */
 
-float kernel::resetArrays(int *mutex, float *x, float *y, float *z, float *mass, int *count,
+KernelsWrapper::KernelsWrapper() {
+    gridSize = 0;
+    blockSize = 0;
+    blockSizeInt = 0;
+}
+
+KernelsWrapper::KernelsWrapper(SimulationParameters p) {
+    gridSize = p.gridSize;
+    blockSize = p.blockSize;
+    blockSizeInt = p.blockSize;
+}
+
+float KernelsWrapper::resetArrays(int *mutex, float *x, float *y, float *z, float *mass, int *count,
                           int *start, int *sorted, int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
                           float *minZ, float *maxZ, int n, int m, bool timing) {
 
@@ -35,7 +49,7 @@ float kernel::resetArrays(int *mutex, float *x, float *y, float *z, float *mass,
 
 }
 
-float kernel::computeBoundingBox(int *mutex, float *x, float *y, float *z, float *minX,
+float KernelsWrapper::computeBoundingBox(int *mutex, float *x, float *y, float *z, float *minX,
                                  float *maxX, float *minY, float *maxY, float *minZ, float *maxZ, int n, bool timing) {
 
     float elapsedTime = 0.f;
@@ -45,7 +59,7 @@ float kernel::computeBoundingBox(int *mutex, float *x, float *y, float *z, float
         cudaEventCreate(&stop_t);
         cudaEventRecord(start_t, 0);
 
-        computeBoundingBoxKernel<<< gridSize, blockSize >>>(mutex, x, y, z, minX, maxX, minY, maxY, minZ, maxZ, n);
+        computeBoundingBoxKernel<<< gridSize, blockSize, 6*sizeof(float)*blockSizeInt >>>(mutex, x, y, z, minX, maxX, minY, maxY, minZ, maxZ, n, blockSizeInt);
 
         cudaEventRecord(stop_t, 0);
         cudaEventSynchronize(stop_t);
@@ -54,13 +68,13 @@ float kernel::computeBoundingBox(int *mutex, float *x, float *y, float *z, float
         cudaEventDestroy(stop_t);
     }
     else {
-        computeBoundingBoxKernel<<< gridSize, blockSize >>>(mutex, x, y, z, minX, maxX, minY, maxY, minZ, maxZ, n);
+        computeBoundingBoxKernel<<< gridSize, blockSize, 6*sizeof(float)*blockSizeInt >>>(mutex, x, y, z, minX, maxX, minY, maxY, minZ, maxZ, n, blockSizeInt);
     }
     return elapsedTime;
 
 }
 
-float kernel::buildTree(float *x, float *y, float *z, float *mass, int *count, int *start,
+float KernelsWrapper::buildTree(float *x, float *y, float *z, float *mass, int *count, int *start,
                         int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
                         float *minZ, float *maxZ, int n, int m, bool timing) {
 
@@ -88,7 +102,7 @@ float kernel::buildTree(float *x, float *y, float *z, float *mass, int *count, i
 
 }
 
-float kernel::centreOfMass(float *x, float *y, float *z, float *mass, int *index, int n, bool timing) {
+float KernelsWrapper::centreOfMass(float *x, float *y, float *z, float *mass, int *index, int n, bool timing) {
 
     float elapsedTime = 0.f;
     if (timing) {
@@ -112,7 +126,7 @@ float kernel::centreOfMass(float *x, float *y, float *z, float *mass, int *index
 
 }
 
-float kernel::sort(int *count, int *start, int *sorted, int *child, int *index, int n, bool timing) {
+float KernelsWrapper::sort(int *count, int *start, int *sorted, int *child, int *index, int n, bool timing) {
 
     float elapsedTime = 0.f;
     if (timing) {
@@ -136,7 +150,7 @@ float kernel::sort(int *count, int *start, int *sorted, int *child, int *index, 
 
 }
 
-float kernel::computeForces(float *x, float *y, float *z, float *vx, float *vy, float *vz,
+float KernelsWrapper::computeForces(float *x, float *y, float *z, float *vx, float *vy, float *vz,
                             float *ax, float *ay, float *az, float *mass, int *sorted, int *child,
                             float *minX, float *maxX, int n, float g, bool timing) {
 
@@ -147,8 +161,8 @@ float kernel::computeForces(float *x, float *y, float *z, float *vx, float *vy, 
         cudaEventCreate(&stop_t);
         cudaEventRecord(start_t, 0);
 
-        computeForcesKernel<<<gridSize, blockSize>>>(x, y, z, vx, vy, vz, ax, ay, az,
-                mass, sorted, child, minX, maxX, n, g);
+        computeForcesKernel<<<gridSize, blockSize, (sizeof(float)+sizeof(int))*64*blockSizeInt/32>>>(x, y, z, vx, vy, vz, ax, ay, az,
+                mass, sorted, child, minX, maxX, n, g, blockSizeInt);
 
         cudaEventRecord(stop_t, 0);
         cudaEventSynchronize(stop_t);
@@ -157,14 +171,14 @@ float kernel::computeForces(float *x, float *y, float *z, float *vx, float *vy, 
         cudaEventDestroy(stop_t);
     }
     else {
-        computeForcesKernel<<<gridSize, blockSize>>>(x, y, z, vx, vy, vz, ax, ay, az,
-                                                     mass, sorted, child, minX, maxX, n, g);
+        computeForcesKernel<<<gridSize, blockSize, (sizeof(float)+sizeof(int))*64*blockSizeInt/32>>>(x, y, z, vx, vy, vz, ax, ay, az,
+                                                     mass, sorted, child, minX, maxX, n, g, blockSizeInt);
     }
     return elapsedTime;
 
 }
 
-float kernel::update(float *x, float *y, float *z, float *vx, float *vy, float *vz,
+float KernelsWrapper::update(float *x, float *y, float *z, float *vx, float *vy, float *vz,
                     float *ax, float *ay, float *az, int n, float dt, float d, bool timing) {
 
     float elapsedTime = 0.f;

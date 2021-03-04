@@ -9,10 +9,11 @@
 #ifndef CUDA_NBODY_KERNELS_CUH
 #define CUDA_NBODY_KERNELS_CUH
 
+#include "Constants.h"
+
 #include <iostream>
 #include <stdio.h>
 #include <cuda.h>
-
 
 /**
  * Reset the arrays/pointers.
@@ -56,7 +57,7 @@ __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, floa
  * @param n number of particles
  */
 __global__ void computeBoundingBoxKernel(int *mutex, float *x, float *y, float *z, float *minX, float *maxX,
-                                         float *minY, float *maxY, float *minZ, float *maxZ, int n);
+                                         float *minY, float *maxY, float *minZ, float *maxZ, int n, int blockSize);
 
 /**
  * Kernel 2: hierarchically subdivides the root cells
@@ -129,7 +130,7 @@ __global__ void sortKernel(int *count, int *start, int *sorted, int *child, int 
  */
 __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, float *vy, float *vz,
                                     float *ax, float *ay, float *az, float *mass, int *sorted, int *child,
-                                    float *minX, float *maxX, int n, float g);
+                                    float *minX, float *maxX, int n, float g, int blockSize);
 
 /**
  * Kernel 6: updates the bodies

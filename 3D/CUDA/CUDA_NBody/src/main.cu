@@ -25,6 +25,8 @@ int main()
     parameters.timestep = 0.001;
     parameters.gravity = 1.0;
     parameters.dampening = 1.0;
+    parameters.gridSize = 1024;
+    parameters.blockSize = 256;
 
 
     LOGCFG.headers = true;

@@ -9,9 +9,19 @@
 #include <cuda.h>
 
 #include "Kernels.cuh"
+#include "Constants.h"
 
 
-namespace kernel {
+class KernelsWrapper {
+
+public:
+
+    dim3 gridSize;  //= 1024; //2048; //1024; //512;
+    dim3 blockSize; //256; //256;
+    int blockSizeInt;
+
+    KernelsWrapper();
+    KernelsWrapper(SimulationParameters p);
 
     float resetArrays(int *mutex, float *x, float *y, float *z, float *mass, int *count,
                       int *start, int *sorted, int *child, int *index, float *minX, float *maxX, float *minY, float *maxY,
@@ -35,6 +45,6 @@ namespace kernel {
     float update(float *x, float *y, float *z, float *vx, float *vy, float *vz,
                  float *ax, float *ay, float *az, int n, float dt, float d, bool timing=false);
 
-}
+};
 
 #endif //CUDA_NBODY_KERNELSWRAPPER_H

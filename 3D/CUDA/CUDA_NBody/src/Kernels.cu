@@ -10,7 +10,8 @@ otherwise unused value (−2) to it using an atomic operation
 
 #include "../include/Kernels.cuh"
 
-__device__ const int   blockSize = 256; //256;
+//__device__ const int   blockSize = 256; //256;
+//extern __shared__ float buffer[];
 __device__ const int   warp = 32;
 __device__ const int   stackSize = 64;
 __device__ const float eps_squared = 0.0025;
@@ -64,7 +65,7 @@ __global__ void resetArraysKernel(int *mutex, float *x, float *y, float *z, floa
 
 // Kernel 1: computes bounding box around all bodies
 __global__ void computeBoundingBoxKernel(int *mutex, float *x, float *y, float *z, float *minX, float *maxX,
-                                         float *minY, float *maxY, float *minZ, float *maxZ, int n)
+                                         float *minY, float *maxY, float *minZ, float *maxZ, int n, int blockSize)
 {
     int index = threadIdx.x + blockDim.x * blockIdx.x;
     int stride = blockDim.x * gridDim.x;
@@ -78,12 +79,22 @@ __global__ void computeBoundingBoxKernel(int *mutex, float *x, float *y, float *
     float z_max = z[index];
 
     // initialize block min/max buffer
-    __shared__ float x_min_buffer[blockSize];
+    /*__shared__ float x_min_buffer[blockSize];
     __shared__ float x_max_buffer[blockSize];
     __shared__ float y_min_buffer[blockSize];
     __shared__ float y_max_buffer[blockSize];
     __shared__ float z_min_buffer[blockSize];
-    __shared__ float z_max_buffer[blockSize];
+    __shared__ float z_max_buffer[blockSize];*/
+
+    extern __shared__ float buffer[];
+
+    float* x_min_buffer = (float*)buffer;
+    float* x_max_buffer = (float*)&x_min_buffer[blockSize];
+    float* y_min_buffer = (float*)&x_max_buffer[blockSize];
+    float* y_max_buffer = (float*)&y_min_buffer[blockSize];
+    float* z_min_buffer = (float*)&y_max_buffer[blockSize];
+    float* z_max_buffer = (float*)&z_min_buffer[blockSize];
+
 
     int offset = stride;
 
@@ -448,15 +459,19 @@ __global__ void sortKernel(int *count, int *start, int *sorted, int *child, int 
 // Kernel 5: computes the (gravitational) forces
 __global__ void computeForcesKernel(float* x, float *y, float *z, float *vx, float *vy, float *vz, 
                                     float *ax, float *ay, float *az, float *mass,
-                                    int *sorted, int *child, float *minX, float *maxX, int n, float g)
+                                    int *sorted, int *child, float *minX, float *maxX, int n, float g, int blockSize)
 {
     int bodyIndex = threadIdx.x + blockIdx.x*blockDim.x;
     int stride = blockDim.x*gridDim.x;
     int offset = 0;
 
-    __shared__ float depth[stackSize * blockSize/warp];
+    //__shared__ float depth[stackSize * blockSize/warp];
     // stack controlled by one thread per warp
-    __shared__ int   stack[stackSize * blockSize/warp];
+    //__shared__ int   stack[stackSize * blockSize/warp];
+    extern __shared__ float buffer[];
+
+    float* depth = (float*)buffer;
+    float* stack = (float*)&depth[stackSize* blockSize/warp];
 
     float radius = 0.5*(*maxX - (*minX));
 

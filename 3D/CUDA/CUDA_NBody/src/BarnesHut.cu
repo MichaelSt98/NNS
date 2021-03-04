@@ -12,6 +12,7 @@ void gpuAssert(cudaError_t code, const char *file, int line, bool abort)
 BarnesHut::BarnesHut(const SimulationParameters p) {
 
     parameters = p;
+    KernelHandler = KernelsWrapper(p);
     step = 0;
     numParticles = p.numberOfParticles; //NUM_BODIES;
     numNodes = 2 * numParticles + 12000; //2 * numParticles + 12000;
@@ -201,7 +202,7 @@ void BarnesHut::update(int step)
 
     float elapsedTimeKernel;
 
-    elapsedTimeKernel = kernel::resetArrays(d_mutex, d_x, d_y, d_z, d_mass, d_count, d_start, d_sorted, d_child, d_index,
+    elapsedTimeKernel = KernelHandler.resetArrays(d_mutex, d_x, d_y, d_z, d_mass, d_count, d_start, d_sorted, d_child, d_index,
                         d_min_x, d_max_x, d_min_y, d_max_y, d_min_z, d_max_z, numParticles, numNodes, timeKernels);
 
     time_resetArrays[step] = elapsedTimeKernel;
@@ -209,7 +210,7 @@ void BarnesHut::update(int step)
         std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
     }
 
-    elapsedTimeKernel = kernel::computeBoundingBox(d_mutex, d_x, d_y, d_z, d_min_x, d_max_x, d_min_y, d_max_y,
+    elapsedTimeKernel = KernelHandler.computeBoundingBox(d_mutex, d_x, d_y, d_z, d_min_x, d_max_x, d_min_y, d_max_y,
                                d_min_z, d_max_z, numParticles, timeKernels);
 
     time_computeBoundingBox[step] = elapsedTimeKernel;
@@ -217,7 +218,7 @@ void BarnesHut::update(int step)
         std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms"  << std::endl;
     }
 
-    elapsedTimeKernel = kernel::buildTree(d_x, d_y, d_z, d_mass, d_count, d_start, d_child, d_index, d_min_x, d_max_x, d_min_y, d_max_y,
+    elapsedTimeKernel = KernelHandler.buildTree(d_x, d_y, d_z, d_mass, d_count, d_start, d_child, d_index, d_min_x, d_max_x, d_min_y, d_max_y,
                       d_min_z, d_max_z, numParticles, numNodes, timeKernels);
 
     time_buildTree[step] = elapsedTimeKernel;
@@ -225,21 +226,21 @@ void BarnesHut::update(int step)
         std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms"  << std::endl;
     }
 
-    elapsedTimeKernel = kernel::centreOfMass(d_x, d_y, d_z, d_mass, d_index, numParticles, timeKernels);
+    elapsedTimeKernel = KernelHandler.centreOfMass(d_x, d_y, d_z, d_mass, d_index, numParticles, timeKernels);
 
     time_centreOfMass[step] = elapsedTimeKernel;
     if (timeKernels) {
         std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms"  << std::endl;
     }
 
-    elapsedTimeKernel = kernel::sort(d_count, d_start, d_sorted, d_child, d_index, numParticles, timeKernels);
+    elapsedTimeKernel = KernelHandler.sort(d_count, d_start, d_sorted, d_child, d_index, numParticles, timeKernels);
 
     time_sort[step] = elapsedTimeKernel;
     if (timeKernels) {
         std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
     }
 
-    elapsedTimeKernel = kernel::computeForces(d_x, d_y, d_z, d_vx, d_vy, d_vz, d_ax, d_ay, d_az, d_mass, d_sorted, d_child,
+    elapsedTimeKernel = KernelHandler.computeForces(d_x, d_y, d_z, d_vx, d_vy, d_vz, d_ax, d_ay, d_az, d_mass, d_sorted, d_child,
                           d_min_x, d_max_x, numParticles, parameters.gravity, timeKernels);
 
     time_computeForces[step] = elapsedTimeKernel;
@@ -247,7 +248,7 @@ void BarnesHut::update(int step)
         std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
     }
 
-    elapsedTimeKernel = kernel::update(d_x, d_y, d_z, d_vx, d_vy, d_vz, d_ax, d_ay, d_az, numParticles,
+    elapsedTimeKernel = KernelHandler.update(d_x, d_y, d_z, d_vx, d_vy, d_vz, d_ax, d_ay, d_az, numParticles,
                    parameters.timestep, parameters.dampening, timeKernels);
 
 

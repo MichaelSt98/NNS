@@ -20,6 +20,7 @@ class BarnesHut {
 private:
 
     SimulationParameters parameters;
+    KernelsWrapper KernelHandler;
 
     int step;
     int numParticles;
