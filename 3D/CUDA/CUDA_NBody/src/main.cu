@@ -1,7 +1,6 @@
 #include "../include/Body.h"
 #include "../include/Constants.h"
 #include "../include/Renderer.h"
-#include "../include/Vector3D.h"
 #include "../include/Logger.h"
 #include "../include/Timer.h"
 #include "../include/KernelsWrapper.cuh"
