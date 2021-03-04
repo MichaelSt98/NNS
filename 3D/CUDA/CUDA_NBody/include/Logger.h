@@ -41,7 +41,8 @@ enum typelog {
     DEBUG,
     INFO,
     WARN,
-    ERROR
+    ERROR,
+    TIME
 };
 
 struct structlog {

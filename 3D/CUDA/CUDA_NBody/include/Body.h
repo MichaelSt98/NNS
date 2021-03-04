@@ -1,7 +1,6 @@
 #ifndef NBODY_BODY_H
 #define NBODY_BODY_H
 
-#include "Vector3D.h"
 #include <cmath>
 
 class Vector3D {
