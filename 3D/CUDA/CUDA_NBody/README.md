@@ -17,6 +17,14 @@ Adopted from:
 	* `make clean` to remove object files ...
 	* `make cleaner` to remove object files, binaries ...
 * **Running:** `./bin/runner`
+	* **-r, --render**              render simulation
+	* **-i, --iterations** arg      number of iterations (default: 100)
+	* **-n, --particles** arg       number of particles (default: 524288)
+	* **-b, --blocksize** arg       block size (default: 256)
+	* **-g, --gridsize** arg        grid size (default: 1024)
+	* **-R, --renderinterval** arg  render interval (default: 10)
+	* **-v, --verbosity**           Verbosity level
+	* **-h, --help**                Show this help
 * **Visualization:** `./createMP4`
 	* result is *movie.mp4* 
 
