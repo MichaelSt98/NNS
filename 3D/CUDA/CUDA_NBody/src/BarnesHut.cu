@@ -17,7 +17,7 @@ BarnesHut::BarnesHut(const SimulationParameters p) {
     numParticles = p.numberOfParticles; //NUM_BODIES;
     numNodes = 2 * numParticles + 12000; //2 * numParticles + 12000;
 
-    timeKernels = true;
+    timeKernels = p.timeKernels; //true;
 
     // allocate host data
     h_min_x = new float;
@@ -207,7 +207,7 @@ void BarnesHut::update(int step)
 
     time_resetArrays[step] = elapsedTimeKernel;
     if (timeKernels) {
-        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
+        Logger(TIME) << "\tReset arrays: " << elapsedTimeKernel << " ms";
     }
 
     elapsedTimeKernel = KernelHandler.computeBoundingBox(d_mutex, d_x, d_y, d_z, d_min_x, d_max_x, d_min_y, d_max_y,
@@ -215,7 +215,7 @@ void BarnesHut::update(int step)
 
     time_computeBoundingBox[step] = elapsedTimeKernel;
     if (timeKernels) {
-        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms"  << std::endl;
+        Logger(TIME) << "\tBounding box: " << elapsedTimeKernel << " ms";
     }
 
     elapsedTimeKernel = KernelHandler.buildTree(d_x, d_y, d_z, d_mass, d_count, d_start, d_child, d_index, d_min_x, d_max_x, d_min_y, d_max_y,
@@ -223,21 +223,21 @@ void BarnesHut::update(int step)
 
     time_buildTree[step] = elapsedTimeKernel;
     if (timeKernels) {
-        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms"  << std::endl;
+        Logger(TIME) << "\tBuilding tree: " << elapsedTimeKernel << " ms";
     }
 
     elapsedTimeKernel = KernelHandler.centreOfMass(d_x, d_y, d_z, d_mass, d_index, numParticles, timeKernels);
 
     time_centreOfMass[step] = elapsedTimeKernel;
     if (timeKernels) {
-        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms"  << std::endl;
+        Logger(TIME) << "\tCenter of mass: " << elapsedTimeKernel << " ms";
     }
 
     elapsedTimeKernel = KernelHandler.sort(d_count, d_start, d_sorted, d_child, d_index, numParticles, timeKernels);
 
     time_sort[step] = elapsedTimeKernel;
     if (timeKernels) {
-        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
+        Logger(TIME) << "\tSort particles: " << elapsedTimeKernel << " ms";
     }
 
     elapsedTimeKernel = KernelHandler.computeForces(d_x, d_y, d_z, d_vx, d_vy, d_vz, d_ax, d_ay, d_az, d_mass, d_sorted, d_child,
@@ -245,7 +245,7 @@ void BarnesHut::update(int step)
 
     time_computeForces[step] = elapsedTimeKernel;
     if (timeKernels) {
-        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
+        Logger(TIME) << "\tCompute forces: " << elapsedTimeKernel << " ms";
     }
 
     elapsedTimeKernel = KernelHandler.update(d_x, d_y, d_z, d_vx, d_vy, d_vz, d_ax, d_ay, d_az, numParticles,
@@ -254,7 +254,7 @@ void BarnesHut::update(int step)
 
     time_update[step] = elapsedTimeKernel;
     if (timeKernels) {
-        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
+        Logger(TIME) << "\tUpdate particles: " << elapsedTimeKernel << " ms";
     }
 
     // copy from device to host
@@ -281,7 +281,7 @@ void BarnesHut::update(int step)
 
     time_copyDeviceToHost[step] = elapsedTimeKernel;
     if (timeKernels) {
-        std::cout << "\tElapsed time: " << elapsedTimeKernel << " ms" << std::endl;
+        Logger(TIME) << "\tCopying to host: " << elapsedTimeKernel << " ms";
     }
 
     //std::cout << "x[0]: " << h_x[0] << std::endl;
@@ -295,7 +295,7 @@ void BarnesHut::update(int step)
     cudaEventDestroy(stop_global);
 
     time_all[step] = elapsedTime;
-    std::cout << "Elapsed time for step " << step << " : " << elapsedTime << " ms" << std::endl;
+    Logger(TIME) << "Elapsed time for step " << step << " : " << elapsedTime << " ms";
 
     step++;
 }
@@ -432,9 +432,9 @@ float BarnesHut::getSystemSize() {
         }
     }
 
-    std::cout << "system size x_max: " << x_max << std::endl;
-    std::cout << "system size y_max: " << y_max << std::endl;
-    std::cout << "system size z_max: " << z_max << std::endl;
+    //std::cout << "system size x_max: " << x_max << std::endl;
+    //std::cout << "system size y_max: " << y_max << std::endl;
+    //std::cout << "system size z_max: " << z_max << std::endl;
 
     float systemSize = x_max;
     if (y_max > systemSize) {

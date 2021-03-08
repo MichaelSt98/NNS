@@ -39,15 +39,15 @@ namespace Color {
 
 enum typelog {
     DEBUG,
-    INFO,
     WARN,
     ERROR,
+    INFO,
     TIME
 };
 
 struct structlog {
     bool headers = false;
-    typelog level = WARN;
+    typelog level = TIME;
 };
 
 extern structlog LOGCFG;

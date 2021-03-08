@@ -32,6 +32,7 @@ inline std::string Logger::getLabel(typelog type) {
         case INFO:  label = "[INFO ] "; break;
         case WARN:  label = "[WARN ] "; break;
         case ERROR: label = "[ERROR] "; break;
+        case TIME:  label = "[TIME ] "; break;
     }
     return label;
 }

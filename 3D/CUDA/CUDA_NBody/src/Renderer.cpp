@@ -26,6 +26,7 @@ Renderer::Renderer(const int _numParticles, const int _width, const int _height,
     Logger(INFO) << "dotSize:            " << dotSize;
     Logger(INFO) << "systemSize:         " << systemSize;
     Logger(INFO) << "renderInterval:     " << renderInterval;
+    Logger(INFO) << "--------------------------------------";
 
 }
 

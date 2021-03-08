@@ -4,9 +4,10 @@
 typedef struct SimulationParameters
 {
 
-    bool debug;
-    bool benchmark;
-    bool fullscreen;
+    //bool debug;
+    //bool benchmark;
+    //bool fullscreen;
+    bool timeKernels;
     int iterations;
     int numberOfParticles;
     float timestep;
@@ -16,6 +17,7 @@ typedef struct SimulationParameters
     int blockSize;
     int warp;
     int stackSize;
+    int renderInterval;
 
 } SimulationParameters;
 
