@@ -2,6 +2,7 @@
 // Created by Michael Staneker on 25.01.21.
 //
 
+#include "../include/cxxopts.hpp"
 #include "../include/Body.h"
 #include "../include/Constants.h"
 #include "../include/Interaction.h"
@@ -38,12 +39,16 @@ bool BINARY;
 // extern variable from Logger has to be initialized here
 structlog LOGCFG = {};
 
-void init(const std::string &configFile);
+bool HASHED_MODE = false;
+
+// function declarations
+cxxopts::Options init(const std::string &configFile);
 void runSimulation(Body* s, Body* b, char* image, double* hdImage);
 
-void init(const std::string &configFile){
+// function definitions
+cxxopts::Options init(const std::string &configFile) {
     // read in config file
-    ConfigParser confP { ConfigParser(configFile) };
+    ConfigParser confP{ConfigParser(configFile)};
 
     // initialize logger
     LOGCFG.headers = true;
@@ -72,17 +77,23 @@ void init(const std::string &configFile){
 
     // initialize renderer
     renderer = new Renderer(
-                confP.getVal<int>("numSuns"),
-                confP.getVal<int>("numBodies"),
-                WIDTH, HEIGHT,
-                confP.getVal<double>("renderScale"),
-                confP.getVal<double>("maxVelColor"),
-                confP.getVal<double>("minVelColor"),
-                confP.getVal<double>("particleBrightness"),
-                confP.getVal<double>("particleSharpness"),
-                confP.getVal<int>("dotSize"),
-                confP.getVal<double>("systemSize"),
-                confP.getVal<int>("renderInterval"));
+            confP.getVal<int>("numSuns"),
+            confP.getVal<int>("numBodies"),
+            WIDTH, HEIGHT,
+            confP.getVal<double>("renderScale"),
+            confP.getVal<double>("maxVelColor"),
+            confP.getVal<double>("minVelColor"),
+            confP.getVal<double>("particleBrightness"),
+            confP.getVal<double>("particleSharpness"),
+            confP.getVal<int>("dotSize"),
+            confP.getVal<double>("systemSize"),
+            confP.getVal<int>("renderInterval"));
+
+    // initialize command line options parser
+    cxxopts::Options opts_("runner", "NBody simulation parallelized by OpenMP");
+    opts_.add_options()("H,hashed-tree", "Utilize a hashed tree.")("h,help", "Show this help");
+
+    return opts_;
 }
 
 void runSimulation(Body* s, Body* b, char* image, double* hdImage)
@@ -118,13 +129,14 @@ void runSimulation(Body* s, Body* b, char* image, double* hdImage)
     Logger(INFO) << "Averaged time per step: " << totalElapsedTime/STEP_COUNT;
 }
 
-
-int main()
+// main
+int main(int argc, char **argv)
 {
     Logger(INFO) << SYSTEM_THICKNESS << "AU thick disk";
 
     // initialization
-    init("config.info");
+    auto options = init("config.info");
+    auto opts = options.parse(argc, argv);
 
     char *image = new char[WIDTH*HEIGHT*3];
     double *hdImage = new double[WIDTH*HEIGHT*3];
@@ -140,6 +152,14 @@ int main()
         //InitializeDistribution::binary(suns, bodies);
     }
 
+    if (opts.count("help")){
+        Logger(INFO) << options.help();
+        return 0;
+    }
+    if (opts.count("hashed-tree")){
+        Logger(INFO) << "HASHED-TREE MODE";
+        HASHED_MODE = true;
+    }
     runSimulation(suns, bodies, image, hdImage);
 
     Logger(INFO) << "FINISHED!";

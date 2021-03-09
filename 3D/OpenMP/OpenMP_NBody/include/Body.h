@@ -25,6 +25,9 @@ public:
 
     std::uint64_t getKey();
 
+    // preparation function for generating a new key for the hashed tree position
+    void discretizePosition(double maxSpan, Vector3D origin);
+
 private:
     std::uint_fast32_t i_x, i_y, i_z;
 };

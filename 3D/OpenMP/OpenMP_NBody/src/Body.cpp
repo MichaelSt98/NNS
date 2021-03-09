@@ -8,6 +8,14 @@ Body::Body() : mass { 0.0 }, position(), velocity(), acceleration() {}
 
 Body::Body(double _mass) : mass { _mass }, position(), velocity(), acceleration() {}
 
+// * origin: (xMin, yMin, zMin)
+// * maxSpan: maximum distance between particles in one coordinate direction
+void Body::discretizePosition(double maxSpan, Vector3D origin){
+    i_x = MASK_COORD2KEY*(position.x - origin.x)/maxSpan;
+    i_y = MASK_COORD2KEY*(position.y - origin.y)/maxSpan;
+    i_z = MASK_COORD2KEY*(position.z - origin.z)/maxSpan;
+}
+
 std::uint64_t Body::getKey(){
     uint64_t key_ { 1 };
     key_ <<= 63; // fill place-holder bit as we use 21 bits of each coordinate (i.e. (3x21=63) bits)
