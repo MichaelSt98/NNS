@@ -1,0 +1,16 @@
+
+numBodies 200
+numSuns 2
+systemSize 3.5
+systemThickness .08
+innerBound .3
+softening .015 ; multiplied with TO_METERS
+solarMass 2e30
+extraMass 1.5
+maxDistance .75
+timeStep 98304
+stepCount 100
+binary true
+binarySeparation .07
+
+#include "rendering.info"

@@ -13,6 +13,7 @@
 #include "../include/Logger.h"
 #include "../include/Timer.h"
 #include "../include/InitializeDistribution.h"
+#include "../include/ConfigParser.h"
 
 #include <fenv.h>
 #include <iostream>
@@ -22,22 +23,74 @@
 #include <random>
 #include <omp.h>
 
-Renderer renderer { NUM_SUNS, NUM_BODIES, WIDTH, HEIGHT, RENDER_SCALE, MAX_VEL_COLOR, MIN_VEL_COLOR,
+Renderer *renderer; /*{ NUM_SUNS, NUM_BODIES, WIDTH, HEIGHT, RENDER_SCALE, MAX_VEL_COLOR, MIN_VEL_COLOR,
                     PARTICLE_BRIGHTNESS, PARTICLE_SHARPNESS, DOT_SIZE,
-                    SYSTEM_SIZE, RENDER_INTERVAL};
+                    SYSTEM_SIZE, RENDER_INTERVAL};*/
 
 Interaction interactionHandler { false };
 
+// re-declare extern global variables, i.e. they are initializen in this source file
+int NUM_BODIES, NUM_SUNS, TIME_STEP, STEP_COUNT, WIDTH, HEIGHT;
+double SYSTEM_SIZE, SYSTEM_THICKNESS, INNER_BOUND, SOFTENING,
+             SOLAR_MASS, EXTRA_MASS, MAX_DISTANCE, BINARY_SEPARATION;
+bool BINARY;
+
+// extern variable from Logger has to be initialized here
 structlog LOGCFG = {};
 
+void init(const std::string &configFile);
 void runSimulation(Body* s, Body* b, char* image, double* hdImage);
+
+void init(const std::string &configFile){
+    // read in config file
+    ConfigParser confP { ConfigParser(configFile) };
+
+    // initialize logger
+    LOGCFG.headers = true;
+    LOGCFG.level = DEBUG;
+
+    // integers
+    NUM_BODIES = confP.getVal<int>("numBodies");
+    NUM_SUNS = confP.getVal<int>("numSuns");
+    TIME_STEP = confP.getVal<int>("timeStep");
+    STEP_COUNT = confP.getVal<int>("stepCount");
+    WIDTH = confP.getVal<int>("width");
+    HEIGHT = confP.getVal<int>("height");
+
+    // doubles
+    SYSTEM_SIZE = confP.getVal<double>("systemSize");
+    SYSTEM_THICKNESS = confP.getVal<double>("systemThickness");
+    INNER_BOUND = confP.getVal<double>("innerBound");
+    SOFTENING = confP.getVal<double>("softening");
+    SOLAR_MASS = confP.getVal<double>("solarMass");
+    EXTRA_MASS = confP.getVal<double>("extraMass");
+    MAX_DISTANCE = confP.getVal<double>("maxDistance");
+    BINARY_SEPARATION = confP.getVal<double>("binarySeparation");
+
+    // bools
+    BINARY = confP.getVal<bool>("binary");
+
+    // initialize renderer
+    renderer = new Renderer(
+                confP.getVal<int>("numSuns"),
+                confP.getVal<int>("numBodies"),
+                WIDTH, HEIGHT,
+                confP.getVal<double>("renderScale"),
+                confP.getVal<double>("maxVelColor"),
+                confP.getVal<double>("minVelColor"),
+                confP.getVal<double>("particleBrightness"),
+                confP.getVal<double>("particleSharpness"),
+                confP.getVal<int>("dotSize"),
+                confP.getVal<double>("systemSize"),
+                confP.getVal<int>("renderInterval"));
+}
 
 void runSimulation(Body* s, Body* b, char* image, double* hdImage)
 {
     double stepDurations [STEP_COUNT];
     Timer stepTimer;
 
-    renderer.createFrame(image, hdImage, s, b, 0);
+    renderer->createFrame(image, hdImage, s, b, 0);
     for (int step=1; step<STEP_COUNT; step++)
     {
         stepTimer.reset();
@@ -49,9 +102,9 @@ void runSimulation(Body* s, Body* b, char* image, double* hdImage)
         double elapsedTime = stepTimer.elapsed();
         stepDurations[step] = elapsedTime;
 
-        if (step%renderer.getRenderInterval()==0)
+        if (step%renderer->getRenderInterval()==0)
         {
-            renderer.createFrame(image, hdImage, s, b, step);
+            renderer->createFrame(image, hdImage, s, b, step);
         }
 
         Logger(INFO) << "-------------- finished timestep: " << step << " in " << elapsedTime << " s";
@@ -68,10 +121,10 @@ void runSimulation(Body* s, Body* b, char* image, double* hdImage)
 
 int main()
 {
-    LOGCFG.headers = true;
-    LOGCFG.level = DEBUG; //INFO;
-
     Logger(INFO) << SYSTEM_THICKNESS << "AU thick disk";
+
+    // initialization
+    init("config.info");
 
     char *image = new char[WIDTH*HEIGHT*3];
     double *hdImage = new double[WIDTH*HEIGHT*3];
@@ -94,6 +147,8 @@ int main()
     delete[] suns;
     delete[] bodies;
     delete[] image;
+
+    delete renderer;
 
     return 0;
 }

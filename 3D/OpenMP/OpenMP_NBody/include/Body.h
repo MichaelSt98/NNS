@@ -5,6 +5,9 @@
 #ifndef NBODY_BODY_H
 #define NBODY_BODY_H
 
+#include <cstdint>
+#include <bitset>
+
 #include "Vector3D.h"
 
 class Body {
@@ -17,6 +20,13 @@ public:
 
     Body();
     Body(double _mass);
+
+    static constexpr std::uint_fast32_t MASK_COORD2KEY { 0x001FFFFF };
+
+    std::uint64_t getKey();
+
+private:
+    std::uint_fast32_t i_x, i_y, i_z;
 };
 
 
