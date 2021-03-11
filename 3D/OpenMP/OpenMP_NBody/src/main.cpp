@@ -138,6 +138,11 @@ int main(int argc, char **argv)
     auto options = init("config.info");
     auto opts = options.parse(argc, argv);
 
+    if (opts.count("help")){
+        Logger(INFO) << options.help();
+        return 0;
+    }
+
     char *image = new char[WIDTH*HEIGHT*3];
     double *hdImage = new double[WIDTH*HEIGHT*3];
 
@@ -152,10 +157,6 @@ int main(int argc, char **argv)
         //InitializeDistribution::binary(suns, bodies);
     }
 
-    if (opts.count("help")){
-        Logger(INFO) << options.help();
-        return 0;
-    }
     if (opts.count("hashed-tree")){
         Logger(INFO) << "HASHED-TREE MODE";
         HASHED_MODE = true;
