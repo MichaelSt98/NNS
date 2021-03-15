@@ -12,3 +12,11 @@ described in the sections:
 	* 8.3 Particle-Cluster Interactions and the Barnes-Hut Method 
 		* 8.3.1 Method 
 		* 8.3.2 **Implementation** 
+	
+## Usage
+
+* **Compilation** via `make`
+* **Running** via `./bin/runner`
+* **Cleaning** via
+	* `make clean`
+	* `make cleaner`
