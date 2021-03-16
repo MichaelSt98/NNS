@@ -1,5 +1,5 @@
 #Compiler/Linker
-CXX         := g++
+CXX         := mpic++ #g++
 
 #Target binary
 TARGET      := runner

@@ -15,21 +15,17 @@ described in the sections:
 		* 8.3.1 Method 
 		* 8.3.2 Implementation
 		* 8.3.3 Applications from Astrophysics
-	* 8.4 **Parallel Tree Methods**
+	* 8.4 **ParallelTreeMethods**
 		* 8.4.1 **An Implementation with Keys** 
 		* 8.4.2 **Dynamical Load Balancing** 
 		* 8.4.3 **Data Distribution with Space-Filling Curves**
 
 as an extension/**parallel version of [BarnesHutSerial](../BarnesHutSerial/)**
 	
-There are **3 parallel implementations** which build on each other and represent additions or rather improvements to the previous version:
+## Usage
 
-* **[Basic](Basic/)** 
-	* corresponding to **Parallel Tree Methods - An Implementation with Keys**
-* **[DynamicalLoadBalancing](DynamicalLoadBalancing/)** 
-	* corresponding to **Parallel Tree Methods - Dynamical Load Balancing**
-* **[SpaceFillingCurves](SpaceFillingCurves/)** 
-	* corresponding to **Parallel Tree Methods - Data Distribution with Space Filling Curves**
-
-
-
+* **Compilation** via `make`
+* **Running** via `mpirun -np <number of processes> ./bin/runner`
+* **Cleaning** via
+	* `make clean`
+	* `make cleaner`
