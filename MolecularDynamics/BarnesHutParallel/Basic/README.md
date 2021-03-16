@@ -25,7 +25,7 @@ as an extension/**parallel version of [BarnesHutSerial](../BarnesHutSerial/)**
 ## Usage
 
 * **Compilation** via `make`
-* **Running** via `./bin/runner`
+* **Running** via `mpirun -np <number of processes> ./bin/runner`
 * **Cleaning** via
 	* `make clean`
 	* `make cleaner`
