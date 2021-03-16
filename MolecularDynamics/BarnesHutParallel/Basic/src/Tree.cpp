@@ -337,26 +337,25 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, S
 void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
     //allocate memory for s->numprocs particle lists in plist;
     //initialize ParticleList plist[to] for all processes to;
-    compTheta(root, s, plist, diam);
+    compTheta(root, root, s, plist, diam);
     for (int i=1; i<s->numprocs; i++) {
         int to = (s->myrank+i)%s->numprocs;
         int from = (s->myrank+s->numprocs-i)%s->numprocs; send (pseudo-)particle data from plist[to] to process to; receive (pseudo-)particle data from process from;
-        insert all received (pseudo-)particles p into
-        the tree using insertTree(&p, root);
+        //insert all received (pseudo-)particles p into the tree using insertTree(&p, root);
     }
-    delete plist;
+    //delete plist;
     compF_BH(root, diam);
 }
 
 //TODO: implement compTheta
-void compTheta(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist, float diam) {
+void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *plist, float diam) {
     //called recursively as in Algorithm 8.1;
     if (t != NULL) {
         for (int i = 0; i < POWDIM; i++)
-            compTheta(t->son[i]);
+            compTheta(t->son[i], root, s, plist, diam);
         // start of the operation on *t
         int proc;
-        if ((/* *t is a domainList node*/) && ((proc = key2proc(key(*t), s)) != s->myrank)) {
+        if ((true/* TODO: *t is a domainList node*/) && ((proc = key2proc(key(*t), s)) != s->myrank)) {
             // the key of *t can be computed step by step in the recursion
             symbolicForce(t, root, diam, &plist[proc], s);
         }

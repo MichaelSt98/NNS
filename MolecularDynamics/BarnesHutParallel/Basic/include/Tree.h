@@ -81,6 +81,6 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, S
 
 void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s);
 
-void compTheta(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist, float diam);
+void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *plist, float diam);
 
 #endif //BARNESHUTSERIAL_TREE_H

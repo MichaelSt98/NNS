@@ -58,6 +58,12 @@ int main(int argc, char *argv[]) {
 
     MPI_Init(argc, argv);
 
+    SubDomainKeyTree  s;
+    MPI_Comm_rank(MPI_COMM_WORLD, &s.myrank);
+    MPI_Comm_size(MPI_COMM_WORLD, &s.numprocs);
+    s.range = 0; //TODO: set range for sub domain key tree
+
+    //TODO: needed to be called by every process?
     float systemSize = 3.0;
 
     TreeNode *root;
@@ -66,8 +72,6 @@ int main(int argc, char *argv[]) {
         box.lower[i] = -systemSize;
         box.upper[i] = systemSize;
     }
-    SubDomainKeyTree  s;
-    s.range = 0; //TODO: set range for sub domain key tree
 
     float delta_t = 0.01;
     float t_end = 1.0; //0.1;
@@ -78,6 +82,7 @@ int main(int argc, char *argv[]) {
     initData_BH(&root, &box, &s, N);
     timeIntegration_BH(0, delta_t, t_end, root, box, &s);
 
+    //free resources
     freeTree_BH(root);
     free(s.range);
     MPI_Finalize();
