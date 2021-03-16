@@ -1,4 +1,4 @@
-# Barnes-Hut serial
+# Barnes-Hut parallel
 
 > **NOT WORKING/IMPLEMENTED YET!**
 
