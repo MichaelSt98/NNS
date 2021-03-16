@@ -5,6 +5,11 @@
 #ifndef NBODY_INTERACTION_H
 #define NBODY_INTERACTION_H
 
+#include <cstdint>
+#include <cstdlib>
+#include <map>
+#include <vector>
+
 #include "Vector3D.h"
 #include "Body.h"
 #include "Tree.h"
@@ -66,8 +71,9 @@ public:
      * * update/advance particles
      *
      * @param b Body instances.
+     * @param hashed flag for using a hashed tree for parallelization
      */
-    void interactBodies(Body* suns, Body* bods);
+    void interactBodies(Body* suns, Body* bods, bool hashed=false);
 
 };
 
