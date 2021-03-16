@@ -10,27 +10,27 @@ const double G = 6.67408e-11;               //! Gravitational constant
 
 
 /// Initialization/Simulation
+// TODO: Use a config struct with const qualifier to access global variables read in from config file
 
+extern int NUM_BODIES;                    //! Number of small particles
+extern int NUM_SUNS;
+extern double SYSTEM_SIZE;                //! Farthest particle (in AU)
+extern double SYSTEM_THICKNESS;           //! Disk thicknes (in AU)
+extern double INNER_BOUND;                //! Closest particle to the center (in AU)
+extern double SOFTENING;                  //! Smooth particle interactions for small distances
+extern double SOLAR_MASS;                 //! Solar mass (in kg)
+extern double EXTRA_MASS;                 //! Disk mass as portion of center star mass
+extern double MAX_DISTANCE;               //! Barnes-Hut parameter (approximation factor)
+extern int TIME_STEP;                     //! time step in seconds
+extern int STEP_COUNT;                    //! amount of (simulation) steps
 
-
-const int NUM_BODIES = (1024*32);                   //! Number of small particles
-const int NUM_SUNS = 2; //1
-const double SYSTEM_SIZE = 3.5;                     //! Farthest particle (in AU)
-const double SYSTEM_THICKNESS = 0.08;               //! Disk thicknes (in AU)
-const double INNER_BOUND = 0.3;                     //! Closest particle to the center (in AU)
-const double SOFTENING = (0.015 * TO_METERS);       //! Smooth particle interactions for small distances
-const double SOLAR_MASS = 2.0e30;                   //! Solar mass (in kg)
-const double EXTRA_MASS = 1.5;                      //! Disk mass as portion of center star mass
-const double MAX_DISTANCE = 0.75;                   //! Barnes-Hut parameter (approximation factor)
-const int TIME_STEP = (3*32*1024); //(3*3*10);                //! time step in seconds
-const int STEP_COUNT = 100; //16000;                       //! amount of (simulation) steps
-
-const bool BINARY = true;
-const double BINARY_SEPARATION = 0.07; //0.07;
+extern bool BINARY;
+extern double BINARY_SEPARATION;
 
 //#define PARALLEL_RENDER // Renders faster, but can have inaccuracies (especially when many particles occupy a small space)
 #define DEBUG_INFO true // Print lots of info to the console
 
+/*
 /// Rendering related
 const int WIDTH = 1024;
 const int HEIGHT = 1024;
@@ -41,6 +41,6 @@ const double PARTICLE_BRIGHTNESS = 0.35;
 const double PARTICLE_SHARPNESS = 1.0;
 const int DOT_SIZE = 8;
 const int RENDER_INTERVAL = 1; // How many timesteps to simulate in between each frame rendered
-
+*/
 
 #endif /* CONSTANTS_H_ */
