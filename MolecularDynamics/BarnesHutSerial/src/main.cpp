@@ -1,13 +1,20 @@
 #include "../include/Particle.h"
 #include "../include/Integrator.h"
-#include "../include/Tree.h"
-#include "../include/Domain.h"
+#include "../include/ConfigParser.h"
+#include "../include/Renderer.h"
+#include "../include/Logger.h"
 
 #include <iostream>
 #include <random>
 
-void initData_BH(TreeNode **root, Box *domain, int N);
+// extern variable from Logger has to be initialized here
+structlog LOGCFG = {};
 
+// function declarations
+void initData_BH(TreeNode **root, Box *domain, int N);
+Renderer* initRenderer(ConfigParser &confP);
+
+//function implementations
 void initData_BH(TreeNode **root, Box *domain, int N) {
 
     Particle p[N];
@@ -28,7 +35,7 @@ void initData_BH(TreeNode **root, Box *domain, int N) {
         radius = sqrt(systemSize)*sqrt(randRadius(gen));
         //velocity = pow(((G*(SOLAR_MASS+((radius)/systemSize)*SOLAR_MASS)) / (radius*TO_METERS)), 0.5);
 
-        velocity = 0.01;
+        velocity = 0.1;
 
         current = &p[i];
         current->x[0] =  radius*cos(angle);
@@ -40,7 +47,7 @@ void initData_BH(TreeNode **root, Box *domain, int N) {
         current->F[0] = 0.0;
         current->F[1] = 0.0;
         current->F[2] = 0.0;
-        current->m = 0.01; // SOLAR_MASS/N;
+        current->m = 0.1; // SOLAR_MASS/N;
     }
 
     *root = (TreeNode*)calloc(1, sizeof(TreeNode));
@@ -51,10 +58,40 @@ void initData_BH(TreeNode **root, Box *domain, int N) {
         insertTree(&p[i], *root);
 }
 
+Renderer* initRenderer(ConfigParser &confP){
+
+    // initialize renderer
+    auto *renderer_ = new Renderer(
+            confP.getVal<int>("numParticles"),
+            confP.getVal<int>("width"),
+            confP.getVal<int>("height"),
+            confP.getVal<double>("renderScale"),
+            confP.getVal<double>("maxVelColor"),
+            confP.getVal<double>("minVelColor"),
+            confP.getVal<double>("particleBrightness"),
+            confP.getVal<double>("particleSharpness"),
+            confP.getVal<int>("dotSize"),
+            confP.getVal<double>("systemSize"),
+            confP.getVal<int>("renderInterval"));
+
+    return renderer_;
+}
 
 int main() {
 
-    float systemSize = 3.0;
+    // initialize logger
+    LOGCFG.headers = true;
+    LOGCFG.level = ERROR;
+
+    ConfigParser confP {ConfigParser("config.info")};
+
+    int width = confP.getVal<int>("width");
+    int height = confP.getVal<int>("height");
+
+    char *image = new char[width*height*3];
+    double *hdImage = new double[width*height*3];
+
+    const float systemSize {confP.getVal<float>("systemSize")};
     TreeNode *root;
     Box box;
 
@@ -63,13 +100,15 @@ int main() {
         box.upper[i] = systemSize;
     }
 
-    float delta_t = 0.01;
-    float t_end = 1.0; //0.1;
-    int N = 10; //1000;
+    const float delta_t {confP.getVal<float>("timeStep")};
+    const float t_end {confP.getVal<float>("timeEnd")};
+    const int N {confP.getVal<int>("numParticles")};
+
+    Renderer *renderer = initRenderer(confP);
 
     //inputParameters_BH(&delta_t, &t_end, &box, &theta, &N); //TODO
     initData_BH(&root, &box, N);
-    timeIntegration_BH(0, delta_t, t_end, root, box);
+    timeIntegration_BH(0, delta_t, t_end, root, box, renderer, image, hdImage);
     freeTree_BH(root);
 
     return 0;

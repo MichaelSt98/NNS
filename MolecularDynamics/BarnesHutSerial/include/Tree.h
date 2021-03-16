@@ -43,6 +43,10 @@ void repairTree(TreeNode *t);
 
 void output_particles(TreeNode *root);
 
+void build_particle_list(TreeNode *t, ParticleList *pLst);
+
+void get_particle_array(TreeNode *root, Particle *p);
+
 void freeTree_BH(TreeNode *root);
 
 #endif //BARNESHUTSERIAL_TREE_H

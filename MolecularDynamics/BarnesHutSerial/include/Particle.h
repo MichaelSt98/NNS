@@ -17,6 +17,13 @@ typedef struct {
     bool todelete = false;
 } Particle;
 
+
+typedef struct ParticleList {
+    Particle p;
+    struct ParticleList *next;
+} ParticleList;
+
+
 void force(Particle *i, Particle *j);
 
 void updateX(Particle *p, float delta_t);

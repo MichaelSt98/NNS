@@ -220,6 +220,33 @@ void output_particles(TreeNode *t) {
     }
 }
 
+void build_particle_list(TreeNode *t, ParticleList *pLst){
+    if (t != NULL) {
+        if (isLeaf(t)) {
+            //append to particle list
+            pLst->p = t->p;
+            pLst->next = new ParticleList;
+        }
+        for (int i = 0; i < POWDIM; i++) {
+            build_particle_list(t->son[i], pLst);
+            if (isLeaf(t->son[i])){
+                pLst = pLst->next;
+            }
+        }
+    }
+}
+
+void get_particle_array(TreeNode *root, Particle *p){
+    auto *pLst = new ParticleList;
+    build_particle_list(root, pLst);
+    int pIndex = 0;
+    while(pLst){
+        p[pIndex] = pLst->p;
+        pLst = pLst->next;
+        ++pIndex;
+    }
+}
+
 void freeTree_BH(TreeNode *root) {
     if (root != NULL) {
         for (int i=0; i<POWDIM; i++) {
