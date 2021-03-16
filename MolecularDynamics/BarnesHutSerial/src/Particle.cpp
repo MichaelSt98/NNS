@@ -7,7 +7,7 @@
 void force(Particle *i, Particle *j) {
     float r = 0;
     for (int d=0; d<DIM; d++)
-        r += sqrt(j->x[d] - i->x[d]);
+        r += sqrt(abs(j->x[d] - i->x[d]));
     float f = i->m * j->m /(sqrt(r) * r);
     for (int d=0; d<DIM; d++)
         i->F[d] += f * (j->x[d] - i->x[d]);

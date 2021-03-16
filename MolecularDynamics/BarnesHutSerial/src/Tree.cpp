@@ -115,7 +115,7 @@ void force_tree(TreeNode *tl, TreeNode *t, float diam) {
     if ((t != tl) && (t != NULL)) {
         float r = 0;
         for (int d=0; d<DIM; d++) {
-            r += sqrt(t->p.x[d] - tl->p.x[d]);
+            r += sqrt(abs(t->p.x[d] - tl->p.x[d]));
         }
         r = sqrt(r);
         if ((isLeaf(t)) || (diam < theta * r)) {
@@ -193,16 +193,16 @@ void repairTree(TreeNode *t) {
                         d = i;
                     }
                 }
-                if (0 == numberofsons) {
-                    // *t is an ‘‘empty’’ leaf node and can be deleted
-                    t->p.todelete = true;
-                } else if (1 == numberofsons) {
-                    // *t adopts the role of its only son node and
-                    // the son node is deleted directly
-                    t->p = t->son[d]->p;
-                    //std::cout << "t->son[d]->p.x[0] = " << t->son[d]->p.x[0] << std::endl;
-                    //free(&t->son[d]->p);
-                }
+            }
+            if (0 == numberofsons) {
+                // *t is an ‘‘empty’’ leaf node and can be deleted
+                t->p.todelete = true;
+            } else if (1 == numberofsons) {
+                // *t adopts the role of its only son node and
+                // the son node is deleted directly
+                t->p = t->son[d]->p;
+                //std::cout << "t->son[d]->p.x[0] = " << t->son[d]->p.x[0] << std::endl;
+                free(&t->son[d]->p);
             }
         }
     }

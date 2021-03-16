@@ -40,14 +40,14 @@ void initData_BH(TreeNode **root, Box *domain, int N) {
         current->F[0] = 0.0;
         current->F[1] = 0.0;
         current->F[2] = 0.0;
-        current->m = 1; // SOLAR_MASS/N;
+        current->m = 0.01; // SOLAR_MASS/N;
     }
 
     *root = (TreeNode*)calloc(1, sizeof(TreeNode));
-    (*root)->p = p[1]; //(first particle with number i=1);
+    (*root)->p = p[0]; //(first particle with number i=1); //1
     (*root)->box = *domain;
 
-    for (int i=2; i<=N; i++) //i=2
+    for (int i=1; i<N; i++) //i=2, <=N
         insertTree(&p[i], *root);
 }
 
