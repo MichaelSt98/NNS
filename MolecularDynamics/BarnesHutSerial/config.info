@@ -1,7 +1,9 @@
 
 numParticles 1000
 systemSize 3.
-timeStep .01
-timeEnd 1.
+timeStep .1
+timeEnd 10.
+initMass 1000000.
+initVel .1
 
 #include "rendering.info"

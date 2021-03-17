@@ -220,28 +220,28 @@ void output_particles(TreeNode *t) {
     }
 }
 
-void build_particle_list(TreeNode *t, ParticleList *pLst){
+ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst){
     if (t != NULL) {
         if (isLeaf(t)) {
-            //append to particle list
             pLst->p = t->p;
             pLst->next = new ParticleList;
-        }
-        for (int i = 0; i < POWDIM; i++) {
-            build_particle_list(t->son[i], pLst);
-            if (isLeaf(t->son[i])){
-                pLst = pLst->next;
+            return pLst->next;
+        } else {
+            for (int i = 0; i < POWDIM; i++) {
+                pLst = build_particle_list(t->son[i], pLst);
             }
         }
     }
+    return pLst;
 }
 
 void get_particle_array(TreeNode *root, Particle *p){
-    auto *pLst = new ParticleList;
+    auto pLst = new ParticleList;
     build_particle_list(root, pLst);
     int pIndex = 0;
-    while(pLst){
+    while(pLst->next){
         p[pIndex] = pLst->p;
+        //std::cout << "Adding to *p: x = (" << p[pIndex].x[0] << ", " << p[pIndex].x[1] << ", " << p[pIndex].x[2] << ")" << std::endl;
         pLst = pLst->next;
         ++pIndex;
     }

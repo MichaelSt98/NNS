@@ -15,12 +15,12 @@ void initData_BH(TreeNode **root, Box *domain, int N);
 Renderer* initRenderer(ConfigParser &confP);
 
 //function implementations
-void initData_BH(TreeNode **root, Box *domain, int N) {
+void initData_BH(TreeNode **root, Box *domain, int N, ConfigParser &confP) {
 
     Particle p[N];
     using std::uniform_real_distribution;
     float systemSize = getSystemSize(domain);
-    uniform_real_distribution<float> randAngle (0.0, 200.0 * 3.1415);
+    uniform_real_distribution<float> randAngle (0.0, 200.0 * PI);
     uniform_real_distribution<float> randRadius (0, systemSize);
     uniform_real_distribution<float> randHeight (0.0, systemSize/1000.0);
     std::default_random_engine gen (0);
@@ -32,10 +32,10 @@ void initData_BH(TreeNode **root, Box *domain, int N) {
 
     for (int i=0; i<N; i++) {
         angle = randAngle(gen);
-        radius = sqrt(systemSize)*sqrt(randRadius(gen));
+        radius = sqrt(systemSize-(systemSize/100.0)); //*sqrt(randRadius(gen));
         //velocity = pow(((G*(SOLAR_MASS+((radius)/systemSize)*SOLAR_MASS)) / (radius*TO_METERS)), 0.5);
 
-        velocity = 0.1;
+        velocity = confP.getVal<float>("initVel");
 
         current = &p[i];
         current->x[0] =  radius*cos(angle);
@@ -47,7 +47,7 @@ void initData_BH(TreeNode **root, Box *domain, int N) {
         current->F[0] = 0.0;
         current->F[1] = 0.0;
         current->F[2] = 0.0;
-        current->m = 0.1; // SOLAR_MASS/N;
+        current->m = confP.getVal<float>("initMass"); // SOLAR_MASS/N;
     }
 
     *root = (TreeNode*)calloc(1, sizeof(TreeNode));
@@ -107,7 +107,7 @@ int main() {
     Renderer *renderer = initRenderer(confP);
 
     //inputParameters_BH(&delta_t, &t_end, &box, &theta, &N); //TODO
-    initData_BH(&root, &box, N);
+    initData_BH(&root, &box, N, confP);
     timeIntegration_BH(0, delta_t, t_end, root, box, renderer, image, hdImage);
     freeTree_BH(root);
 

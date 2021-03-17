@@ -13,8 +13,8 @@ void timeIntegration_BH(float t, float delta_t, float t_end, TreeNode *root, Box
     int step = 0;
 
     while (t < t_end) {
-        std::cout << "t = " << t << std::endl;
-        output_particles(root);
+        Logger(INFO) << "t = " << t;
+        //output_particles(root);
         ++step;
         // rendering
         if (step%renderer->getRenderInterval()==0)
@@ -31,7 +31,6 @@ void timeIntegration_BH(float t, float delta_t, float t_end, TreeNode *root, Box
         compV_BH(root, delta_t);
         repairTree(root);
     }
-    std::cout << "t = " << t << ", FINAL RESULT:" << std::endl;
-    output_particles(root);
-
+    Logger(INFO) << "t = " << t << ", DONE.";
+    //output_particles(root);
 }
