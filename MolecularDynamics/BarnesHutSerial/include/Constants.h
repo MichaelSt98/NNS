@@ -16,6 +16,6 @@ const float TO_METERS = 1.496e11;
 const float G = 6.67408e-11;
 
 const float SOLAR_MASS = 2.0e30;
-const float theta = 0.7;
+const float theta = 0.5;
 
 #endif //BARNESHUTSERIAL_CONSTANTS_H

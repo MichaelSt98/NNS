@@ -21,18 +21,32 @@ void initData_BH(TreeNode **root, Box *domain, int N, ConfigParser &confP) {
     using std::uniform_real_distribution;
     float systemSize = getSystemSize(domain);
     uniform_real_distribution<float> randAngle (0.0, 200.0 * PI);
-    uniform_real_distribution<float> randRadius (0, systemSize);
+    uniform_real_distribution<float> randRadius (0.0, systemSize/2.0);
     uniform_real_distribution<float> randHeight (0.0, systemSize/1000.0);
     std::default_random_engine gen (0);
     float angle;
     float radius;
+    float radiusOffset;
     float velocity;
 
     Particle *current;
 
-    for (int i=0; i<N; i++) {
+    current = &p[0];
+    current->x[0] = 0.0;
+    current->x[1] = 0.0;
+    current->x[2] = 0.0;
+    current->v[0] = 0.0;
+    current->v[1] = 0.0;
+    current->v[2] = 0.0;
+    current->F[0] = 0.0;
+    current->F[1] = 0.0;
+    current->F[2] = 0.0;
+    current->m = (N*N)*confP.getVal<float>("initMass"); // SOLAR_MASS/N;
+
+    for (int i=1; i<N; i++) {
         angle = randAngle(gen);
-        radius = sqrt(systemSize-(systemSize/100.0)); //*sqrt(randRadius(gen));
+        radiusOffset = randRadius(gen);
+        radius = sqrt(systemSize-radiusOffset); //*sqrt(randRadius(gen));
         //velocity = pow(((G*(SOLAR_MASS+((radius)/systemSize)*SOLAR_MASS)) / (radius*TO_METERS)), 0.5);
 
         velocity = confP.getVal<float>("initVel");
