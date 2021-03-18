@@ -43,6 +43,7 @@ void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s) {
     t->node = domainList;
     int p1 = key2proc(k,s);
     int p2 = key2proc(k | ~(~0L << DIM*(maxlevel-level)),s);
+
     if (p1 != p2) {
         for (int i = 0; i < POWDIM; i++) {
             t->son[i] = (TreeNode *) calloc(1, sizeof(TreeNode));
