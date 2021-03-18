@@ -10,6 +10,7 @@
 #include "Particle.h"
 #include <cmath>
 #include <iostream>
+#include <bitset>
 #include <climits> // for ulong_max
 #include <mpi.h>
 
@@ -40,6 +41,12 @@ typedef struct {
     keytype *range;
 } SubDomainKeyTree;
 
+keytype key(TreeNode t);
+
+keytype nextRange(TreeNode *t, const int &ppr, int &pCounter, keytype prevRange, keytype k=1UL, int level=0);
+
+void createRanges(TreeNode *t, int N, SubDomainKeyTree *s);
+
 int key2proc(keytype k, SubDomainKeyTree *s);
 
 void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s);
@@ -52,7 +59,7 @@ int sonNumber(Box *box, Box *sonbox, Particle *p);
 
 void compPseudoParticles(TreeNode *t);
 
-void compF_BH(TreeNode *t, TreeNode *root, float diam);
+void compF_BH(TreeNode *t, TreeNode *root, float diam, SubDomainKeyTree *s);
 
 void force_tree(TreeNode *tl, TreeNode *t, float diam);
 

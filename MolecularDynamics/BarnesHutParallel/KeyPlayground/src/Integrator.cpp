@@ -15,7 +15,7 @@ void timeIntegration_BH(float t, float delta_t, float t_end, TreeNode *root, Box
         t += delta_t; // update timestep
         //std::cout << "\nroot->p.x = (" << root->p.x[0] << ", " << root->p.x[1] << ", " << root->p.x[2] << ")" << std::endl;
         compX_BH(root, delta_t);
-        compF_BH(root, root, getSystemSize(&box));
+        compF_BH(root, root, getSystemSize(&box), s);
         compV_BH(root, delta_t);
         repairTree(root);
     }

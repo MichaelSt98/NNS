@@ -1,0 +1,9 @@
+width 1024
+height 1024
+renderScale 2.5
+maxVelColor 40000
+minVelColor 0
+particleBrightness .35
+particleSharpness 1
+dotSize 8
+renderInterval 1

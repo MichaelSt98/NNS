@@ -28,6 +28,42 @@
 // --> less data needs to be exchanged
 // [range_i, range_i+1) defines a minimal upper part of the tree, that has to be present in all processes as a copy to ensure the consistency of the global tree
 
+keytype key(TreeNode t){
+    //TODO: implement
+    return 0;
+}
+
+keytype nextRange(TreeNode *t, const int &ppr, int &pCounter, keytype prevRange, keytype k, int level){
+    if (t != NULL) {
+        for (int i = 0; i < POWDIM; i++) {
+            if (isLeaf(t->son[i])){
+                k += (static_cast<keytype>(i) << level*DIM); // calculating key of the son node
+                // std::cout << "k = " << std::bitset<64>(k) << std::endl;
+                if (k >= prevRange) ++pCounter; // counting particles, starting at range_i
+                if (pCounter == ppr) return k + 1; // range_i+1 found
+            } else {
+                keytype candidate = nextRange(t->son[i], ppr, pCounter, prevRange,
+                                       k + (static_cast<keytype>(i) << level*DIM), level+1);
+                if(candidate != KEY_MAX) return candidate; // don't return when empty node is visited
+            }
+        }
+    }
+    return KEY_MAX;
+}
+
+void createRanges(TreeNode *t, int N, SubDomainKeyTree *s){
+    s->range = new keytype[s->numprocs+1];
+    s->range[0] = 0UL; // range_0 = 0
+
+    const int ppr = (N % s->numprocs != 0) ? N/s->numprocs+1 : N/s->numprocs; // particles per range
+
+    for (int i=1; i<=s->numprocs; i++){
+        int counter { 0 };
+        s->range[i] = nextRange(t, ppr, counter, s->range[i-1]);
+        std::cout << "range[" << i << "] = " << std::bitset<64>(s->range[i]) << std::endl;
+    }
+}
+
 int key2proc(keytype k, SubDomainKeyTree *s) {
     for (int i=1; i<=s->numprocs; i++) {
         if (k >= s->range[i]) {
@@ -37,17 +73,15 @@ int key2proc(keytype k, SubDomainKeyTree *s) {
     return -1; // error
 }
 
-
 // initial call: createDomainList(root, 0, 0, s)
 void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s) {
     t->node = domainList;
     int p1 = key2proc(k,s);
     int p2 = key2proc(k | ~(~0L << DIM*(maxlevel-level)),s);
-
     if (p1 != p2) {
         for (int i = 0; i < POWDIM; i++) {
             t->son[i] = (TreeNode *) calloc(1, sizeof(TreeNode));
-            createDomainList(t->son[i], level + 1, k + i << DIM * (maxlevel - level - 1), s);
+            createDomainList(t->son[i], level + 1, (k + i) << DIM * (maxlevel - level - 1), s);
         }
     }
 }
@@ -145,7 +179,7 @@ void compPseudoParticles(TreeNode *t) {
 void compF_BH(TreeNode *t, TreeNode *root, float diam, SubDomainKeyTree *s) {
     if (t != NULL) {
         for (int i = 0; i < POWDIM; i++) {
-            compF_BH(t->son[i], root, diam);
+            compF_BH(t->son[i], root, diam, s);
         }
         // start of the operation on *t
         if (isLeaf(t) && (key2proc(key(*t), s) == s->myrank)) {
@@ -310,7 +344,7 @@ void freeTree_BH(TreeNode *root) {
 void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     //allocate memory for s->numprocs particle lists in plist;
     //initialize ParticleList plist[to] for all processes to;
-    buildSendlist(root, s, plist);
+    //TODO: buildSendlist(root, s, plist);
     repairTree(root); // here, domainList nodes may not be deleted
     for (int i=1; i<s->numprocs; i++) {
         int to = (s->myrank+i)%s->numprocs;
@@ -319,19 +353,19 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
         // receive particle data from process from;
         //insert all received particles p into the tree using insertTree(&p, root);
     }
-    delete plist;
+    //TODO: delete plist;
 }
 
 //TODO: implement buildSendlist (Sending Particles to Their Owners and Inserting Them in the Local Tree)
 void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist) {
     if (t != NULL) {
         for (int i = 0; i < POWDIM; i++) {
-            buildSendlist(t->son[i]);
+            //TODO: buildSendlist(t->son[i]);
         }
         // start of the operation on *t
         if (t != NULL) {
             for (int i = 0; i < POWDIM; i++) {
-                buildSendlist(t->son[i]);
+                //TODO: buildSendlist(t->son[i]);
             }
             int proc;
             if ((isLeaf(t)) && ((proc = key2proc(key(*t), s)) != s->myrank)) {
@@ -432,15 +466,15 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, S
 void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
     //allocate memory for s->numprocs particle lists in plist;
     //initialize ParticleList plist[to] for all processes to;
-    compTheta(root, root, s, plist, diam);
+    //TODO: compTheta(root, root, s, plist, diam);
     for (int i=1; i<s->numprocs; i++) {
         int to = (s->myrank+i)%s->numprocs;
         int from = (s->myrank+s->numprocs-i)%s->numprocs;
         //send (pseudo-)particle data from plist[to] to process to; receive (pseudo-)particle data from process from;
         //insert all received (pseudo-)particles p into the tree using insertTree(&p, root);
     }
-    //delete plist;
-    compF_BH(root, diam);
+    //TODO: delete plist;
+    //TODO: compF_BH(root, diam);
 }
 
 //TODO: implement compTheta (Parallel Force Computation)

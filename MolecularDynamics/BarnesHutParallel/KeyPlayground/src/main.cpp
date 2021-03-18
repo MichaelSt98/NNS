@@ -79,12 +79,15 @@ void initData_BH(TreeNode **root, Box *domain, SubDomainKeyTree  *s, int N, Conf
     }
 
     *root = (TreeNode*)calloc(1, sizeof(TreeNode));
-    createDomainList(root, 0, 0, s);
+
     (*root)->p = p[0]; //(first particle with number i=1); //1
     (*root)->box = *domain;
 
     for (int i=1; i<N; i++) //i=2, <=N
         insertTree(&p[i], *root);
+
+    createRanges(*root, N, s);
+    createDomainList(*root, 0, 0, s);
 }
 
 Renderer* initRenderer(ConfigParser &confP){
@@ -108,12 +111,12 @@ Renderer* initRenderer(ConfigParser &confP){
 
 int main(int argc, char *argv[]) {
 
-    MPI_Init(argc, argv);
+    MPI_Init(&argc, &argv);
 
     SubDomainKeyTree  s;
     MPI_Comm_rank(MPI_COMM_WORLD, &s.myrank);
     MPI_Comm_size(MPI_COMM_WORLD, &s.numprocs);
-    s.range = 0; //TODO: set range for sub domain key tree
+    //s.range = 0; //TODO: set range for sub domain key tree
 
     //TODO: needed to be called by every process?
     // initialize logger
@@ -144,8 +147,9 @@ int main(int argc, char *argv[]) {
 
     //inputParameters_BH(&delta_t, &t_end, &box, &theta, &N);
 
-    initData_BH(&root, &box, &s, N);
-    timeIntegration_BH(0, delta_t, t_end, root, box, &s);
+    initData_BH(&root, &box, &s, N, confP);
+
+    //TODO: timeIntegration_BH(0, delta_t, t_end, root, box, &s);
 
     //free resources
     freeTree_BH(root);
