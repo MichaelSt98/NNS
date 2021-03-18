@@ -115,6 +115,10 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &s.numprocs);
     s.range = 0; //TODO: set range for sub domain key tree
 
+    //create MPI datatype for Particle struct
+    MPI_Type_create_struct(6, mpiParticleLengths, mpiParticleDisplacements, mpiParticleTypes, &mpiParticle);
+    MPI_Type_commit(&mpiParticle);
+
     //TODO: needed to be called by every process?
     // initialize logger
     LOGCFG.headers = true;
@@ -150,7 +154,10 @@ int main(int argc, char *argv[]) {
     //free resources
     freeTree_BH(root);
     free(s.range);
+
+    MPI_Type_free(&mpiParticle);
     MPI_Finalize();
+
     return 0;
 }
 

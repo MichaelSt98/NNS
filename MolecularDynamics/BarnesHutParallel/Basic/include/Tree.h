@@ -40,8 +40,10 @@ typedef struct {
     keytype *range;
 } SubDomainKeyTree;
 
+//new
 int key2proc(keytype k, SubDomainKeyTree *s);
 
+//new
 void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s);
 
 bool isLeaf(TreeNode *t);
@@ -76,20 +78,28 @@ void get_particle_array(TreeNode *root, Particle *p);
 
 void freeTree_BH(TreeNode *root);
 
+//new
 void sendParticles(TreeNode *root, SubDomainKeyTree *s);
 
-void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist);
+//new
+void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist, int *plistLength);
 
+//new
 void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s);
 
+//new
 void compLocalPseudoParticlespar(TreeNode *t);
 
+//new
 void compDomainListPseudoParticlespar(TreeNode *t);
 
+//new
 void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, SubDomainKeyTree *s);
 
+//new
 void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s);
 
+//new
 void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *plist, float diam);
 
 #endif //BARNESHUTSERIAL_TREE_H
