@@ -11,6 +11,23 @@
         Perform the operations of the function FUNCTION on *t ;
     }
 }*/
+
+
+//TODO: create key (!?)
+// simple approach:
+// numbering all possible nodes of each new generation consecutively (see page 343 and 344) = three bits are added to the key in each level of the tree
+// key of a father note of a given node can be determined by deleting the last three bits
+// the keys are global, unique and of integer type
+// decomposing the tree = decomposing the keys (set a range for each process)
+// more sophisticated (and better approach):
+// transform key as in the following:
+// - remove the leading bit (original root)
+// - shift remaining bits to the left until the maximal bit length of the key tiype is reached
+// (- denote the resulting bit word as *domain key*)
+// now the keys are vertically sorted, keys of nodes within one level are unique but keys for nodes of different levels can happen to be the same
+// --> less data needs to be exchanged
+// [range_i, range_i+1) defines a minimal upper part of the tree, that has to be present in all processes as a copy to ensure the consistency of the global tree
+
 int key2proc(keytype k, SubDomainKeyTree *s) {
     for (int i=1; i<=s->numprocs; i++) {
         if (k >= s->range[i]) {
@@ -42,18 +59,18 @@ bool isLeaf(TreeNode *t) {
     return false;
 }
 
+//TODO: do not insert particle data within domainList nodes, instead:
+// insert recursively into its son nodes (may cause particles lying deeper in the tree)
+// AND: insert certain pseudoparticles from other processes into its local tree to be able to compute the force on its particles.
+// Therefore, extend the routine in such a way that a domainList node can be inserted into a given tree.
+// Then, the associated decomposition of the domain changes. To this end, pseudoparticles can be simply re-flagged as domainList there.
+// However, if a real particle is encountered, create a domainList node and insert the particle as a son node.
+// reflagging ?!
 void insertTree(Particle *p, TreeNode *t) {
     // determine the son b of t in which particle p is located
     // compute the boundary data of the subdomain of the son node and store it in t->son[b].box;
     Box sunbox;
     int b = sonNumber(&t->box, &sunbox, p);
-    //std::cout << "b = " << b << std::endl;
-    //std::cout << "sunbox.upper[0] = " << sunbox.upper[0] << std::endl;
-    //t->son[b]->box = *sunbox;
-    /*for (int d = DIM - 1; d >= 0; d--) {
-        t->son[b]->box.upper[d] = sunbox.upper[d];
-        t->son[b]->box.lower[d] = sunbox.lower[d];
-    }*/
     if (t->son[b] == NULL) {
         if (isLeaf(t)) {
             Particle p2 = t->p;
@@ -67,8 +84,13 @@ void insertTree(Particle *p, TreeNode *t) {
             t->son[b]->box = sunbox;
         }
     } else {
-        t->son[b]->box = sunbox; //?
-        insertTree(p, t->son[b]);
+        if (t->son[b]->node == domainList) {
+            //here???
+        }
+        else {
+            t->son[b]->box = sunbox; //?
+            insertTree(p, t->son[b]);
+        }
     }
 }
 
@@ -199,7 +221,7 @@ void moveLeaf(TreeNode *t, TreeNode *root) {
 }
 
 void repairTree(TreeNode *t) {
-    if (t != NULL) {
+    if (t != NULL && t->node != domainList) {
         if (!isLeaf(t)) {
             int numberofsons = 0;
             int d;
@@ -239,6 +261,33 @@ void output_particles(TreeNode *t) {
     }
 }
 
+ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst){
+    if (t != NULL) {
+        if (isLeaf(t)) {
+            pLst->p = t->p;
+            pLst->next = new ParticleList;
+            return pLst->next;
+        } else {
+            for (int i = 0; i < POWDIM; i++) {
+                pLst = build_particle_list(t->son[i], pLst);
+            }
+        }
+    }
+    return pLst;
+}
+
+void get_particle_array(TreeNode *root, Particle *p){
+    auto pLst = new ParticleList;
+    build_particle_list(root, pLst);
+    int pIndex = 0;
+    while(pLst->next){
+        p[pIndex] = pLst->p;
+        //std::cout << "Adding to *p: x = (" << p[pIndex].x[0] << ", " << p[pIndex].x[1] << ", " << p[pIndex].x[2] << ")" << std::endl;
+        pLst = pLst->next;
+        ++pIndex;
+    }
+}
+
 void freeTree_BH(TreeNode *root) {
     if (root != NULL) {
         for (int i=0; i<POWDIM; i++) {
@@ -250,7 +299,9 @@ void freeTree_BH(TreeNode *root) {
     }
 }
 
-//TODO: implement sendParticles
+//TODO: implement sendParticles (Sending Particles to Their Owners and Inserting Them in the Local Tree)
+// determine right amount of memory which has to be allocated for the `buffer`,
+// by e.g. communicating the length of the message as prior message or by using other MPI commands
 void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     //allocate memory for s->numprocs particle lists in plist;
     //initialize ParticleList plist[to] for all processes to;
@@ -266,7 +317,7 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     delete plist;
 }
 
-//TODO: implement buildSendlist
+//TODO: implement buildSendlist (Sending Particles to Their Owners and Inserting Them in the Local Tree)
 void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist) {
     if (t != NULL) {
         for (int i = 0; i < POWDIM; i++) {
@@ -288,14 +339,14 @@ void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist) {
     // end of the operation on *t
 }
 
-//TODO: implement compPseudoParticlespar
+//TODO: implement compPseudoParticlespar (Parallel Computation of the Values of the Pseudoparticles)
 void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s) {
     compLocalPseudoParticlespar(root);
     //MPI_Allreduce(..., {mass, moments} of the lowest domainList nodes, MPI_SUM, ...);
     compDomainListPseudoParticlespar(root);
 }
 
-//TODO: implement compLocalPseudoParticlespar
+//TODO: implement compLocalPseudoParticlespar (Parallel Computation of the Values of the Pseudoparticles)
 void compLocalPseudoParticlespar(TreeNode *t) {
     //called recursively as in Algorithm 8.1;
     if (t != NULL) {
@@ -304,23 +355,51 @@ void compLocalPseudoParticlespar(TreeNode *t) {
         }
         // start of the operation on *t
         if ((!isLeaf(t)) && (t->node != domainList)) {
-            // operations analogous to Algorithm 8.5
+            // operations analogous to Algorithm 8.5 (see below)
         }
     }
     // end of the operation on *t
 }
 
-//TODO: implement compDomainListPsudoParticlespar
+//TODO: implement compDomainListPsudoParticlespar (Parallel Computation of the Values of the Pseudoparticles)
 void compDomainListPseudoParticlespar(TreeNode *t) {
     //called recursively as in Algorithm 8.1 for the coarse domainList-tree;
     // start of the operation on *t
     if (t->node == domainList) {
-        // operations analogous to Algorithm 8.5
+        // operations analogous to Algorithm 8.5 (see below)
     }
     // end of the operation on *t
 }
 
-//TODO: implement symbolicForce
+/*
+ * Algorithm 8.5:
+ void compPseudoParticles(TreeNode *t) {
+    if (t != NULL) {
+        for (int i=0; i<POWDIM; i++) {
+            compPseudoParticles(t->son[i]);
+        }
+        if (!isLeaf(t)) {
+            t->p.m = 0;
+            for (int d = 0; d < DIM; d++) {
+                t->p.x[d] = 0;
+            }
+            for (int j = 0; j < POWDIM; j++) {
+                if (t->son[j] != NULL) {
+                    t->p.m += t->son[j]->p.m;
+                    for (int d = 0; d < DIM; d++) {
+                        t->p.x[d] += t->son[j]->p.m * t->son[j]->p.x[d];
+                    }
+                }
+            }
+            for (int d = 0; d < DIM; d++) {
+                t->p.x[d] = t->p.x[d] / t->p.m;
+            }
+        }
+    }
+}
+ */
+
+//TODO: implement symbolicForce (Determining Subtrees that are Needed in the Parallel Force Computation)
 void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, SubDomainKeyTree *s) {
     if ((t != NULL) && (key2proc(key(*t), s) == s->myrank)) {
         // the key of *t can be computed step by step in the recursion insert t->p into list plist;
@@ -333,21 +412,33 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, S
     }
 }
 
-//TODO: implement compF_BHpar
+/*
+ * NOTE: Force computation:
+ *
+ * The computation of the distance of a cell to a particle can be implemented with appropriate case distinctions.
+ * One has to test whether the particle lies left, right, or inside the cell along each coordinate direction.
+ * The particles to be sent are collected in lists. It could happen that a (pseudo-)particle is inserted into the list
+ * several times, if several cells td are traversed for one process. Such duplicate (pseudo-)particles should be removed
+ * before the communication step. This can be implemented easily via sorted lists.
+ *
+ */
+
+//TODO: implement compF_BHpar (Parallel Force Computation)
 void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
     //allocate memory for s->numprocs particle lists in plist;
     //initialize ParticleList plist[to] for all processes to;
     compTheta(root, root, s, plist, diam);
     for (int i=1; i<s->numprocs; i++) {
         int to = (s->myrank+i)%s->numprocs;
-        int from = (s->myrank+s->numprocs-i)%s->numprocs; send (pseudo-)particle data from plist[to] to process to; receive (pseudo-)particle data from process from;
+        int from = (s->myrank+s->numprocs-i)%s->numprocs;
+        //send (pseudo-)particle data from plist[to] to process to; receive (pseudo-)particle data from process from;
         //insert all received (pseudo-)particles p into the tree using insertTree(&p, root);
     }
     //delete plist;
     compF_BH(root, diam);
 }
 
-//TODO: implement compTheta
+//TODO: implement compTheta (Parallel Force Computation)
 void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *plist, float diam) {
     //called recursively as in Algorithm 8.1;
     if (t != NULL) {
@@ -362,6 +453,18 @@ void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *p
     }
 // end of the operation on *t
 }
+
+
+/*
+ * NOTE: Remaining parts:
+ * The remaining parts needed to complete the parallel pro- gram can be implemented in a straightforward way.
+ * After the force com- putation, copies of particles from other processes have to be removed. The routine for the
+ * time integration can be reused from the sequential case. It only processes all particles that belong to the process.
+ * Particles are moved in two phases. First, the sequential routine is used to re-sort particles that have left their
+ * cell in the local tree. Afterwards, particles that have left the process have to be sent to other processes
+ * (implemented in `sendList()`).
+ *
+ */
 
 
 
