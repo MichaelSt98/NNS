@@ -139,14 +139,6 @@ int main(int argc, char *argv[]) {
     if (s.myrank == outputRank) {
         std::cout << "Sending and receiving particles..." << std::endl;
     }
-    int from = s.myrank;
-    int to;
-    if (from == 1) {
-        to = 0;
-    }
-    else {
-        to = 1;
-    }
 
     int messageLength[s.numprocs];
     messageLength[s.myrank] = particlesPerProcess;
@@ -154,20 +146,28 @@ int main(int argc, char *argv[]) {
     MPI_Request req;
     MPI_Status stat;
 
-    MPI_Isend(&messageLength[s.myrank], 1, MPI_INT, to, 17, MPI_COMM_WORLD, &req);
-    MPI_Recv(&messageLength[to], 1, MPI_INT, to, 17, MPI_COMM_WORLD, &stat);
+    for (int proc=0; proc < s.numprocs; proc++) {
+        if (proc != s.myrank) {
+            MPI_Isend(&messageLength[s.myrank], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &req);
+            MPI_Recv(&messageLength[proc], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &stat);
+        }
+    }
 
     MPI_Wait(&req, &stat);
 
     if (s.myrank == outputRank) {
-        std::cout << "Message length: " << messageLength << std::endl;
+        std::cout << "Message length: " << *messageLength << std::endl;
     }
 
     //MPI_Request req;
     //MPI_Status stat;
 
-    MPI_Isend(pArray[s.myrank], messageLength[s.myrank], mpiParticle, to, 17, MPI_COMM_WORLD, &req);
-    MPI_Recv(pArray[to], messageLength[to], mpiParticle, to, 17, MPI_COMM_WORLD, &stat);
+    for (int proc=0; proc < s.numprocs; proc++) {
+        if (proc != s.myrank) {
+            MPI_Isend(pArray[s.myrank], messageLength[s.myrank], mpiParticle, proc, 17, MPI_COMM_WORLD, &req);
+            MPI_Recv(pArray[proc], messageLength[proc], mpiParticle, proc, 17, MPI_COMM_WORLD, &stat);
+        }
+    }
 
     MPI_Wait(&req, &stat);
     //MPI_Request_free(&req);
@@ -187,10 +187,16 @@ int main(int argc, char *argv[]) {
     if (s.myrank == outputRank) {
         std::cout << "RECEIVED" << std::endl;
         std::cout << "rank: " << s.myrank << std::endl;
-        for (int i=0; i < particlesPerProcess; i++) {
-            std::cout << "\treceived particle " << i << ": "
-                      << "\n\t\t x = "<< "(" << pArray[to][i].x[0] << ", " << pArray[to][i].x[1] << ", " << pArray[to][i].x[2] << ")"
-                      << "\n\t\t v = "<< "(" << pArray[to][i].v[0] << ", " << pArray[to][i].v[1] << ", " << pArray[to][i].v[2] << ")" << std::endl;
+        for (int proc = 0; proc < s.numprocs; proc++) {
+            if (proc != s.myrank) {
+                for (int i = 0; i < particlesPerProcess; i++) {
+                    std::cout << "\tproc[" << proc <<  "] received particle " << i << ": "
+                              << "\n\t\t x = " << "(" << pArray[proc][i].x[0] << ", " << pArray[proc][i].x[1] << ", "
+                              << pArray[proc][i].x[2] << ")"
+                              << "\n\t\t v = " << "(" << pArray[proc][i].v[0] << ", " << pArray[proc][i].v[1] << ", "
+                              << pArray[proc][i].v[2] << ")" << std::endl;
+                }
+            }
         }
     }
 
