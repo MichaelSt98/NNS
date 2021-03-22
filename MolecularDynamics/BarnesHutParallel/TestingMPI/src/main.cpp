@@ -143,17 +143,20 @@ int main(int argc, char *argv[]) {
     int messageLength[s.numprocs];
     messageLength[s.myrank] = particlesPerProcess;
 
-    MPI_Request req;
-    MPI_Status stat;
+    int counter = 0;
+    MPI_Request req[s.numprocs-1];
+    MPI_Status stat[s.numprocs-1];
 
     for (int proc=0; proc < s.numprocs; proc++) {
         if (proc != s.myrank) {
-            MPI_Isend(&messageLength[s.myrank], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &req);
-            MPI_Recv(&messageLength[proc], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &stat);
+            MPI_Isend(&messageLength[s.myrank], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &req[counter]);
+            MPI_Recv(&messageLength[proc], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &stat[counter]);
+            counter++;
         }
     }
 
-    MPI_Wait(&req, &stat);
+    //MPI_Wait(&req, &stat);
+    MPI_Waitall(s.numprocs-1, req, stat);
 
     if (s.myrank == outputRank) {
         std::cout << "Message length: " << *messageLength << std::endl;
@@ -162,14 +165,16 @@ int main(int argc, char *argv[]) {
     //MPI_Request req;
     //MPI_Status stat;
 
+    counter = 0;
     for (int proc=0; proc < s.numprocs; proc++) {
         if (proc != s.myrank) {
-            MPI_Isend(pArray[s.myrank], messageLength[s.myrank], mpiParticle, proc, 17, MPI_COMM_WORLD, &req);
-            MPI_Recv(pArray[proc], messageLength[proc], mpiParticle, proc, 17, MPI_COMM_WORLD, &stat);
+            MPI_Isend(pArray[s.myrank], messageLength[s.myrank], mpiParticle, proc, 17, MPI_COMM_WORLD, &req[counter]);
+            MPI_Recv(pArray[proc], messageLength[proc], mpiParticle, proc, 17, MPI_COMM_WORLD, &stat[counter]);
         }
     }
 
-    MPI_Wait(&req, &stat);
+    //MPI_Wait(&req, &stat);
+    MPI_Waitall(s.numprocs-1, req, stat);
     //MPI_Request_free(&req);
 
 
