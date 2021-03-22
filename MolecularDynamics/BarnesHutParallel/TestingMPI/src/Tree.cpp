@@ -13,7 +13,7 @@
 }*/
 
 
-ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst){
+/*ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst){
     /*
     if (t != NULL) {
         if (isLeaf(t)) {
@@ -28,7 +28,7 @@ ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst){
     }
     return pLst;
      */
-}
+/*}*/
 
 void get_particle_array(TreeNode *root, Particle *p){
     /*

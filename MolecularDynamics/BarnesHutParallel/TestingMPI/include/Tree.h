@@ -33,7 +33,7 @@ typedef struct {
 } SubDomainKeyTree;
 
 
-ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst);
+//ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst);
 
 void get_particle_array(TreeNode *root, Particle *p);
 
