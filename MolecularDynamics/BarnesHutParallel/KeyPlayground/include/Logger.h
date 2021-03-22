@@ -6,6 +6,7 @@
 #define NBODY_LOGGER_H
 
 #include <iostream>
+#include <string>
 #include "Color.h"
 
 namespace Color {
@@ -27,6 +28,7 @@ enum typelog {
 struct structlog {
     bool headers = false;
     typelog level = WARN;
+    int myrank = -1; // don't use MPI by default
 };
 
 extern structlog LOGCFG;

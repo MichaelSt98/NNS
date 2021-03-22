@@ -10,10 +10,10 @@ Renderer::Renderer(const int _numParticles, const int _width, const int _height,
                         particleSharpness { _particleSharpness }, dotSize { _dotSize },
                         systemSize { _systemSize }, renderInterval { _renderInterval } {
 
-    LOGCFG.headers = true;
-    LOGCFG.level = INFO;
+    //LOGCFG.headers = true;
+    //LOGCFG.level = INFO;
 
-    Logger(INFO) << "RENDERING RELATED PARAMETERS";
+    /*Logger(INFO) << "RENDERING RELATED PARAMETERS";
     Logger(INFO) << "--------------------------------------";
     Logger(INFO) << "num Particles:      " << numParticles;
     Logger(INFO) << "width:              " << width;
@@ -26,7 +26,7 @@ Renderer::Renderer(const int _numParticles, const int _width, const int _height,
     Logger(INFO) << "dotSize:            " << dotSize;
     Logger(INFO) << "systemSize:         " << systemSize;
     Logger(INFO) << "renderInterval:     " << renderInterval;
-    Logger(INFO) << "--------------------------------------";
+    Logger(INFO) << "--------------------------------------";*/
 
 }
 

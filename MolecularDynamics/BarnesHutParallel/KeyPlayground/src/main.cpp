@@ -5,11 +5,16 @@
 #include "../include/Logger.h"
 
 #include <iostream>
+#include <fstream>
+#include <bitset>
 #include <random>
 #include <mpi.h>
 
 // extern variable from Logger has to be initialized here
 structlog LOGCFG = {};
+
+// MPI output process rank number
+int outputRank = 0;
 
 // function declarations
 void initData_BH(TreeNode **root, Box *domain, SubDomainKeyTree  *s, int N, ConfigParser &confP);
@@ -86,8 +91,28 @@ void initData_BH(TreeNode **root, Box *domain, SubDomainKeyTree  *s, int N, Conf
     for (int i=1; i<N; i++) //i=2, <=N
         insertTree(&p[i], *root);
 
-    createRanges(*root, N, s);
-    createDomainList(*root, 0, 0, s);
+    createRanges(*root, N, s, confP.getVal<int>("dummyDomains"));
+    //createDomainList(*root, 0, 0, s);
+
+    Particle *pOut = new Particle[N];
+    keytype *particleKeys = new keytype[N];
+
+    get_particle_array(*root, pOut);
+    int pCounter { 0 };
+    getParticleKeys(*root, particleKeys, pCounter);
+
+    const std::string &csvFile { "./pKeysBasic.csv" };
+    Logger(INFO) << "Writing particle keys to file '" << csvFile << "' ...";
+    std::ofstream outf{"./pKeysBasic.csv"};
+    if (!outf) {
+        Logger(ERROR) << "An error occurred while opening 'particleKeysBasic'. - Aborting.";
+        exit(1); //TODO: throw exception
+    }
+    for (int i = 0; i < N; ++i) {
+        outf << std::bitset<64>(particleKeys[i]) << ";"
+                << pOut[i].x[0] << ";" << pOut[i].x[1] << ";" << pOut[i].x[2] << '\n';
+    }
+    Logger(INFO) << "... done.";
 }
 
 Renderer* initRenderer(ConfigParser &confP){
@@ -116,44 +141,46 @@ int main(int argc, char *argv[]) {
     SubDomainKeyTree  s;
     MPI_Comm_rank(MPI_COMM_WORLD, &s.myrank);
     MPI_Comm_size(MPI_COMM_WORLD, &s.numprocs);
-    //s.range = 0; //TODO: set range for sub domain key tree
 
     //TODO: needed to be called by every process?
     // initialize logger
     LOGCFG.headers = true;
-    LOGCFG.level = ERROR;
+    LOGCFG.level = DEBUG;
+    LOGCFG.myrank = s.myrank;
 
-    ConfigParser confP {ConfigParser("config.info")};
+    if (s.myrank == 0) {
+        ConfigParser confP{ConfigParser("config.info")};
 
-    int width = confP.getVal<int>("width");
-    int height = confP.getVal<int>("height");
+        int width = confP.getVal<int>("width");
+        int height = confP.getVal<int>("height");
 
-    char *image = new char[width*height*3];
-    double *hdImage = new double[width*height*3];
+        char *image = new char[width * height * 3];
+        double *hdImage = new double[width * height * 3];
 
-    const float systemSize {confP.getVal<float>("systemSize")};
-    TreeNode *root;
-    Box box;
-    for (int i=0; i<DIM; i++) {
-        box.lower[i] = -systemSize;
-        box.upper[i] = systemSize;
+        const float systemSize{confP.getVal<float>("systemSize")};
+        TreeNode *root;
+        Box box;
+        for (int i = 0; i < DIM; i++) {
+            box.lower[i] = -systemSize;
+            box.upper[i] = systemSize;
+        }
+
+        const float delta_t{confP.getVal<float>("timeStep")};
+        const float t_end{confP.getVal<float>("timeEnd")};
+        const int N{confP.getVal<int>("numParticles")};
+
+        Renderer *renderer = initRenderer(confP);
+
+        //inputParameters_BH(&delta_t, &t_end, &box, &theta, &N);
+
+        initData_BH(&root, &box, &s, N, confP);
+
+        //TODO: timeIntegration_BH(0, delta_t, t_end, root, box, &s);
+
+        //free resources
+        freeTree_BH(root);
     }
 
-    const float delta_t {confP.getVal<float>("timeStep")};
-    const float t_end {confP.getVal<float>("timeEnd")};
-    const int N {confP.getVal<int>("numParticles")};
-
-    Renderer *renderer = initRenderer(confP);
-
-    //inputParameters_BH(&delta_t, &t_end, &box, &theta, &N);
-
-    initData_BH(&root, &box, &s, N, confP);
-
-    //TODO: timeIntegration_BH(0, delta_t, t_end, root, box, &s);
-
-    //free resources
-    freeTree_BH(root);
-    free(s.range);
     MPI_Finalize();
     return 0;
 }

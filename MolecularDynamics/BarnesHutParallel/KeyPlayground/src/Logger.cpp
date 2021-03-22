@@ -29,13 +29,17 @@ Logger::~Logger() {
 
 inline std::string Logger::getLabel(typelog type) {
     std::string label;
+    std::string rankLbl = "";
+    if (LOGCFG.myrank >= 0){
+        rankLbl = "(" + std::to_string(LOGCFG.myrank) + ")";
+    }
     switch(type) {
         case DEBUG: label = "[DEBUG] "; break;
         case INFO:  label = "[INFO ] "; break;
         case WARN:  label = "[WARN ] "; break;
         case ERROR: label = "[ERROR] "; break;
     }
-    return label;
+    return rankLbl + label;
 }
 
 inline Color::Modifier Logger::getColor(typelog type) {

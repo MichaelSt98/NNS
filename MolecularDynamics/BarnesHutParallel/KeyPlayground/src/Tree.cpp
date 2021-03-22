@@ -33,6 +33,22 @@ keytype key(TreeNode t){
     return 0;
 }
 
+void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k, int level){
+    if (t != NULL){
+        for (int i = 0; i < POWDIM; i++) {
+            if (isLeaf(t->son[i])){
+                p[pCounter] = k += (static_cast<keytype>(i) << level*DIM); // inserting key
+                Logger(DEBUG) << "Inserted particle '" << std::bitset<64>(k + (static_cast<keytype>(i) << level*DIM))
+                        << "'@" << pCounter;
+                ++pCounter; // counting inserted particles
+            } else {
+                getParticleKeys(t->son[i], p, pCounter,
+                                k + (static_cast<keytype>(i) << level*DIM), level+1); // go deeper
+            }
+        }
+    }
+}
+
 keytype nextRange(TreeNode *t, const int &ppr, int &pCounter, keytype prevRange, keytype k, int level){
     if (t != NULL) {
         for (int i = 0; i < POWDIM; i++) {
@@ -42,6 +58,7 @@ keytype nextRange(TreeNode *t, const int &ppr, int &pCounter, keytype prevRange,
                 if (k >= prevRange) ++pCounter; // counting particles, starting at range_i
                 if (pCounter == ppr) return k + 1; // range_i+1 found
             } else {
+                //TODO: no tail recursion => performance issues?
                 keytype candidate = nextRange(t->son[i], ppr, pCounter, prevRange,
                                        k + (static_cast<keytype>(i) << level*DIM), level+1);
                 if(candidate != KEY_MAX) return candidate; // don't return when empty node is visited
@@ -51,17 +68,29 @@ keytype nextRange(TreeNode *t, const int &ppr, int &pCounter, keytype prevRange,
     return KEY_MAX;
 }
 
-void createRanges(TreeNode *t, int N, SubDomainKeyTree *s){
-    s->range = new keytype[s->numprocs+1];
+void createRanges(TreeNode *root, int N, SubDomainKeyTree *s, int K){
+    // K-domains for debugging
+    //s->range = new keytype[s->numprocs+1];
+    keytype *pKeys = new keytype[N];
+
+    //int pIndex{ 0 };
+    //getParticleKeys(root, pKeys, pIndex);
+
+    s->range = new keytype[K+1];
+
     s->range[0] = 0UL; // range_0 = 0
 
-    const int ppr = (N % s->numprocs != 0) ? N/s->numprocs+1 : N/s->numprocs; // particles per range
+    //const int ppr = (N % s->numprocs != 0) ? N/s->numprocs+1 : N/s->numprocs; // particles per range
+    const int ppr = (N % K != 0) ? N/K+1 : N/K; // particles per range, K procs emulated
 
-    for (int i=1; i<=s->numprocs; i++){
+    //for (int i=1; i<s->numprocs; i++){
+    for (int i=1; i<K; i++){
         int counter { 0 };
-        s->range[i] = nextRange(t, ppr, counter, s->range[i-1]);
-        std::cout << "range[" << i << "] = " << std::bitset<64>(s->range[i]) << std::endl;
+        s->range[i] = nextRange(root, ppr, counter, s->range[i-1]);
+        //s->range[i] = pKeys[i*ppr];
+        Logger(DEBUG) << "Computed range[" << i << "] = " << std::bitset<64>(s->range[i]);
     }
+    s->range[K] = KEY_MAX; // last range does not need to be computed
 }
 
 int key2proc(keytype k, SubDomainKeyTree *s) {
@@ -318,10 +347,10 @@ ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst){
 void get_particle_array(TreeNode *root, Particle *p){
     auto pLst = new ParticleList;
     build_particle_list(root, pLst);
-    int pIndex = 0;
+    int pIndex { 0 };
     while(pLst->next){
         p[pIndex] = pLst->p;
-        //std::cout << "Adding to *p: x = (" << p[pIndex].x[0] << ", " << p[pIndex].x[1] << ", " << p[pIndex].x[2] << ")" << std::endl;
+        Logger(DEBUG) << "Adding to *p: x = (" << p[pIndex].x[0] << ", " << p[pIndex].x[1] << ", " << p[pIndex].x[2] << ")";
         pLst = pLst->next;
         ++pIndex;
     }
