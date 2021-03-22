@@ -1,7 +1,3 @@
-//
-// Created by Michael Staneker on 15.03.21.
-//
-
 #ifndef BARNESHUTSERIAL_TREE_H
 #define BARNESHUTSERIAL_TREE_H
 

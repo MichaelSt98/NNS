@@ -358,7 +358,7 @@ void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist, int *p
             }
             int proc;
             if ((isLeaf(t)) && ((proc = key2proc(key(*t), s)) != s->myrank)) {
-                //the key of *t can be computed step by step in the recursion
+                //the key of *t can be computed step by step in the recursion //TODO: compute key of *t
                 //insert t->p into list plist[proc];
                 plist[proc]->p = p;
                 plist[proc]->next = new ParticleList; //TODO: similar problem as with get_particle_array() ?!

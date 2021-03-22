@@ -9,11 +9,12 @@
 #include <iostream>
 
 int outputRank = 1;
+MPI_Datatype mpiParticle;
 
 void initializeParticles(Particle *particle, int N);
 void createLocalParticleList(SubDomainKeyTree s, ParticleList *pList, Particle *particles, int numberOfParticles);
-
 void createParticleDatatype(MPI_Datatype datatype);
+void convertListToArray(SubDomainKeyTree s, ParticleList *particleList, Particle *pArray, int particlesPerProcess);
 
 void createParticleDatatype(MPI_Datatype *datatype) {
     //create MPI datatype for Particle struct
@@ -81,6 +82,10 @@ void convertListToArray(SubDomainKeyTree s, ParticleList *particleList, Particle
     }
 }
 
+void exchangeParticles() {
+
+}
+
 int main(int argc, char *argv[]) {
 
     MPI_Init(&argc, &argv);
@@ -98,7 +103,7 @@ int main(int argc, char *argv[]) {
         std::cout << "Creating MPI Datatype for Particle struct..." << std::endl;
     }
     //create MPI datatype for Particle struct
-    MPI_Datatype mpiParticle;
+    //MPI_Datatype mpiParticle;
     createParticleDatatype(&mpiParticle);
 
     /** -------------------------------------- */
@@ -126,10 +131,9 @@ int main(int argc, char *argv[]) {
         std::cout << "Converting back to an array..." << std::endl;
     }
     //convert back to array
-    Particle pArray[particlesPerProcess];
-    Particle pReceived[particlesPerProcess];
+    Particle pArray[s.numprocs][particlesPerProcess];
 
-    convertListToArray(s, particleList, pArray, particlesPerProcess);
+    convertListToArray(s, particleList, pArray[s.myrank], particlesPerProcess);
 
     /** -------------------------------------- */
     if (s.myrank == outputRank) {
@@ -144,11 +148,26 @@ int main(int argc, char *argv[]) {
         to = 1;
     }
 
+    int messageLength[s.numprocs];
+    messageLength[s.myrank] = particlesPerProcess;
+
     MPI_Request req;
     MPI_Status stat;
 
-    MPI_Isend(pArray, particlesPerProcess, mpiParticle, to, 17, MPI_COMM_WORLD, &req);
-    MPI_Recv(pReceived, particlesPerProcess, mpiParticle, to, 17, MPI_COMM_WORLD, &stat);
+    MPI_Isend(&messageLength[s.myrank], 1, MPI_INT, to, 17, MPI_COMM_WORLD, &req);
+    MPI_Recv(&messageLength[to], 1, MPI_INT, to, 17, MPI_COMM_WORLD, &stat);
+
+    MPI_Wait(&req, &stat);
+
+    if (s.myrank == outputRank) {
+        std::cout << "Message length: " << messageLength << std::endl;
+    }
+
+    //MPI_Request req;
+    //MPI_Status stat;
+
+    MPI_Isend(pArray[s.myrank], messageLength[s.myrank], mpiParticle, to, 17, MPI_COMM_WORLD, &req);
+    MPI_Recv(pArray[to], messageLength[to], mpiParticle, to, 17, MPI_COMM_WORLD, &stat);
 
     MPI_Wait(&req, &stat);
     //MPI_Request_free(&req);
@@ -162,7 +181,7 @@ int main(int argc, char *argv[]) {
         std::cout << "EXPECTED" << std::endl;
         std::cout << "rank: " << s.myrank << std::endl;
         for (int i=0; i < particlesPerProcess; i++) {
-            std::cout << "\texpected particle " << i << ": " << "(" << pArray[i].x[0] << ", " << pArray[i].x[1] << ", " << pArray[i].x[2] << ")" << std::endl;
+            std::cout << "\texpected particle " << i << ": " << "(" << pArray[s.myrank][i].x[0] << ", " << pArray[s.myrank][i].x[1] << ", " << pArray[s.myrank][i].x[2] << ")" << std::endl;
         }
     }*/
     if (s.myrank == outputRank) {
@@ -170,8 +189,8 @@ int main(int argc, char *argv[]) {
         std::cout << "rank: " << s.myrank << std::endl;
         for (int i=0; i < particlesPerProcess; i++) {
             std::cout << "\treceived particle " << i << ": "
-                        << "\n\t\t x = "<< "(" << pReceived[i].x[0] << ", " << pReceived[i].x[1] << ", " << pReceived[i].x[2] << ")"
-                        << "\n\t\t v = "<< "(" << pReceived[i].v[0] << ", " << pReceived[i].v[1] << ", " << pReceived[i].v[2] << ")" << std::endl;
+                      << "\n\t\t x = "<< "(" << pArray[to][i].x[0] << ", " << pArray[to][i].x[1] << ", " << pArray[to][i].x[2] << ")"
+                      << "\n\t\t v = "<< "(" << pArray[to][i].v[0] << ", " << pArray[to][i].v[1] << ", " << pArray[to][i].v[2] << ")" << std::endl;
         }
     }
 
@@ -184,3 +203,4 @@ int main(int argc, char *argv[]) {
     MPI_Finalize();
 
 }
+
