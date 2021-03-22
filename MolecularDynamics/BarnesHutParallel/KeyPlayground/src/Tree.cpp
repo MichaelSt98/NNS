@@ -37,7 +37,7 @@ void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k, int leve
     if (t != NULL){
         for (int i = 0; i < POWDIM; i++) {
             if (isLeaf(t->son[i])){
-                p[pCounter] = k += (static_cast<keytype>(i) << level*DIM); // inserting key
+                p[pCounter] = k + (static_cast<keytype>(i) << level*DIM); // inserting key
                 Logger(DEBUG) << "Inserted particle '" << std::bitset<64>(k + (static_cast<keytype>(i) << level*DIM))
                         << "'@" << pCounter;
                 ++pCounter; // counting inserted particles
@@ -49,32 +49,15 @@ void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k, int leve
     }
 }
 
-keytype nextRange(TreeNode *t, const int &ppr, int &pCounter, keytype prevRange, keytype k, int level){
-    if (t != NULL) {
-        for (int i = 0; i < POWDIM; i++) {
-            if (isLeaf(t->son[i])){
-                k += (static_cast<keytype>(i) << level*DIM); // calculating key of the son node
-                // std::cout << "k = " << std::bitset<64>(k) << std::endl;
-                if (k >= prevRange) ++pCounter; // counting particles, starting at range_i
-                if (pCounter == ppr) return k + 1; // range_i+1 found
-            } else {
-                //TODO: no tail recursion => performance issues?
-                keytype candidate = nextRange(t->son[i], ppr, pCounter, prevRange,
-                                       k + (static_cast<keytype>(i) << level*DIM), level+1);
-                if(candidate != KEY_MAX) return candidate; // don't return when empty node is visited
-            }
-        }
-    }
-    return KEY_MAX;
-}
-
 void createRanges(TreeNode *root, int N, SubDomainKeyTree *s, int K){
     // K-domains for debugging
     //s->range = new keytype[s->numprocs+1];
     keytype *pKeys = new keytype[N];
 
-    //int pIndex{ 0 };
-    //getParticleKeys(root, pKeys, pIndex);
+    int pIndex{ 0 };
+    getParticleKeys(root, pKeys, pIndex);
+    // sort keys in ascending order
+    std::sort(pKeys, pKeys+N);
 
     s->range = new keytype[K+1];
 
@@ -85,9 +68,7 @@ void createRanges(TreeNode *root, int N, SubDomainKeyTree *s, int K){
 
     //for (int i=1; i<s->numprocs; i++){
     for (int i=1; i<K; i++){
-        int counter { 0 };
-        s->range[i] = nextRange(root, ppr, counter, s->range[i-1]);
-        //s->range[i] = pKeys[i*ppr];
+        s->range[i] = pKeys[i*ppr];
         Logger(DEBUG) << "Computed range[" << i << "] = " << std::bitset<64>(s->range[i]);
     }
     s->range[K] = KEY_MAX; // last range does not need to be computed

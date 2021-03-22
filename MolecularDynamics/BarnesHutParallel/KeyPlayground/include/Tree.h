@@ -12,6 +12,7 @@
 #include <cmath>
 #include <iostream>
 #include <bitset>
+#include <algorithm> // for sorting particle keys
 #include <climits> // for ulong_max
 #include <mpi.h>
 
@@ -46,9 +47,6 @@ keytype key(TreeNode t);
 
 /*** keytype k=1UL and int level=0 corresponds to root node ***/
 void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k=1UL, int level=0);
-
-/*** keytype k=1UL and int level=0 corresponds to root node ***/
-keytype nextRange(TreeNode *t, const int &ppr, int &pCounter, keytype prevRange, keytype k=1UL, int level=0);
 
 void createRanges(TreeNode *root, int N, SubDomainKeyTree *s, int K);
 
