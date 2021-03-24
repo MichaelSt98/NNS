@@ -33,17 +33,42 @@ keytype key(TreeNode t){
     return 0;
 }
 
-void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k, int level){
+/** First step in the path key creation done explicitly [p. 343f]
+ * - Starting at the root node 1
+ * - Each level needs 3 bits => [0,7] are the labels of the sons
+ * - The labels [0,7] are shifted 3 x level times
+ *
+ * @param t Current node in recursion, should be initialized with root
+ * @param p Container to be filled with path keys of all leaves (keytype[N])
+ * @param pCounter Global counter by reference
+ * @param k default=1UL (root node)
+ * @param level default=0
+ */
+void getParticleKeysSimple(TreeNode *t, keytype *p, int &pCounter, keytype k, int level){
     if (t != NULL){
         for (int i = 0; i < POWDIM; i++) {
             if (isLeaf(t->son[i])){
                 p[pCounter] = k + (static_cast<keytype>(i) << level*DIM); // inserting key
-                Logger(DEBUG) << "Inserted particle '" << std::bitset<64>(k + (static_cast<keytype>(i) << level*DIM))
-                        << "'@" << pCounter;
+                Logger(DEBUG) << "Inserted particle '" << p[pCounter] << "'@" << pCounter;
                 ++pCounter; // counting inserted particles
             } else {
                 getParticleKeys(t->son[i], p, pCounter,
                                 k + (static_cast<keytype>(i) << level*DIM), level+1); // go deeper
+            }
+        }
+    }
+}
+
+void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k, int level){
+    if (t != NULL){
+        for (int i = 0; i < POWDIM; i++) {
+            if (isLeaf(t->son[i])){
+                p[pCounter] = k + (i << DIM*(maxlevel-level-1)); // inserting key
+                Logger(DEBUG) << "Inserted particle '" << p[pCounter] << "'@" << pCounter;
+                ++pCounter; // counting inserted particles
+            } else {
+                getParticleKeys(t->son[i], p, pCounter,
+                                k + (i << DIM*(maxlevel-level-1)), level+1); // go deeper
             }
         }
     }
@@ -75,9 +100,9 @@ void createRanges(TreeNode *root, int N, SubDomainKeyTree *s, int K){
 }
 
 int key2proc(keytype k, SubDomainKeyTree *s) {
-    for (int i=1; i<=s->numprocs; i++) {
+    for (int i=0; i<s->numprocs; i++) {
         if (k >= s->range[i]) {
-            return i - 1;
+            return i;
         }
     }
     return -1; // error
@@ -91,7 +116,7 @@ void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s) {
     if (p1 != p2) {
         for (int i = 0; i < POWDIM; i++) {
             t->son[i] = (TreeNode *) calloc(1, sizeof(TreeNode));
-            createDomainList(t->son[i], level + 1, (k + i) << DIM * (maxlevel - level - 1), s);
+            createDomainList(t->son[i], level + 1,  k + (i << DIM*(maxlevel-level-1)), s);
         }
     }
 }

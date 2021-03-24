@@ -45,8 +45,9 @@ typedef struct {
 
 keytype key(TreeNode t);
 
-/*** keytype k=1UL and int level=0 corresponds to root node ***/
-void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k=1UL, int level=0);
+void getParticleKeysSimple(TreeNode *t, keytype *p, int &pCounter, keytype k=1UL, int level=0);
+
+void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k=0UL, int level=0);
 
 void createRanges(TreeNode *root, int N, SubDomainKeyTree *s, int K);
 

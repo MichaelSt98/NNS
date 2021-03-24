@@ -92,7 +92,8 @@ void initData_BH(TreeNode **root, Box *domain, SubDomainKeyTree  *s, int N, Conf
         insertTree(&p[i], *root);
 
     createRanges(*root, N, s, confP.getVal<int>("dummyDomains"));
-    //createDomainList(*root, 0, 0, s);
+
+    createDomainList(*root, 0, 0, s);
 
     Particle *pOut = new Particle[N];
     keytype *particleKeys = new keytype[N];
@@ -148,7 +149,7 @@ int main(int argc, char *argv[]) {
     LOGCFG.level = DEBUG;
     LOGCFG.myrank = s.myrank;
 
-    if (s.myrank == 0) {
+    if (s.myrank == outputRank) {
         ConfigParser confP{ConfigParser("config.info")};
 
         int width = confP.getVal<int>("width");
