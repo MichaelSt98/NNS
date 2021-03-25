@@ -64,7 +64,7 @@ void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k, int leve
         for (int i = 0; i < POWDIM; i++) {
             if (isLeaf(t->son[i])){
                 p[pCounter] = k + (i << DIM*(maxlevel-level-1)); // inserting key
-                Logger(DEBUG) << "Inserted particle '" << p[pCounter] << "'@" << pCounter;
+                Logger(DEBUG) << "Inserted particle '" << std::bitset<64>(p[pCounter]) << "'@" << pCounter;
                 ++pCounter; // counting inserted particles
             } else {
                 getParticleKeys(t->son[i], p, pCounter,
