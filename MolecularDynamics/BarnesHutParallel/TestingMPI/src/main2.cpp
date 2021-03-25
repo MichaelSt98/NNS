@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
     for (int proc = 0; proc<s.numprocs; proc++) {
         if (proc != s.myrank) {
             if (s.myrank == outputRank) {
-                std::cout << "length: " << getParticleListLength(&plist[proc]) << std::endl;
+                std::cout << "length[" << proc << "] : " << getParticleListLength(&plist[proc]) << std::endl;
             }
         }
     }
@@ -210,7 +210,7 @@ int main(int argc, char *argv[]) {
 
     if (s.myrank == outputRank) {
         for (int i=0; i<receiveLength; i++) {
-            std::cout << "pArray[" << s.myrank << "][" << i << "]: (" << pArray[s.myrank][i].x[0] << ")" << std::endl;
+            std::cout << "received pArray[" << s.myrank << "][" << i << "]: (" << pArray[s.myrank][i].x[0] << ")" << std::endl;
         }
     }
 
