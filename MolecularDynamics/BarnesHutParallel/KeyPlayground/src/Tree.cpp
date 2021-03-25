@@ -100,7 +100,7 @@ void createRanges(TreeNode *root, int N, SubDomainKeyTree *s, int K){
 }
 
 int key2proc(keytype k, SubDomainKeyTree *s) {
-    for (int i=0; i<s->numprocs; i++) {
+    for (int i=0; i<s->numprocs; i++) { //1
         if (k >= s->range[i]) {
             return i;
         }
