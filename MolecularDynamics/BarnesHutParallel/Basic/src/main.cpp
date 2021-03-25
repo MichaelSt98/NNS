@@ -10,7 +10,6 @@
 #include <random>
 #include <mpi.h>
 
-
 // extern variable from Logger has to be initialized here
 structlog LOGCFG = {};
 
