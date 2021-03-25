@@ -12,6 +12,17 @@
     }
 }*/
 
+const char* get_node_type(int nodetype)
+{
+    //particle, pseudoParticle, domainList
+    switch (nodetype)
+    {
+        case 0: return "particle      ";
+        case 1: return "pseudoParticle";
+        case 2: return "domainList    ";
+    }
+}
+
 
 //TODO: create key (!?)
 // simple approach:
@@ -99,6 +110,27 @@ void createRanges(TreeNode *root, int N, SubDomainKeyTree *s, int K){
     s->range[K] = KEY_MAX; // last range does not need to be computed
 }
 
+void createRanges(TreeNode *root, int N, SubDomainKeyTree *s) {
+
+    s->range = new keytype[s->numprocs+1];
+    keytype *pKeys = new keytype[N];
+
+    int pIndex{ 0 };
+    getParticleKeys(root, pKeys, pIndex);
+    // sort keys in ascending order
+    std::sort(pKeys, pKeys+N);
+
+    s->range[0] = 0UL; // range_0 = 0
+
+    const int ppr = (N % s->numprocs != 0) ? N/s->numprocs+1 : N/s->numprocs; // particles per range
+
+    for (int i=1; i<s->numprocs; i++){
+        s->range[i] = pKeys[i*ppr];
+        Logger(DEBUG) << "Computed range[" << i << "] = " << std::bitset<64>(s->range[i]);
+    }
+    s->range[s->numprocs+1] = KEY_MAX;
+}
+
 int key2proc(keytype k, SubDomainKeyTree *s) {
     for (int i=0; i<s->numprocs; i++) { //1
         if (k >= s->range[i]) {
@@ -158,9 +190,11 @@ void insertTree(Particle *p, TreeNode *t) {
             t->son[b]->box = sunbox;
         }
     } else {
+        //parallel change
         if (t->son[b]->node == domainList) {
-            //here???
-        }
+            t->son[b]->box = t->box;
+            insertTree(p, t->son[b]);
+        } //end of parallel change
         else {
             t->son[b]->box = sunbox; //?
             insertTree(p, t->son[b]);
@@ -191,6 +225,9 @@ void compPseudoParticles(TreeNode *t) {
             compPseudoParticles(t->son[i]);
         }
         if (!isLeaf(t)) {
+            if (t->node != domainList) {
+                t->node = pseudoParticle; //TODO: new (correct?)
+            }
             t->p.m = 0;
             for (int d = 0; d < DIM; d++) {
                 t->p.x[d] = 0;
@@ -294,6 +331,7 @@ void moveLeaf(TreeNode *t, TreeNode *root) {
     }
 }
 
+//parallel change: do not delete if domainList node
 void repairTree(TreeNode *t) {
     if (t != NULL && t->node != domainList) {
         if (!isLeaf(t)) {
@@ -309,10 +347,10 @@ void repairTree(TreeNode *t) {
                     }
                 }
             }
-            if (0 == numberofsons) {
+            if (numberofsons == 0) {
                 // *t is an ‘‘empty’’ leaf node and can be deleted
                 t->p.todelete = true;
-            } else if (1 == numberofsons) {
+            } else if (numberofsons == 1) {
                 // *t adopts the role of its only son node and
                 // the son node is deleted directly
                 t->p = t->son[d]->p;
@@ -321,6 +359,77 @@ void repairTree(TreeNode *t) {
             }
         }
     }
+}
+
+/*void output_tree(TreeNode *t) {
+        std::cout << "\tnodetype: " << get_node_type(t->node) << "  x = (" << t->p.x[0] << ", " << t->p.x[1] << ", " << t->p.x[2] << ")" << std::endl;
+        for (int i = 0; i<POWDIM; i++) {
+            output_tree(t->son[i]);
+        }
+    }
+}*/
+
+void output_tree(TreeNode *t) {
+
+    int counterParticle = 0;
+    int counterPseudoParticle = 0;
+    int counterDomainList = 0;
+
+    int nNodes = get_tree_node_number(t);
+    Particle * pArray;
+    nodetype * nArray;
+    pArray = new Particle[nNodes];
+    nArray = new nodetype[nNodes];
+    get_tree_array(t, pArray, nArray);
+
+    std::cout << "-------------------------------------------------------------------------" << std::endl;
+
+    for (int i=nNodes-1; i>=0; i--) {
+        if (nArray[i] == 0) {
+            counterParticle++;
+        }
+        else if (nArray[i] == 1) {
+            counterPseudoParticle++;
+        }
+        else {
+            counterDomainList++;
+        }
+        std::cout << "\tnodetype: " << get_node_type(nArray[i]) << "  x = (" << pArray[i].x[0] << ", " << pArray[i].x[1] << ", "
+                  << pArray[i].x[2] << ")" << std::endl;
+    }
+
+    std::cout << "-------------------------------------------------------------------------" << std::endl;
+    std::cout << "NUMBER OF NODES:            " << nNodes << std::endl;
+    std::cout << "amount of particles:        " << counterParticle << std::endl;
+    std::cout << "amount of pseudoParticles:  " << counterPseudoParticle << std::endl;
+    std::cout << "amount of domainList nodes: " << counterDomainList << std::endl;
+    std::cout << "-------------------------------------------------------------------------" << std::endl;
+
+
+
+    /*std::cout << "-------------------------------------------------------------------------" << std::endl;
+    std::cout << "TREE REPRESENTATION" << std::endl;
+    if (t != NULL) {
+        if (t->node == 1) {
+            counterParticle++;
+        }
+        else if (t->node == 2) {
+            counterPseudoParticle++;
+        }
+        else {
+            counterDomainList++;
+        }
+        std::cout << "\tnodetype: " << get_node_type(t->node) << "  x = (" << t->p.x[0] << ", " << t->p.x[1] << ", " << t->p.x[2] << ")" << std::endl;
+        for (int i = 0; i<POWDIM; i++) {
+            output_tree(t->son[i]);
+        }
+    }
+    std::cout << "-------------------------------------------------------------------------" << std::endl;
+    std::cout << "amount of particles:        " << counterParticle << std::endl;
+    std::cout << "amount of pseudoParticles:  " << counterPseudoParticle << std::endl;
+    std::cout << "amount of domainList nodes: " << counterDomainList << std::endl;
+    std::cout << "-------------------------------------------------------------------------" << std::endl;
+     */
 }
 
 void output_particles(TreeNode *t) {
@@ -333,6 +442,19 @@ void output_particles(TreeNode *t) {
             std::cout << "\tx = (" << t->p.x[0] << ", " << t->p.x[1] << ", " << t->p.x[2] << ")" << std::endl;
         }
     }
+}
+
+NodeList* build_tree_list(TreeNode *t, NodeList *nLst) {
+    if (t != NULL) {
+        for (int i = 0; i < POWDIM; i++) {
+            nLst = build_tree_list(t->son[i], nLst);
+        }
+        nLst->p = t->p;
+        nLst->node = t->node;
+        nLst->next = new NodeList;
+        return nLst->next;
+    }
+    return nLst;
 }
 
 ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst){
@@ -348,6 +470,32 @@ ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst){
         }
     }
     return pLst;
+}
+
+int get_tree_node_number(TreeNode *root) {
+    auto nLst = new NodeList;
+    build_tree_list(root, nLst);
+    NodeList * current;
+    current = nLst;
+    int nIndex = 0;
+    while(current->next) {
+        nIndex++;
+        current = current->next;
+    }
+    return nIndex;
+}
+
+int get_tree_array(TreeNode *root, Particle *p, nodetype *n) {
+    auto nLst = new NodeList;
+    build_tree_list(root, nLst);
+    int nIndex { 0 };
+    while(nLst->next){
+        p[nIndex] = nLst->p;
+        n[nIndex] = nLst->node;
+        nLst = nLst->next;
+        ++nIndex;
+    }
+    return nIndex;
 }
 
 void get_particle_array(TreeNode *root, Particle *p){
@@ -373,44 +521,164 @@ void freeTree_BH(TreeNode *root) {
     }
 }
 
+/*
+
+void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
+    //allocate memory for s->numprocs particle lists in plist;
+    //initialize ParticleList plist[to] for all processes to;
+    buildSendlist(root, s, plist);
+    repairTree(root); // here, domainList nodes may not be deleted
+    for (int i=1; i<s->numprocs; i++) {
+        int to = (s->myrank+i)%s->numprocs;
+        int from = (s->myrank+s->numprocs-i)%s->numprocs;
+        //send particle data from plist[to] to process to;
+        //receive particle data from process from;
+        //insert all received particles p into the tree using insertTree(&p, root);
+    }
+    delete plist;
+}
+
+void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist) {
+    called recursively as in Algorithm 8.1;
+    // start of the operation on *t
+    int proc;
+    if ((*t is a leaf node) && ((proc = key2proc(key(*t), s)) != s->myrank)) {
+        // the key of *t can be computed step by step in the recursion
+        insert t->p into list plist[proc];
+        mark t->p as to be deleted;
+    }
+    // end of the operation on *t }
+}
+
+ */
+
+int getParticleListLength(ParticleList *plist) {
+    ParticleList * current = plist;
+    int count = 0;
+    while (current) {
+        count++;
+        current = current->next;
+    }
+    return count;
+}
+
 //TODO: implement sendParticles (Sending Particles to Their Owners and Inserting Them in the Local Tree)
 // determine right amount of memory which has to be allocated for the `buffer`,
 // by e.g. communicating the length of the message as prior message or by using other MPI commands
 void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     //allocate memory for s->numprocs particle lists in plist;
     //initialize ParticleList plist[to] for all processes to;
-    //TODO: buildSendlist(root, s, plist);
-    repairTree(root); // here, domainList nodes may not be deleted
-    for (int i=1; i<s->numprocs; i++) {
+    ParticleList * plist;
+    plist = new ParticleList[s->numprocs];
+
+    buildSendlist(root, s, plist); //TODO: something to be changed?
+    repairTree(root); // here, domainList nodes may not be deleted //TODO: something to be changed?
+
+    Particle ** pArray = new Particle*[s->numprocs];
+
+    int *plistLengthSend;
+    plistLengthSend = new int[s->numprocs];
+    plistLengthSend[s->myrank] = -1;
+
+    int *plistLengthReceive;
+    plistLengthReceive = new int[s->numprocs];
+    plistLengthReceive[s->myrank] = -1; // nothing to receive from yourself
+
+    for (int proc=0; proc < s->numprocs; proc++) {
+        if (proc != s->myrank) {
+            plistLengthSend[proc] = getParticleListLength(&plist[proc]);
+            //if (s->myrank == outputRank) {
+            //    std::cout << "plistLengthSend[" << proc << "] = " << plistLengthSend[proc] << std::endl;
+            //}
+            pArray[proc] = new Particle[plistLengthSend[proc]];
+            ParticleList * current = &plist[proc];
+            for (int i = 0; i < plistLengthSend[proc]; i++) {
+                pArray[proc][i] = current->p;
+                current = current->next;
+            }
+        }
+    }
+
+    int reqCounter = 0;
+    MPI_Request req[s->numprocs-1];
+    MPI_Status stat[s->numprocs-1];
+
+    //send plistLengthSend and receive plistLengthReceive
+    for (int proc=0; proc < s->numprocs; proc++) {
+        if (proc != s->myrank) {
+            MPI_Isend(&plistLengthSend[proc], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &req[reqCounter]);
+            MPI_Recv(&plistLengthReceive[proc], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &stat[reqCounter]);
+            reqCounter++;
+        }
+    }
+    MPI_Waitall(s->numprocs-1, req, stat);
+
+    //sum over to get total amount of particles to receive
+    int receiveLength = 0;
+    for (int proc=0; proc < s->numprocs; proc++) {
+        if (proc != s->myrank) {
+            receiveLength += plistLengthReceive[proc];
+        }
+    }
+
+    //if (s.myrank == outputRank) {
+    //    std::cout << "receiveLength = " << receiveLength << std::endl;
+    //}
+
+    // allocate missing (sub)array for process rank
+    pArray[s->myrank] = new Particle[receiveLength];
+
+    //send and receive particles
+    reqCounter = 0;
+    int receiveOffset = 0;
+    for (int proc=0; proc < s->numprocs; proc++) {
+        if (proc != s->myrank) {
+            MPI_Isend(pArray[proc], plistLengthSend[proc], mpiParticle, proc, 17, MPI_COMM_WORLD, &req[reqCounter]);
+            MPI_Recv(pArray[s->myrank]+receiveOffset, plistLengthReceive[proc], mpiParticle, proc, 17, MPI_COMM_WORLD,
+                     &stat[reqCounter]);
+            receiveOffset += plistLengthReceive[proc];
+            reqCounter++;
+        }
+    }
+    MPI_Waitall(s->numprocs-1, req, stat);
+
+    /*for (int i=1; i<s->numprocs; i++) {
         int to = (s->myrank+i)%s->numprocs;
         int from = (s->myrank+s->numprocs-i)%s->numprocs;
         //send particle data from plist[to] to process to;
-        // receive particle data from process from;
+        //receive particle data from process from;
         //insert all received particles p into the tree using insertTree(&p, root);
+    }*/
+
+    delete [] plist; //delete plist;
+    delete [] plistLengthSend;
+    delete [] plistLengthReceive;
+    for (int proc=0; proc < s->numprocs; proc++) {
+        delete pArray[proc];
     }
-    //TODO: delete plist;
+    delete [] pArray;
 }
 
 //TODO: implement buildSendlist (Sending Particles to Their Owners and Inserting Them in the Local Tree)
 void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist) {
+    /*
     if (t != NULL) {
-        for (int i = 0; i < POWDIM; i++) {
-            //TODO: buildSendlist(t->son[i]);
+        for (int i=0; i<POWDIM; i++) {
+            buildSendlist(t->son[i]);
         }
         // start of the operation on *t
-        if (t != NULL) {
-            for (int i = 0; i < POWDIM; i++) {
-                //TODO: buildSendlist(t->son[i]);
-            }
-            int proc;
-            if ((isLeaf(t)) && ((proc = key2proc(key(*t), s)) != s->myrank)) {
-                // the key of *t can be computed step by step in the recursion
-                //insert t->p into list plist[proc];
-                //mark t->p as to be deleted;
-            }
+        int proc;
+        if ((isLeaf(t)) && ((proc = key2proc(key(*t), s)) != s->myrank)) {
+            // the key of *t can be computed step by step in the recursion //TODO: compute key of *t
+            //insert t->p into list plist[proc];
+            plist[proc]->p = p;
+            plist[proc]->next = new ParticleList; //TODO: similar problem as with get_particle_array() ?!
+            //mark t->p as to be deleted;
+            t->p.todelete = true;
         }
+        // end of the operation on *t }
     }
-    // end of the operation on *t
+*/
 }
 
 //TODO: implement compPseudoParticlespar (Parallel Computation of the Values of the Pseudoparticles)

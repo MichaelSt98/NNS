@@ -5,6 +5,6 @@ timeStep .2
 timeEnd 100.
 initMass 1200000.
 initVel .1
-dummyDomains 5
+dummyDomains 2
 
 #include "rendering.info"

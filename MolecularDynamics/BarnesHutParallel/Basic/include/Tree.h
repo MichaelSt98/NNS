@@ -18,6 +18,8 @@
 
 #define KEY_MAX ULONG_MAX
 
+extern MPI_Datatype mpiParticle;
+
 /** three types of tree nodes:
  * * **particle:** leaf nodes, which are nodes without sons in which particle data is stored
  * * **pseudoParticle:** inner tree nodes that don not belong to the common coarse tree (in which pseudoparticles are stored)
@@ -25,13 +27,18 @@
  */
 typedef enum { particle, pseudoParticle, domainList } nodetype;
 
+typedef struct NodeList {
+    nodetype node;
+    Particle p;
+    struct NodeList *next;
+} NodeList;
+
 typedef struct TreeNode {
     Particle p;
     Box box;
     struct TreeNode *son[POWDIM];
     nodetype node;
 } TreeNode;
-
 
 typedef unsigned long keytype;
 
@@ -50,6 +57,7 @@ void getParticleKeysSimple(TreeNode *t, keytype *p, int &pCounter, keytype k=1UL
 void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k=0UL, int level=0);
 
 void createRanges(TreeNode *root, int N, SubDomainKeyTree *s, int K);
+void createRanges(TreeNode *root, int N, SubDomainKeyTree *s);
 
 int key2proc(keytype k, SubDomainKeyTree *s);
 
@@ -79,9 +87,17 @@ void moveLeaf(TreeNode *t, TreeNode *root);
 
 void repairTree(TreeNode *t);
 
+void output_tree(TreeNode *root);
+
 void output_particles(TreeNode *root);
 
+NodeList* build_tree_list(TreeNode *t, NodeList *nLst);
+
 ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst);
+
+int get_tree_node_number(TreeNode *root);
+
+int get_tree_array(TreeNode *root, Particle *p, nodetype *n);
 
 void get_particle_array(TreeNode *root, Particle *p);
 
