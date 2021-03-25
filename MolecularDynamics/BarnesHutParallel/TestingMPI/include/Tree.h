@@ -39,6 +39,7 @@ void get_particle_array(TreeNode *root, Particle *p);
 
 
 //new
+int getParticleListLength(ParticleList *plist);
 void sendParticles(TreeNode *root, SubDomainKeyTree *s);
 
 //new

@@ -44,6 +44,16 @@ void get_particle_array(TreeNode *root, Particle *p){
      */
 }
 
+int getParticleListLength(ParticleList *plist) {
+    ParticleList * current = plist;
+    int count = 0;
+    while (current) {
+        count++;
+        current = current->next;
+    }
+    return count;
+}
+
 
 //TODO: implement sendParticles (Sending Particles to Their Owners and Inserting Them in the Local Tree)
 // determine right amount of memory which has to be allocated for the `buffer`,

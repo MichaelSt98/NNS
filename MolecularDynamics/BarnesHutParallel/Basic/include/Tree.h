@@ -79,10 +79,11 @@ void get_particle_array(TreeNode *root, Particle *p);
 void freeTree_BH(TreeNode *root);
 
 //new
+int getParticleListLength(ParticleList *plist);
 void sendParticles(TreeNode *root, SubDomainKeyTree *s);
 
 //new
-void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist, int *plistLength);
+void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist);
 
 //new
 void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s);

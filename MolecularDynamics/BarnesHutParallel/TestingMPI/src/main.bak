@@ -170,13 +170,12 @@ int main(int argc, char *argv[]) {
         if (proc != s.myrank) {
             MPI_Isend(pArray[s.myrank], messageLength[s.myrank], mpiParticle, proc, 17, MPI_COMM_WORLD, &req[counter]);
             MPI_Recv(pArray[proc], messageLength[proc], mpiParticle, proc, 17, MPI_COMM_WORLD, &stat[counter]);
+            counter++;
         }
     }
 
     //MPI_Wait(&req, &stat);
     MPI_Waitall(s.numprocs-1, req, stat);
-    //MPI_Request_free(&req);
-
 
     /** -------------------------------------- */
     if (s.myrank == outputRank) {

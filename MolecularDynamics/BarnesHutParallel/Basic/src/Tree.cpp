@@ -303,6 +303,47 @@ void freeTree_BH(TreeNode *root) {
     }
 }
 
+/*
+
+void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
+    //allocate memory for s->numprocs particle lists in plist;
+    //initialize ParticleList plist[to] for all processes to;
+    buildSendlist(root, s, plist);
+    repairTree(root); // here, domainList nodes may not be deleted
+    for (int i=1; i<s->numprocs; i++) {
+        int to = (s->myrank+i)%s->numprocs;
+        int from = (s->myrank+s->numprocs-i)%s->numprocs;
+        //send particle data from plist[to] to process to;
+        //receive particle data from process from;
+        //insert all received particles p into the tree using insertTree(&p, root);
+    }
+    delete plist;
+}
+
+void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist) {
+    called recursively as in Algorithm 8.1;
+    // start of the operation on *t
+    int proc;
+    if ((*t is a leaf node) && ((proc = key2proc(key(*t), s)) != s->myrank)) {
+        // the key of *t can be computed step by step in the recursion
+        insert t->p into list plist[proc];
+        mark t->p as to be deleted;
+    }
+    // end of the operation on *t }
+}
+
+ */
+
+int getParticleListLength(ParticleList *plist) {
+    ParticleList * current = plist;
+    int count = 0;
+    while (current) {
+        count++;
+        current = current->next;
+    }
+    return count;
+}
+
 //TODO: implement sendParticles (Sending Particles to Their Owners and Inserting Them in the Local Tree)
 // determine right amount of memory which has to be allocated for the `buffer`,
 // by e.g. communicating the length of the message as prior message or by using other MPI commands
@@ -311,64 +352,119 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     //initialize ParticleList plist[to] for all processes to;
     ParticleList * plist;
     plist = new ParticleList[s->numprocs];
+    Particle ** pArray = new Particle*[s->numprocs];
+
     int plistLengthSend;
     plistLengthSend = new int[s->numprocs];
+    plistLengthSend[s->myrank] = -1; // nothing to send to yourself
+
     int plistLengthReceive;
     plistLengthReceive = new int[s->numprocs];
-    buildSendlist(root, s, plist, plistLength);
+    plistLengthReceive[s->myrank] = -1; // nothing to receive from yourself
+
+    buildSendlist(root, s, plist);
+
     repairTree(root); // here, domainList nodes may not be deleted
-    //convert list to array for better sending
-    //TODO send and receive plistLengthReceive
-    // receive and sum over to get real length
-    int *pArrays;
-    pArrays = new int*[s->numprocs];
-    for (int i=1; i<s->numprocs; i++) {
-        pArrays[i] = new int [plistLengthSend[i]];
-        int counter = 0;
-        while (plist[s->myrank]) {
-            pArrays[i][counter] = plist[s->myrank].p;
+
+    //convert list to array for better sending and for lengths
+    int listLength;
+    for (int proc=0; proc<s->numprocs; proc++) {
+        if (proc != s->myrank) {
+            plistLengthSend[proc] = getParticleListLength(plist[proc]);
+            pArray[proc] = new Particle[listLength];
+            for (int i = 0; i < plistLengthSend[proc]; i++) {
+                pArray[proc][i] = plist->p;
+                plist = plist->next;
+            }
         }
     }
-    for (int i=1; i<s->numprocs; i++) {
-        if (i != s->myrank) { //needed?
-            int to = (s->myrank + i) % s->numprocs;
-            int from = (s->myrank + s->numprocs - i) % s->numprocs;
-            //send particle data from plist[to] to process to;
-            MPI_Send(plist[i]);
-            //receive particle data from process from;
-        }
-        //insert all received particles p into the tree using insertTree(&p, root);
-        for (int i=0; i<0 /*TODO length*/; i++) {
-            insertTree(pArrays[s->myrank][i], root);
+
+    int reqCounter = 0;
+    MPI_Request req[s.numprocs-1];
+    MPI_Status stat[s.numprocs-1];
+
+    //send plistLengthSend and receive plistLengthReceive
+    for (int proc=0; proc<s->numprocs, proc++) {
+        if (proc != s->myrank) {
+            MPI_Isend(plistLengthSend[proc], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &req[reqCounter]);
+            MPI_Recv(plistLengthReceive[proc], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &stat[reqCounter]);
+            reqCounter++;
         }
     }
-    delete plist;
+    MPI_Waitall(s.numprocs-1, req, stat);
+
+    //sum over to get total amount of particles to receive
+    int receiveLength = 0;
+    for (int proc=0; proc<s->numprocs, proc++) {
+        if (proc != s->myrank) {
+            receiveLength += plistLengthReceive[proc];
+        }
+    }
+
+    // allocate missing (sub)array for process rank
+    pArray[s->myrank] = new Particle[receiveLength];
+
+    //send and receive particles
+    counter = 0;
+    int receiveOffset = 0;
+    for (int proc=0; proc<s->numprocs, proc++) {
+        if (proc != s->myrank) {
+            MPI_Isend(pArray[proc], plistLengthSend[proc], mpiParticle, proc, 17, MPI_COMM_WORLD, &req[counter]);
+            MPI_Recv(pArray[s->myrank]+receiveOffset, plistLengthReceive[proc], mpiParticle, proc, 17, MPI_COMM_WORLD, &stat[counter]);
+            receiveOffset += plistLengthReceive[proc];
+            counter++;
+        }
+    }
+    MPI_Waitall(s.numprocs-1, req, stat);
+
+    for (int i=0; i<receiveLength; i++) {
+        insertTree(pArray[s->myrank][i], root);
+    }
+
+
+    //    for (int i=1; i<s->numprocs; i++) { //TODO: i=1 ? -> i=0 ??
+    //        if (i != s->myrank) { //needed?
+    //            int to = (s->myrank + i) % s->numprocs;
+    //            int from = (s->myrank + s->numprocs - i) % s->numprocs;
+    //            //send particle data from plist[to] to process to;
+    //            MPI_Send(plist[i]);
+    //            //receive particle data from process from;
+    //        }
+    //        //insert all received particles p into the tree using insertTree(&p, root);
+    //        for (int i=0; i<0 /*TODO length*/; i++) {
+    //            insertTree(pArrays[s->myrank][i], root);
+    //        }
+    //    }
+
+
+    delete plist; //TODO delete [] plist;
+    for (int i = 0; i < s->numprocs; i++) {
+        delete [] pArray[i];
+    }
+    delete [] pArray;
+    delete [] plistLengthSend;
+    delete [] plistLengthReceive;
 }
 
 //TODO: implement buildSendlist (Sending Particles to Their Owners and Inserting Them in the Local Tree)
-void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist, int *plistLength) {
+void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist) {
     if (t != NULL) {
-        for (int i = 0; i < POWDIM; i++) {
+        for (int i=0; i<POWDIM; i++) {
             buildSendlist(t->son[i]);
         }
         // start of the operation on *t
-        if (t != NULL) {
-            for (int i = 0; i < POWDIM; i++) {
-                buildSendlist(t->son[i]);
-            }
-            int proc;
-            if ((isLeaf(t)) && ((proc = key2proc(key(*t), s)) != s->myrank)) {
-                //the key of *t can be computed step by step in the recursion //TODO: compute key of *t
-                //insert t->p into list plist[proc];
-                plist[proc]->p = p;
-                plist[proc]->next = new ParticleList; //TODO: similar problem as with get_particle_array() ?!
-                plistLength[proc]++;
-                //mark t->p as to be deleted;
-                t->p.todelete = true;
-            }
+        int proc;
+        if ((isLeaf(t)) && ((proc = key2proc(key(*t), s)) != s->myrank)) {
+            // the key of *t can be computed step by step in the recursion //TODO: compute key of *t
+            //insert t->p into list plist[proc];
+            plist[proc]->p = p;
+            plist[proc]->next = new ParticleList; //TODO: similar problem as with get_particle_array() ?!
+            //mark t->p as to be deleted;
+            t->p.todelete = true;
         }
+    // end of the operation on *t }
     }
-    // end of the operation on *t
+
 }
 
 //TODO: implement compPseudoParticlespar (Parallel Computation of the Values of the Pseudoparticles)
