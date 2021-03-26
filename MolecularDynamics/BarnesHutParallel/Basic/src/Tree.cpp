@@ -128,7 +128,7 @@ void createRanges(TreeNode *root, int N, SubDomainKeyTree *s) {
         s->range[i] = pKeys[i*ppr];
         Logger(DEBUG) << "Computed range[" << i << "] = " << std::bitset<64>(s->range[i]);
     }
-    s->range[s->numprocs+1] = KEY_MAX;
+    s->range[s->numprocs] = KEY_MAX;
 }
 
 int key2proc(keytype k, SubDomainKeyTree *s) {
@@ -369,7 +369,7 @@ void repairTree(TreeNode *t) {
     }
 }*/
 
-void output_tree(TreeNode *t) {
+void output_tree(TreeNode *t, bool detailed) {
 
     int counterParticle = 0;
     int counterPseudoParticle = 0;
@@ -394,8 +394,11 @@ void output_tree(TreeNode *t) {
         else {
             counterDomainList++;
         }
-        std::cout << "\tnodetype: " << get_node_type(nArray[i]) << "  x = (" << pArray[i].x[0] << ", " << pArray[i].x[1] << ", "
-                  << pArray[i].x[2] << ")" << std::endl;
+        if (detailed) {
+            std::cout << "\tnodetype: " << get_node_type(nArray[i]) << "  x = (" << pArray[i].x[0] << ", "
+                      << pArray[i].x[1] << ", "
+                      << pArray[i].x[2] << ")" << std::endl;
+        }
     }
 
     std::cout << "-------------------------------------------------------------------------" << std::endl;
@@ -404,32 +407,6 @@ void output_tree(TreeNode *t) {
     std::cout << "amount of pseudoParticles:  " << counterPseudoParticle << std::endl;
     std::cout << "amount of domainList nodes: " << counterDomainList << std::endl;
     std::cout << "-------------------------------------------------------------------------" << std::endl;
-
-
-
-    /*std::cout << "-------------------------------------------------------------------------" << std::endl;
-    std::cout << "TREE REPRESENTATION" << std::endl;
-    if (t != NULL) {
-        if (t->node == 1) {
-            counterParticle++;
-        }
-        else if (t->node == 2) {
-            counterPseudoParticle++;
-        }
-        else {
-            counterDomainList++;
-        }
-        std::cout << "\tnodetype: " << get_node_type(t->node) << "  x = (" << t->p.x[0] << ", " << t->p.x[1] << ", " << t->p.x[2] << ")" << std::endl;
-        for (int i = 0; i<POWDIM; i++) {
-            output_tree(t->son[i]);
-        }
-    }
-    std::cout << "-------------------------------------------------------------------------" << std::endl;
-    std::cout << "amount of particles:        " << counterParticle << std::endl;
-    std::cout << "amount of pseudoParticles:  " << counterPseudoParticle << std::endl;
-    std::cout << "amount of domainList nodes: " << counterDomainList << std::endl;
-    std::cout << "-------------------------------------------------------------------------" << std::endl;
-     */
 }
 
 void output_particles(TreeNode *t) {

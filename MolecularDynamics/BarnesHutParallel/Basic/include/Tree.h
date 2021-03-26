@@ -87,7 +87,7 @@ void moveLeaf(TreeNode *t, TreeNode *root);
 
 void repairTree(TreeNode *t);
 
-void output_tree(TreeNode *root);
+void output_tree(TreeNode *root, bool detailed=false);
 
 void output_particles(TreeNode *root);
 

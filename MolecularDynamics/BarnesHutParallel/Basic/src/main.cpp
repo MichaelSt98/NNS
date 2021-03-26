@@ -17,7 +17,7 @@ structlog LOGCFG = {};
 MPI_Datatype mpiParticle;
 
 // MPI output process rank number
-int outputRank = 1;
+int outputRank = 0;
 
 // function declarations
 void initData_BH(TreeNode **root, Box *domain, SubDomainKeyTree  *s, int N, ConfigParser &confP);
@@ -246,23 +246,61 @@ int main(int argc, char *argv[]) {
         }
 
 
-        TreeNode *root;
-        root = (TreeNode *) calloc(1, sizeof(TreeNode));
+        TreeNode *rootAll;
+        rootAll = (TreeNode *) calloc(1, sizeof(TreeNode));
 
-        root->p = pArrayAll[0]; //(first particle with number i=1); //1
-        root->box = domain;
+        rootAll->p = pArrayAll[0]; //(first particle with number i=1); //1
+        rootAll->box = domain;
 
         for (int i = 1; i < N; i++) {
-            insertTree(&pArrayAll[i], root);
+            insertTree(&pArrayAll[i], rootAll);
         }
 
         //createRanges(root, N, &s, confP.getVal<int>("dummyDomains"));
-        createRanges(root, N, &s);
-        createDomainList(root, 0, 0, &s);
-        compPseudoParticles(root);
+        createRanges(rootAll, N, &s);
+        createDomainList(rootAll, 0, 0, &s);
+        compPseudoParticles(rootAll);
 
-        output_tree(root);
+        output_tree(rootAll, false);
     }
+
+    //send ranges to all processes
+    //MPI_UNSIGNED_LONG
+    //keytype *range[s.numprocs+1];
+
+    //if (s.myrank == 0) {
+    //    range = s.range;
+    //}
+
+    if (s.myrank != 0) {
+        s.range = new keytype[s.numprocs+1];
+    }
+
+    MPI_Bcast(s.range, s.numprocs+1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+
+    //if (s.myrank == 1) {
+    //    for (int i=0; i<s.numprocs+1; i++) {
+    //        Logger(INFO) << std::bitset<64>(s.range[i]);
+    //    }
+    //}
+
+    TreeNode *root;
+    root = (TreeNode *) calloc(1, sizeof(TreeNode));
+
+    root->p = pArray[0]; //(first particle with number i=1); //1
+    root->box = domain;
+
+    for (int i = 1; i < ppp; i++) {
+        insertTree(&pArray[i], root);
+    }
+
+    //createRanges(root, N, &s, confP.getVal<int>("dummyDomains"));
+    //createRanges(rootAll, N, &s);
+    createDomainList(root, 0, 0, &s);
+    compPseudoParticles(root);
+
+    output_tree(root, false);
+
 
     /*if (s.myrank == outputRank) {
         ConfigParser confP{ConfigParser("config.info")};
