@@ -211,6 +211,8 @@ int main(int argc, char *argv[]) {
     int width = confP.getVal<int>("width");
     int height = confP.getVal<int>("height");
 
+    Particle rootParticle {};
+
     const float systemSize{confP.getVal<float>("systemSize")};
     Box domain;
     for (int i = 0; i < DIM; i++) {
@@ -218,7 +220,7 @@ int main(int argc, char *argv[]) {
         domain.upper[i] = systemSize;
     }
 
-    int N = 100;
+    int N = 1000;
 
     Particle *pArrayAll;
     if (s.myrank == 0) {
@@ -249,10 +251,11 @@ int main(int argc, char *argv[]) {
         TreeNode *rootAll;
         rootAll = (TreeNode *) calloc(1, sizeof(TreeNode));
 
-        rootAll->p = pArrayAll[0]; //(first particle with number i=1); //1
+        //rootAll->p = pArrayAll[0]; //(first particle with number i=1); //1
         rootAll->box = domain;
+        rootAll->p = rootParticle;
 
-        for (int i = 1; i < N; i++) {
+        for (int i = 0; i < N; i++) {
             insertTree(&pArrayAll[i], rootAll);
         }
 
@@ -287,10 +290,11 @@ int main(int argc, char *argv[]) {
     TreeNode *root;
     root = (TreeNode *) calloc(1, sizeof(TreeNode));
 
-    root->p = pArray[0]; //(first particle with number i=1); //1
+    //root->p = pArray[0]; //(first particle with number i=1); //1
     root->box = domain;
+    root->p = rootParticle;
 
-    for (int i = 1; i < ppp; i++) {
+    for (int i = 0; i < ppp; i++) {
         insertTree(&pArray[i], root);
     }
 
@@ -300,6 +304,8 @@ int main(int argc, char *argv[]) {
     compPseudoParticles(root);
 
     output_tree(root, false);
+
+    sendParticles(root, &s);
 
 
     /*if (s.myrank == outputRank) {

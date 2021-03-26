@@ -39,9 +39,20 @@ const char* get_node_type(int nodetype)
 // --> less data needs to be exchanged
 // [range_i, range_i+1) defines a minimal upper part of the tree, that has to be present in all processes as a copy to ensure the consistency of the global tree
 
-keytype key(TreeNode t){
-    //TODO: implement
-    return 0;
+// t for tree traversal, keynode for comparison if we are at the right key
+keytype key(TreeNode *t, TreeNode *keynode, keytype k, int level) {
+    if (t != NULL) {
+        for (int i = 0; i < POWDIM; i++){
+            if (isLeaf(t->son[i])){
+                if (&(t->son[i]) == &keynode) return k + (i << DIM*(maxlevel-level-1));
+            } else {
+                keytype keyCandidate = key(t->son[i], keynode,
+                                           k + (i << DIM*(maxlevel-level-1)), level+1);
+                if (keyCandidate != KEY_MAX) return keyCandidate;
+            }
+        }
+    }
+    return KEY_MAX;
 }
 
 /** First step in the path key creation done explicitly [p. 343f]
@@ -254,7 +265,7 @@ void compF_BH(TreeNode *t, TreeNode *root, float diam, SubDomainKeyTree *s) {
             compF_BH(t->son[i], root, diam, s);
         }
         // start of the operation on *t
-        if (isLeaf(t) && (key2proc(key(*t), s) == s->myrank)) {
+        if (isLeaf(t) && (key2proc(key(root, t), s) == s->myrank)) {
             for (int d = 0; d < DIM; d++) {
                 t->p.F[d] = 0;
             }
@@ -548,7 +559,7 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     ParticleList * plist;
     plist = new ParticleList[s->numprocs];
 
-    buildSendlist(root, s, plist); //TODO: something to be changed?
+    buildSendlist(root, root, s, plist); //TODO: something to be changed?
     repairTree(root); // here, domainList nodes may not be deleted //TODO: something to be changed?
 
     Particle ** pArray = new Particle*[s->numprocs];
@@ -627,6 +638,11 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
         //insert all received particles p into the tree using insertTree(&p, root);
     }*/
 
+    Logger(ERROR) << "particles to be send = " << receiveLength-1;
+    for (int i=0; i<receiveLength-1; i++) {
+        insertTree(&pArray[s->myrank][i], root);
+    }
+
     delete [] plist; //delete plist;
     delete [] plistLengthSend;
     delete [] plistLengthReceive;
@@ -637,25 +653,23 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
 }
 
 //TODO: implement buildSendlist (Sending Particles to Their Owners and Inserting Them in the Local Tree)
-void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist) {
-    /*
+void buildSendlist(TreeNode *root, TreeNode *t, SubDomainKeyTree *s, ParticleList *plist) {
     if (t != NULL) {
         for (int i=0; i<POWDIM; i++) {
-            buildSendlist(t->son[i]);
+            buildSendlist(root, t->son[i], s, plist);
         }
         // start of the operation on *t
         int proc;
-        if ((isLeaf(t)) && ((proc = key2proc(key(*t), s)) != s->myrank)) {
+        if ((isLeaf(t)) && ((proc = key2proc(key(root, t), s)) != s->myrank)) {
             // the key of *t can be computed step by step in the recursion //TODO: compute key of *t
             //insert t->p into list plist[proc];
-            plist[proc]->p = p;
-            plist[proc]->next = new ParticleList; //TODO: similar problem as with get_particle_array() ?!
+            plist[proc].p = t->p;
+            plist[proc].next = new ParticleList; //TODO: similar problem as with get_particle_array() ?!
             //mark t->p as to be deleted;
             t->p.todelete = true;
         }
         // end of the operation on *t }
     }
-*/
 }
 
 //TODO: implement compPseudoParticlespar (Parallel Computation of the Values of the Pseudoparticles)
@@ -720,7 +734,7 @@ void compDomainListPseudoParticlespar(TreeNode *t) {
 
 //TODO: implement symbolicForce (Determining Subtrees that are Needed in the Parallel Force Computation)
 void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, SubDomainKeyTree *s) {
-    if ((t != NULL) && (key2proc(key(*t), s) == s->myrank)) {
+    if ((t != NULL) && (key2proc(key(td, t), s) == s->myrank)) {
         // the key of *t can be computed step by step in the recursion insert t->p into list plist;
         float r = 0; //IMPLEMENT: smallest distance from t->p.x to cell td->box;
         if (diam >= theta * r) {
@@ -765,7 +779,7 @@ void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *p
             compTheta(t->son[i], root, s, plist, diam);
         // start of the operation on *t
         int proc;
-        if ((true/* TODO: *t is a domainList node*/) && ((proc = key2proc(key(*t), s)) != s->myrank)) {
+        if ((true/* TODO: *t is a domainList node*/) && ((proc = key2proc(key(root, t), s)) != s->myrank)) {
             // the key of *t can be computed step by step in the recursion
             symbolicForce(t, root, diam, &plist[proc], s);
         }

@@ -50,7 +50,8 @@ typedef struct {
     keytype *range;
 } SubDomainKeyTree;
 
-keytype key(TreeNode t);
+//keytype key(TreeNode t);
+keytype key(TreeNode *t, TreeNode *keynode, keytype k=0UL, int level=0);
 
 void getParticleKeysSimple(TreeNode *t, keytype *p, int &pCounter, keytype k=1UL, int level=0);
 
@@ -105,7 +106,8 @@ void freeTree_BH(TreeNode *root);
 
 void sendParticles(TreeNode *root, SubDomainKeyTree *s);
 
-void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist);
+void buildSendlist(TreeNode *root, TreeNode *t, SubDomainKeyTree *s, ParticleList *plist);
+//void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist);
 
 void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s);
 
