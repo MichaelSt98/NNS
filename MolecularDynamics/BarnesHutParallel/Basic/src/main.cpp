@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
     int width = confP.getVal<int>("width");
     int height = confP.getVal<int>("height");
 
-    Particle rootParticle {};
+    //Particle rootParticle {};
 
     const float systemSize{confP.getVal<float>("systemSize")};
     Box domain;
@@ -220,7 +220,7 @@ int main(int argc, char *argv[]) {
         domain.upper[i] = systemSize;
     }
 
-    int N = 1000;
+    int N = confP.getVal<int>("numParticles"); //100;
 
     Particle *pArrayAll;
     if (s.myrank == 0) {
@@ -233,38 +233,38 @@ int main(int argc, char *argv[]) {
 
     initParticles(&s, &domain, pArray, ppp, confP);
 
-    if (s.myrank == outputRank) {
-        for (int i=0; i<ppp; i++) {
-            Logger(INFO) << "pArray[" << i << "].x = (" << pArray[i].x[0] << ", " << pArray[i].x[1] << ", " << pArray[i].x[2] << ")";
-        }
-    }
+    //if (s.myrank == outputRank) {
+    //    for (int i=0; i<ppp; i++) {
+    //        Logger(INFO) << "pArray[" << i << "].x = (" << pArray[i].x[0] << ", " << pArray[i].x[1] << ", " << pArray[i].x[2] << ")";
+    //    }
+    //}
 
     MPI_Gather(pArray, ppp, mpiParticle, &pArrayAll[0], ppp, mpiParticle, 0, MPI_COMM_WORLD);
 
     if (s.myrank == 0) {
         for (int i = 0; i < N; i++) {
-            Logger(INFO) << "pArrayAll[" << i << "].x = (" << pArrayAll[i].x[0] << ", " << pArrayAll[i].x[1] << ", "
-                         << pArrayAll[i].x[2] << ")";
+            //Logger(INFO) << "pArrayAll[" << i << "].x = (" << pArrayAll[i].x[0] << ", " << pArrayAll[i].x[1] << ", "
+              //           << pArrayAll[i].x[2] << ")";
         }
 
 
         TreeNode *rootAll;
         rootAll = (TreeNode *) calloc(1, sizeof(TreeNode));
 
-        //rootAll->p = pArrayAll[0]; //(first particle with number i=1); //1
+        rootAll->p = pArrayAll[0]; //(first particle with number i=1); //1
         rootAll->box = domain;
-        rootAll->p = rootParticle;
+        //rootAll->p = rootParticle;
 
-        for (int i = 0; i < N; i++) {
+        for (int i = 1; i < N; i++) {
             insertTree(&pArrayAll[i], rootAll);
         }
 
         //createRanges(root, N, &s, confP.getVal<int>("dummyDomains"));
         createRanges(rootAll, N, &s);
-        createDomainList(rootAll, 0, 0, &s);
-        compPseudoParticles(rootAll);
+        //createDomainList(rootAll, 0, 0, &s);
+        //compPseudoParticles(rootAll);
 
-        output_tree(rootAll, false);
+        //output_tree(rootAll, false);
     }
 
     //send ranges to all processes
@@ -290,20 +290,29 @@ int main(int argc, char *argv[]) {
     TreeNode *root;
     root = (TreeNode *) calloc(1, sizeof(TreeNode));
 
+    createDomainList(root, 0, 0, &s);
+
     //root->p = pArray[0]; //(first particle with number i=1); //1
     root->box = domain;
-    root->p = rootParticle;
+    //root->p = rootParticle;
 
     for (int i = 0; i < ppp; i++) {
+        //Logger(INFO) << "Insert particle: " << i;
         insertTree(&pArray[i], root);
     }
 
     //createRanges(root, N, &s, confP.getVal<int>("dummyDomains"));
     //createRanges(rootAll, N, &s);
-    createDomainList(root, 0, 0, &s);
-    compPseudoParticles(root);
+    //createDomainList(root, 0, 0, &s);
+    //compPseudoParticles(root);
 
-    output_tree(root, false);
+    //compPseudoParticlespar(root, &s);
+
+    //if (s.myrank == outputRank) {
+    //    output_tree(root, true);
+    //}
+
+    //output_tree(root, false);
 
     sendParticles(root, &s);
 

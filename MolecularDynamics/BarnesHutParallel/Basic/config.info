@@ -1,5 +1,5 @@
 
-numParticles 10
+numParticles 100
 systemSize 3.
 timeStep .2
 timeEnd 100.
