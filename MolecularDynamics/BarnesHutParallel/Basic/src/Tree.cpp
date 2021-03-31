@@ -389,8 +389,10 @@ void moveLeaf(TreeNode *t, TreeNode *root) {
 
 //parallel change: do not delete if domainList node
 void repairTree(TreeNode *t) {
-    if (t != NULL && t->node != domainList) {
-        if (!isLeaf(t)) {
+    if (t != NULL) {
+        for (int i=0; i<POWDIM; i++)
+            repairTree(t->son[i]); // recursive call according to algorithm 8.1
+        if (!isLeaf(t) && t->node != domainList) {
             int numberofsons = 0;
             int d;
             for (int i = 0; i < POWDIM; i++) {
@@ -406,12 +408,14 @@ void repairTree(TreeNode *t) {
             if (numberofsons == 0) {
                 // *t is an ‘‘empty’’ leaf node and can be deleted
                 t->p.todelete = true;
+                //Logger(DEBUG) << "Empty leaf node";
             } else if (numberofsons == 1) {
                 // *t adopts the role of its only son node and
                 // the son node is deleted directly
                 t->p = t->son[d]->p;
                 //std::cout << "t->son[d]->p.x[0] = " << t->son[d]->p.x[0] << std::endl;
                 free(&t->son[d]->p);
+                //free(t->son[d]);
             }
         }
     }
@@ -656,22 +660,16 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
         pIndex[proc] = 0;
     }
 
-    Logger(INFO) << "Range      " << std::bitset<64>(s->range[1]);
+    Logger(INFO) << "Range    = " << std::bitset<64>(s->range[1]);
     buildSendlist(root, root, s, plist, pIndex, 0UL, 0); //TODO: something to be changed?
 
     for (int proc = 0; proc < s->numprocs; proc++) {
-        int plistcounter = 0;
-        while(plist[proc].next){
-            Logger(INFO) << "plist.p = " << plist->p.x[0] << "   (" << plistcounter << ")";
-            plist[proc] = *plist[proc].next;
-            plistcounter++;
+        ParticleList *current = &plist[proc]; // needed not to 'consume' plist
+        for (int i=0; i<pIndex[proc];i++){
+            Logger(DEBUG) << "x2send = ("
+                                << current->p.x[0] << ", " << current->p.x[1] << ", " << current->p.x[2] << ")";
+            current = current->next;
         }
-
-        /*for (i=0; i<pIndex[proc]; i++) {
-            Logger(INFO) << "plist.p = " << plist->p.x[0] << "   (" << plistcounter << ")";
-            plist = plist.next;
-            plistcounter++;
-        }*/
     }
 
     repairTree(root); // here, domainList nodes may not be deleted //TODO: something to be changed?
@@ -757,10 +755,14 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
         //insert all received particles p into the tree using insertTree(&p, root);
     }*/
 
+    output_tree(root, false);
+
     //Logger(ERROR) << "particles to be send = " << receiveLength;
     for (int i=0; i<receiveLength; i++) {
         insertTree(&pArray[s->myrank][i], root);
     }
+
+    output_tree(root, false);
 
     delete [] plist; //delete plist;
     delete [] plistLengthSend;
@@ -780,7 +782,8 @@ void buildSendlist(TreeNode *root, TreeNode *t, SubDomainKeyTree *s, ParticleLis
         int proc;
         if ((isLeaf(t)) && ((proc = key2proc(k, s)) != s->myrank) && t->node != domainList) {
             current = &plist[proc];
-            Logger(DEBUG) << "key2send = " << std::bitset<64>(k);
+            Logger(DEBUG) << "key2send = " << std::bitset<64>(k)
+                    << "; x = (" << t->p.x[0] << ", " << t->p.x[1] << ", " << t->p.x[2] << ")";
             //Logger(INFO) << "proc = " << proc;
             // the key of *t can be computed step by step in the recursion //TODO: compute key of *t
             //insert t->p into list plist[proc];
@@ -805,8 +808,8 @@ void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s) {
 
     compLocalPseudoParticlespar(root);
 
-    Particle * pArray;
-    int pLength = get_domain_list_array(root, pArray);
+    /*Particle * pArray;
+    int pLength = get_domain_list_array(root, pArray);*/
 
     //Logger(INFO) << "pLength = " << pLength;
     //for (int i=0; i<pLength; i++) {
@@ -814,7 +817,7 @@ void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s) {
     //}
 
     //if (s->myrank == ) {
-        output_tree(root, true);
+    output_tree(root, false);
     //}
 
     //MPI_Allreduce(..., {mass, moments} of the lowest domainList nodes, MPI_SUM, ...);
@@ -828,6 +831,18 @@ void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s) {
     //compDomainListPseudoParticlespar(root);
 }
 
+bool isLowestDomainListNode(TreeNode *t){
+    if (t != NULL){
+        if (t->node == domainList && !isLeaf(t)){
+            for (int i=0; i<POWDIM; i++){
+                if (t->son[i] && t->son[i]->node == domainList) return false;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
 //TODO: implement compLocalPseudoParticlespar (Parallel Computation of the Values of the Pseudoparticles)
 void compLocalPseudoParticlespar(TreeNode *t) {
     //called recursively as in Algorithm 8.1;
@@ -836,9 +851,9 @@ void compLocalPseudoParticlespar(TreeNode *t) {
             compLocalPseudoParticlespar(t->son[i]);
         }
         // start of the operation on *t
-        if ((!isLeaf(t)) && (t->node != domainList)) {
+        if (((!isLeaf(t)) && (t->node != domainList)) || isLowestDomainListNode(t)) {
             // operations analogous to Algorithm 8.5 (see below)
-            t->node = pseudoParticle;
+            if (!isLowestDomainListNode(t)) t->node = pseudoParticle;
             t->p.m = 0;
             for (int d = 0; d < DIM; d++) {
                 t->p.x[d] = 0;
@@ -855,24 +870,6 @@ void compLocalPseudoParticlespar(TreeNode *t) {
                 t->p.x[d] = t->p.x[d] / t->p.m;
             }
         }
-
-        /*if (!(isLeaf(t)) && (t->node == domainList)) {
-            t->p.m = 0;
-            for (int d = 0; d < DIM; d++) {
-                t->p.x[d] = 0;
-            }
-            for (int j = 0; j < POWDIM; j++) {
-                if (t->son[j] != NULL) {
-                    t->p.m += t->son[j]->p.m;
-                    for (int d = 0; d < DIM; d++) {
-                        t->p.x[d] += t->son[j]->p.m * t->son[j]->p.x[d];
-                    }
-                }
-            }
-            for (int d = 0; d < DIM; d++) {
-                t->p.x[d] = t->p.x[d] / t->p.m;
-            }
-        }*/
     }
     // end of the operation on *t
 }

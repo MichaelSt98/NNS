@@ -116,6 +116,8 @@ void get_domain_list_nodes(TreeNode *t, ParticleList *pList, int &pCounter);
 
 int get_domain_moments_array(TreeNode *root, float * moments);
 
+bool isLowestDomainListNode(TreeNode *t);
+
 void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s);
 
 void compLocalPseudoParticlespar(TreeNode *t);

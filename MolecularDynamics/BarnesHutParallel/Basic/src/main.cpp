@@ -251,11 +251,11 @@ int main(int argc, char *argv[]) {
         TreeNode *rootAll;
         rootAll = (TreeNode *) calloc(1, sizeof(TreeNode));
 
-        rootAll->p = pArrayAll[0]; //(first particle with number i=1); //1
+        //rootAll->p = pArrayAll[0]; //(first particle with number i=1); //1
         rootAll->box = domain;
         //rootAll->p = rootParticle;
 
-        for (int i = 1; i < N; i++) {
+        for (int i = 0; i < N; i++) {
             insertTree(&pArrayAll[i], rootAll);
         }
 
@@ -315,6 +315,8 @@ int main(int argc, char *argv[]) {
     //output_tree(root, false);
 
     sendParticles(root, &s);
+
+    //compPseudoParticlespar(root, &s);
 
 
     /*if (s.myrank == outputRank) {
