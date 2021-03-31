@@ -120,8 +120,7 @@ void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k, int leve
             if (isLeaf(t->son[i])){
                 p[pCounter] = (unsigned long)(k + i << DIM*(maxlevel-level-1)); // inserting key
                 //Logger(DEBUG) << "Inserted particle '" << std::bitset<64>(p[pCounter]) << "'@" << pCounter;
-		Logger(ERROR) << "pCounter: " << pCounter;
-	       	pCounter++;	
+	       	    pCounter++;
             } else {
                 getParticleKeys(t->son[i], p, pCounter,
                                 (unsigned long)(k + i << DIM*(maxlevel-level-1)), level+1); // go deeper
@@ -134,7 +133,7 @@ void createRanges(TreeNode *root, int N, SubDomainKeyTree *s) {
 
     s->range = new keytype[s->numprocs+1];
     keytype *pKeys = new keytype[N+1]; //TODO: N+1 instead of N due to valgrind but why???
-    Logger(ERROR) << "N = " << N;
+    //Logger(ERROR) << "N = " << N;
     for (int i=0; i<N; i++) {
         pKeys[i] = 0UL;
     }
@@ -163,7 +162,7 @@ int key2proc(keytype k, SubDomainKeyTree *s) {
             return i;
         }
     }
-    Logger(ERROR) << "key2proc(k= " << k << "): -1!";
+    //Logger(ERROR) << "key2proc(k= " << k << "): -1!";
     return -1; // error
 }
 
@@ -446,7 +445,7 @@ void output_tree(TreeNode *t, bool detailed) {
     int nNodes = get_tree_node_number(t);
     Particle * pArray;
     nodetype * nArray;
-    Logger(ERROR) << "nNodes: " << nNodes;
+    //Logger(ERROR) << "nNodes: " << nNodes;
     pArray = new Particle[nNodes];
     nArray = new nodetype[nNodes];
     get_tree_array(t, pArray, nArray);
@@ -700,7 +699,7 @@ int getParticleListLength(ParticleList *plist) {
 // by e.g. communicating the length of the message as prior message or by using other MPI commands
 void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
 
-    Logger(ERROR) << "At start of sendParticles";
+    //Logger(ERROR) << "At start of sendParticles";
     //output_tree(root, false);
     //allocate memory for s->numprocs particle lists in plist;
     //initialize ParticleList plist[to] for all processes to;
@@ -791,13 +790,13 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     // allocate missing (sub)array for process rank
     pArray[s->myrank] = new Particle[receiveLength];
 
-    for (int proc=0; proc<s->numprocs; proc++) {
-        if (proc != s->myrank) {
-            for (int i = 0; i < plistLengthSend[proc]; i++) {
-                Logger(INFO) << "Sending particle pArray[" << proc << "][" << i << "] : " << pArray[proc][i].x[0];
-            }
-        }
-    }
+    //for (int proc=0; proc<s->numprocs; proc++) {
+    //    if (proc != s->myrank) {
+    //        for (int i = 0; i < plistLengthSend[proc]; i++) {
+    //            Logger(INFO) << "Sending particle pArray[" << proc << "][" << i << "] : " << pArray[proc][i].x[0];
+    //        }
+    //    }
+    //}
 
     MPI_Request reqParticles[s->numprocs-1];
     MPI_Status statParticles[s->numprocs-1];
@@ -824,16 +823,12 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
         //insert all received particles p into the tree using insertTree(&p, root);
     }*/
 
-    Logger(ERROR) << "BEFORE INSERTING RECEIVED PARTICLES";
-    //output_tree(root, false);
-
     //Logger(ERROR) << "particles to be send = " << receiveLength;
     for (int i=0; i<receiveLength; i++) {
-        Logger(INFO) << "Inserting particle pArray[" << i << "] : " << pArray[s->myrank][i].x[0];
+        //Logger(INFO) << "Inserting particle pArray[" << i << "] : " << pArray[s->myrank][i].x[0];
         insertTree(&pArray[s->myrank][i], root);
     }
 
-    Logger(ERROR) << "AFTER INSERTING RECEIVED PARTICLES";
     //output_tree(root, false);
 
     delete [] plist; //deleteParticleList(plist); //delete [] plist; //delete plist;

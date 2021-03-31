@@ -225,15 +225,15 @@ int main(int argc, char *argv[]) {
 
     //output_tree(root, false);
 
-    Logger(ERROR) << "BEFORE SENDING PARTICLES";
-    output_tree(root, true);
+    Logger(DEBUG) << "BEFORE SENDING PARTICLES";
+    output_tree(root, false);
 
     //MPI_Barrier(MPI_COMM_WORLD);
 
     sendParticles(root, &s);
 
-    Logger(ERROR) << "AFTER SENDING PARTICLES";
-    output_tree(root, true);
+    Logger(DEBUG) << "AFTER SENDING PARTICLES";
+    output_tree(root, false);
 
 
     //output_particles(root);
@@ -275,8 +275,6 @@ int main(int argc, char *argv[]) {
     }*/
 
     //freeTree_BH(root);
-
-    Logger(INFO) << "FINISHED WITH EVERYTHING";
 
     MPI_Finalize();
     return 0;
