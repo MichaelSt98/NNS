@@ -12,6 +12,7 @@
     }
 }*/
 
+
 const char* get_node_type(int nodetype)
 {
     //particle, pseudoParticle, domainList
@@ -42,6 +43,18 @@ const char* get_node_type(int nodetype)
 // DUMMY
 keytype key(TreeNode *t){
     return KEY_MAX;
+}
+
+void deleteNodeList(NodeList * nLst) {
+    while (nLst->next)
+    {
+        NodeList* old = nLst;
+        nLst = nLst->next;
+        delete old;
+    }
+    if (nLst) {
+        delete nLst;
+    }
 }
 
 // t for tree traversal, keynode for comparison if we are at the right key
@@ -151,6 +164,7 @@ void createRanges(TreeNode *root, int N, SubDomainKeyTree *s) {
         Logger(DEBUG) << "Computed range[" << i << "] = " << std::bitset<64>(s->range[i]);
     }
     s->range[s->numprocs] = KEY_MAX;
+    delete[] pKeys;
 }
 
 int key2proc(keytype k, SubDomainKeyTree *s) {
@@ -251,7 +265,7 @@ void insertTree(Particle *p, TreeNode *t) {
             //} //end of parallel change
             //else {
 
-            //t->son[b]->box = sonbox; //?
+            t->son[b]->box = sonbox; //?
             insertTree(p, t->son[b]);
 
         }
@@ -471,6 +485,9 @@ void output_tree(TreeNode *t, bool detailed) {
     Logger(INFO) << "amount of pseudoParticles:  " << counterPseudoParticle;
     Logger(INFO) << "amount of domainList nodes: " << counterDomainList;
     Logger(INFO) << "-------------------------------------------------------------------------";
+
+    delete [] nArray;
+    delete [] pArray;
 }
 
 void output_particles(TreeNode *t) {
@@ -540,16 +557,13 @@ int get_tree_node_number(TreeNode *root) {
     //auto nLst = new NodeList;
     NodeList * nLst;
     nLst = new NodeList;
-
-    build_tree_list(root, nLst);
-    NodeList * current;
-    current = nLst;
     int nIndex = 0;
-    while(current->next) {
+    build_tree_list(root, nLst);
+    while (nLst->next) {
         nIndex++;
-        current = current->next;
+        nLst = nLst->next;
     }
-    delete nLst;
+    deleteNodeList(nLst); //delete nLst;
     return nIndex;
 }
 
@@ -557,16 +571,18 @@ int get_tree_array(TreeNode *root, Particle *&p, nodetype *&n) {
     //auto nLst = new NodeList;
     NodeList * nLst;
     nLst = new NodeList;
+    int nIndex = 0;
 
     build_tree_list(root, nLst);
-    int nIndex { 0 };
-    while(nLst->next){
-        p[nIndex] = nLst->p;
-        n[nIndex] = nLst->node;
-        nLst = nLst->next;
-        ++nIndex;
+    if (nLst->next) {
+        while (nLst->next) {
+            p[nIndex] = nLst->p;
+            n[nIndex] = nLst->node;
+            nLst = nLst->next;
+            ++nIndex;
+        }
     }
-    delete nLst;
+    deleteNodeList(nLst); //delete nLst;
     return nIndex;
 }
 
@@ -596,7 +612,7 @@ int get_domain_list_array(TreeNode *root, Particle *&pArray) {
         pList = pList->next;
         //Logger(INFO) << "m[" << i << "]  = " << pArray[i].m << "   x = " << pArray[i].x[0];
     }
-    delete pList;
+    deleteParticleList(pList);
     return pCounter;
 }
 
@@ -798,7 +814,7 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     Logger(ERROR) << "AFTER INSERTING RECEIVED PARTICLES";
     //output_tree(root, false);
 
-    delete [] plist; //delete plist;
+    deleteParticleList(plist); //delete [] plist; //delete plist;
     delete [] plistLengthSend;
     delete [] plistLengthReceive;
     for (int proc=0; proc < s->numprocs; proc++) {

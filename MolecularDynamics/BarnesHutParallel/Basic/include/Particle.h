@@ -22,6 +22,7 @@ typedef struct ParticleList {
     struct ParticleList *next;
 } ParticleList;
 
+void deleteParticleList(ParticleList * pLst);
 
 void force(Particle *i, Particle *j);
 

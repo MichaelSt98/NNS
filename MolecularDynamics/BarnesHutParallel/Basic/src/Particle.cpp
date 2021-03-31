@@ -4,6 +4,18 @@
 
 #include "../include/Particle.h"
 
+void deleteParticleList(ParticleList * pLst) {
+    while (pLst->next)
+    {
+        ParticleList* old = pLst;
+        pLst = pLst->next;
+        delete old;
+    }
+    if (pLst) {
+        delete pLst;
+    }
+}
+
 void force(Particle *i, Particle *j) {
     float r = 0;
     for (int d=0; d<DIM; d++)

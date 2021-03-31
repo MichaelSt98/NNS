@@ -53,6 +53,8 @@ typedef struct {
 keytype key(TreeNode *t); // DUMMY
 //keytype key(TreeNode *t, TreeNode *&keynode, keytype k=0UL, int level=0);
 
+void deleteNodeList(NodeList * nLst);
+
 void getParticleKeysSimple(TreeNode *t, keytype *p, int &pCounter, keytype k=1UL, int level=0);
 
 void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k=0UL, int level=0);
