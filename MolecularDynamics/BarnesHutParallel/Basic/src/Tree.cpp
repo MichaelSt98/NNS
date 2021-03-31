@@ -133,6 +133,9 @@ void createRanges(TreeNode *root, int N, SubDomainKeyTree *s) {
 
     s->range = new keytype[s->numprocs+1];
     keytype *pKeys = new keytype[N];
+    for (int i=0; i<N; i++) {
+        pKeys = [0UL];
+    }
 
     int pIndex{ 0 };
     getParticleKeys(root, pKeys, pIndex);
