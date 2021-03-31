@@ -314,7 +314,14 @@ int main(int argc, char *argv[]) {
 
     //output_tree(root, false);
 
+    Logger(ERROR) << "BEFORE SENDING PARTICLES";
+    output_tree(root, false);
+
     sendParticles(root, &s);
+
+    Logger(ERROR) << "AFTER SENDING PARTICLES";
+    //output_tree(root, false);
+    //output_particles(root);
 
     //compPseudoParticlespar(root, &s);
 
