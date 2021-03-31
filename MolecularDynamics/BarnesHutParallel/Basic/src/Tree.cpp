@@ -118,12 +118,12 @@ void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k, int leve
     if (t != NULL){
         for (int i = 0; i < POWDIM; i++) {
             if (isLeaf(t->son[i])){
-                p[pCounter] = (k + i << DIM*(maxlevel-level-1)); // inserting key
+                p[pCounter] = (unsigned long)(k + i << DIM*(maxlevel-level-1)); // inserting key
                 //Logger(DEBUG) << "Inserted particle '" << std::bitset<64>(p[pCounter]) << "'@" << pCounter;
                 ++pCounter; // counting inserted particles
             } else {
                 getParticleKeys(t->son[i], p, pCounter,
-                                k + i << DIM*(maxlevel-level-1), level+1); // go deeper
+                                (unsigned long)(k + i << DIM*(maxlevel-level-1)), level+1); // go deeper
             }
         }
     }
@@ -134,7 +134,7 @@ void createRanges(TreeNode *root, int N, SubDomainKeyTree *s) {
     s->range = new keytype[s->numprocs+1];
     keytype *pKeys = new keytype[N];
     for (int i=0; i<N; i++) {
-        pKeys = [0UL];
+        pKeys[i] = 0UL;
     }
 
     int pIndex{ 0 };
