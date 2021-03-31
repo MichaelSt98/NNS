@@ -119,7 +119,7 @@ void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k, int leve
     if (t != NULL){
         for (int i = 0; i < POWDIM; i++) {
             if (isLeaf(t->son[i])){
-                p[pCounter] = k + i << DIM*(maxlevel-level-1); // inserting key
+                p[pCounter] = (int)(k + i << DIM*(maxlevel-level-1)); // inserting key
                 //Logger(DEBUG) << "Inserted particle '" << std::bitset<64>(p[pCounter]) << "'@" << pCounter;
                 ++pCounter; // counting inserted particles
             } else {
@@ -441,8 +441,8 @@ void repairTree(TreeNode *t) {
                 // the son node is deleted directly
                 t->p = t->son[d]->p;
                 //std::cout << "t->son[d]->p.x[0] = " << t->son[d]->p.x[0] << std::endl;
-                free(&t->son[d]->p); //TODO: free son or free son's particle
-                //free(t->son[d]);
+                //free(&t->son[d]->p); //TODO: free son or free son's particle
+                free(t->son[d]);
             }
         }
     }
@@ -828,7 +828,7 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     delete [] plistLengthSend;
     delete [] plistLengthReceive;
     for (int proc=0; proc < s->numprocs; proc++) {
-        delete pArray[proc];
+        delete [] pArray[proc];
     }
     delete [] pArray;
 }

@@ -270,7 +270,7 @@ int main(int argc, char *argv[]) {
         //compPseudoParticles(rootAll);
 
         //output_tree(rootAll, false);
-        //freeTree_BH(rootAll);
+        freeTree_BH(rootAll);
     }
 
     //send ranges to all processes
@@ -369,7 +369,10 @@ int main(int argc, char *argv[]) {
         freeTree_BH(root);
     }*/
 
-    //freeTree_BH(root);
+    freeTree_BH(root);
+
+    Logger(ERROR) << "FINISHED WITH EVERYTHING";
+
     MPI_Finalize();
     return 0;
 }
