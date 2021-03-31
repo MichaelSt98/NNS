@@ -4,6 +4,15 @@
 
 #include "../include/Domain.h"
 
+Box::Box() {
+    lower[0] = 0.f;
+    lower[1] = 0.f;
+    lower[2] = 0.f;
+    upper[0] = 0.f;
+    upper[1] = 0.f;
+    upper[2] = 0.f;
+}
+
 float getSystemSize(Box *b) {
     float systemSize = 0.0;
     float temp;

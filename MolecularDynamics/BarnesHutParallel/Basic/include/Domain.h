@@ -9,10 +9,12 @@
 #include "Particle.h"
 #include <cmath>
 
-typedef struct Box {
+struct Box {
     float lower[DIM];
     float upper[DIM];
-} Box;
+
+    Box();
+};
 
 float getSystemSize(Box *b);
 

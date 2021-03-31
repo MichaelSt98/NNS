@@ -27,28 +27,31 @@ extern MPI_Datatype mpiParticle;
  */
 typedef enum { particle, pseudoParticle, domainList } nodetype;
 
-typedef struct NodeList {
+struct NodeList {
     nodetype node;
     Particle p;
     struct NodeList *next;
-} NodeList;
 
-typedef struct TreeNode {
+    NodeList();
+    ~NodeList();
+};
+
+struct TreeNode {
     Particle p;
     Box box;
     struct TreeNode *son[POWDIM];
     nodetype node;
-} TreeNode;
+};
 
 typedef unsigned long keytype;
 
 const int maxlevel = (sizeof(keytype)*CHAR_BIT - 1)/DIM;
 
-typedef struct {
+struct SubDomainKeyTree {
     int myrank;
     int numprocs;
     keytype *range;
-} SubDomainKeyTree;
+};
 
 keytype key(TreeNode *t); // DUMMY
 //keytype key(TreeNode *t, TreeNode *&keynode, keytype k=0UL, int level=0);

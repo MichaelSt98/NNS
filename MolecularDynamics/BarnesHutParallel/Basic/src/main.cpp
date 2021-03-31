@@ -242,7 +242,7 @@ int main(int argc, char *argv[]) {
     //    }
     //}
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    //MPI_Barrier(MPI_COMM_WORLD);
 
     MPI_Gather(pArray, ppp, mpiParticle, &pArrayAll[0], ppp, mpiParticle, 0, MPI_COMM_WORLD);
 
@@ -285,7 +285,7 @@ int main(int argc, char *argv[]) {
         s.range = new keytype[s.numprocs+1];
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    //MPI_Barrier(MPI_COMM_WORLD);
 
     MPI_Bcast(s.range, s.numprocs+1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
 
@@ -325,7 +325,7 @@ int main(int argc, char *argv[]) {
     Logger(ERROR) << "BEFORE SENDING PARTICLES";
     output_tree(root, false);
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    //MPI_Barrier(MPI_COMM_WORLD);
 
     sendParticles(root, &s);
 
@@ -369,7 +369,7 @@ int main(int argc, char *argv[]) {
         freeTree_BH(root);
     }*/
 
-    freeTree_BH(root);
+    //freeTree_BH(root);
     MPI_Finalize();
     return 0;
 }

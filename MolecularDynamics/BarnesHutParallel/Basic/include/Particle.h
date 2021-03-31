@@ -8,19 +8,24 @@
 #include "Constants.h"
 #include <cmath>
 
-typedef struct {
+struct Particle {
     float m;
     float x[DIM];
     float v[DIM];
     float F[DIM];
-    bool moved = false;
-    bool todelete = false;
-} Particle;
+    bool moved;
+    bool todelete;
 
-typedef struct ParticleList {
+    Particle();
+};
+
+struct ParticleList {
     Particle p;
     struct ParticleList *next;
-} ParticleList;
+
+    ParticleList();
+    ~ParticleList();
+};
 
 void deleteParticleList(ParticleList * pLst);
 

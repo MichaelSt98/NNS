@@ -4,6 +4,30 @@
 
 #include "../include/Particle.h"
 
+Particle::Particle() {
+    m = 0.f;
+    x[0] = 0.f;
+    x[1] = 0.f;
+    x[2] = 0.f;
+    v[0] = 0.f;
+    v[1] = 0.f;
+    v[2] = 0.f;
+    F[0] = 0.f;
+    F[1] = 0.f;
+    F[2] = 0.f;
+    moved = false;
+    todelete = false;
+}
+
+ParticleList::ParticleList() {
+    //p = p();
+    next = NULL;
+}
+
+ParticleList::~ParticleList() {
+    delete next;
+}
+
 void deleteParticleList(ParticleList * pLst) {
     while (pLst->next)
     {

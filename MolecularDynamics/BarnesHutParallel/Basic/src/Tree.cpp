@@ -12,6 +12,16 @@
     }
 }*/
 
+NodeList::NodeList() {
+    node = particle;
+    //p = p();
+    next = NULL;
+}
+
+NodeList::~NodeList() {
+    delete next;
+}
+
 
 const char* get_node_type(int nodetype)
 {
@@ -563,7 +573,7 @@ int get_tree_node_number(TreeNode *root) {
         nIndex++;
         nLst = nLst->next;
     }
-    deleteNodeList(nLst); //delete nLst;
+    delete nLst; //deleteNodeList(nLst); //delete nLst;
     return nIndex;
 }
 
@@ -582,7 +592,7 @@ int get_tree_array(TreeNode *root, Particle *&p, nodetype *&n) {
             ++nIndex;
         }
     }
-    deleteNodeList(nLst); //delete nLst;
+    delete nLst; //deleteNodeList(nLst); //delete nLst;
     return nIndex;
 }
 
@@ -612,7 +622,7 @@ int get_domain_list_array(TreeNode *root, Particle *&pArray) {
         pList = pList->next;
         //Logger(INFO) << "m[" << i << "]  = " << pArray[i].m << "   x = " << pArray[i].x[0];
     }
-    deleteParticleList(pList);
+    delete pList; //deleteParticleList(pList);
     return pCounter;
 }
 
@@ -755,7 +765,7 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
         }
     }
     MPI_Waitall(s->numprocs-1, reqMessageLengths, statMessageLengths);
-    MPI_Barrier(MPI_COMM_WORLD);
+    //MPI_Barrier(MPI_COMM_WORLD);
 
     //sum over to get total amount of particles to receive
     int receiveLength = 0;
@@ -793,7 +803,7 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
         }
     }
     MPI_Waitall(s->numprocs-1, reqParticles, statParticles);
-    MPI_Barrier(MPI_COMM_WORLD);
+    //MPI_Barrier(MPI_COMM_WORLD);
 
     /*for (int i=1; i<s->numprocs; i++) {
         int to = (s->myrank+i)%s->numprocs;
@@ -814,7 +824,7 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     Logger(ERROR) << "AFTER INSERTING RECEIVED PARTICLES";
     //output_tree(root, false);
 
-    deleteParticleList(plist); //delete [] plist; //delete plist;
+    delete [] plist; //deleteParticleList(plist); //delete [] plist; //delete plist;
     delete [] plistLengthSend;
     delete [] plistLengthReceive;
     for (int proc=0; proc < s->numprocs; proc++) {
