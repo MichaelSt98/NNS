@@ -18,8 +18,20 @@ NodeList::NodeList() {
     next = NULL;
 }
 
-NodeList::~NodeList() {
-    delete next;
+//NodeList::~NodeList() {
+//    delete next;
+//}
+
+TreeNode::TreeNode() {
+    son[0] = NULL;
+    son[1] = NULL;
+    son[2] = NULL;
+    son[3] = NULL;
+    son[4] = NULL;
+    son[5] = NULL;
+    son[6] = NULL;
+    son[7] = NULL;
+    node = particle;
 }
 
 
@@ -49,22 +61,9 @@ const char* get_node_type(int nodetype)
 // now the keys are vertically sorted, keys of nodes within one level are unique but keys for nodes of different levels can happen to be the same
 // --> less data needs to be exchanged
 // [range_i, range_i+1) defines a minimal upper part of the tree, that has to be present in all processes as a copy to ensure the consistency of the global tree
-
 // DUMMY
 keytype key(TreeNode *t){
     return KEY_MAX;
-}
-
-void deleteNodeList(NodeList * nLst) {
-    while (nLst->next)
-    {
-        NodeList* old = nLst;
-        nLst = nLst->next;
-        delete old;
-    }
-    if (nLst) {
-        delete nLst;
-    }
 }
 
 // t for tree traversal, keynode for comparison if we are at the right key
@@ -119,7 +118,7 @@ void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k, int leve
     if (t != NULL){
         for (int i = 0; i < POWDIM; i++) {
             if (isLeaf(t->son[i])){
-                p[pCounter] = (int)(k + i << DIM*(maxlevel-level-1)); // inserting key
+                p[pCounter] = (k + i << DIM*(maxlevel-level-1)); // inserting key
                 //Logger(DEBUG) << "Inserted particle '" << std::bitset<64>(p[pCounter]) << "'@" << pCounter;
                 ++pCounter; // counting inserted particles
             } else {
@@ -128,31 +127,6 @@ void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k, int leve
             }
         }
     }
-}
-
-void createRanges(TreeNode *root, int N, SubDomainKeyTree *s, int K){
-    // K-domains for debugging
-    //s->range = new keytype[s->numprocs+1];
-    keytype *pKeys = new keytype[N];
-
-    int pIndex{ 0 };
-    getParticleKeys(root, pKeys, pIndex);
-    // sort keys in ascending order
-    std::sort(pKeys, pKeys+N);
-
-    s->range = new keytype[K+1];
-
-    s->range[0] = 0UL; // range_0 = 0
-
-    //const int ppr = (N % s->numprocs != 0) ? N/s->numprocs+1 : N/s->numprocs; // particles per range
-    const int ppr = (N % K != 0) ? N/K+1 : N/K; // particles per range, K procs emulated
-
-    //for (int i=1; i<s->numprocs; i++){
-    for (int i=1; i<K; i++){
-        s->range[i] = pKeys[i*ppr];
-        Logger(DEBUG) << "Computed range[" << i << "] = " << std::bitset<64>(s->range[i]);
-    }
-    s->range[K] = KEY_MAX; // last range does not need to be computed
 }
 
 void createRanges(TreeNode *root, int N, SubDomainKeyTree *s) {
@@ -184,9 +158,11 @@ int key2proc(keytype k, SubDomainKeyTree *s) {
             return i;
         }
     }
+    Logger(ERROR) << "key2proc(k= " << k << "): -1!";
     return -1; // error
 }
 
+//version described in MolecularDynamics
 /*int key2proc(keytype k, SubDomainKeyTree *s) {
     for (int i=1; i<=s->numprocs; i++) { //1
         if (k >= s->range[i]) {
@@ -206,10 +182,10 @@ void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s) {
     if (p1 != p2) {
         for (int i = 0; i < POWDIM; i++) {
             t->son[i] = (TreeNode *) calloc(1, sizeof(TreeNode));
-            t->son[i]->p.x[0] = 0.f;
-            t->son[i]->p.x[1] = 0.f;
-            t->son[i]->p.x[2] = 0.f;
-            t->son[i]->p.m = 0.f;
+            //t->son[i]->p.x[0] = 0.f;
+            //t->son[i]->p.x[1] = 0.f;
+            //t->son[i]->p.x[2] = 0.f;
+            //t->son[i]->p.m = 0.f;
             createDomainList(t->son[i], level + 1,  k + i << DIM*(maxlevel-level-1), s);
         }
     }
@@ -571,9 +547,11 @@ int get_tree_node_number(TreeNode *root) {
     build_tree_list(root, nLst);
     while (nLst->next) {
         nIndex++;
+        NodeList* old = nLst;
         nLst = nLst->next;
+        delete old;
     }
-    delete nLst; //deleteNodeList(nLst); //delete nLst;
+    //delete nLst; //deleteNodeList(nLst); //delete nLst;
     return nIndex;
 }
 
@@ -588,11 +566,13 @@ int get_tree_array(TreeNode *root, Particle *&p, nodetype *&n) {
         while (nLst->next) {
             p[nIndex] = nLst->p;
             n[nIndex] = nLst->node;
+            NodeList * old = nLst;
             nLst = nLst->next;
+            delete old;
             ++nIndex;
         }
     }
-    delete nLst; //deleteNodeList(nLst); //delete nLst;
+    //delete nLst; //deleteNodeList(nLst); //delete nLst;
     return nIndex;
 }
 
@@ -619,10 +599,12 @@ int get_domain_list_array(TreeNode *root, Particle *&pArray) {
     pArray = new Particle[pCounter];
     for (int i=0; i<pCounter; i++) {
         pArray[i] = pList->p;
+        ParticleList* old = pList;
         pList = pList->next;
+        delete old;
         //Logger(INFO) << "m[" << i << "]  = " << pArray[i].m << "   x = " << pArray[i].x[0];
     }
-    delete pList; //deleteParticleList(pList);
+    //delete pList; //deleteParticleList(pList);
     return pCounter;
 }
 
@@ -641,7 +623,9 @@ void freeTree_BH(TreeNode *root) {
         for (int i=0; i<POWDIM; i++) {
             if (root->son[i] != NULL) {
                 freeTree_BH(root->son[i]);
-                free(root->son[i]);
+                if (root->son[i] != NULL) {
+                    free(root->son[i]);
+                }
             }
         }
     }
@@ -700,7 +684,7 @@ int getParticleListLength(ParticleList *plist) {
 void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
 
     Logger(ERROR) << "At start of sendParticles";
-    output_tree(root, false);
+    //output_tree(root, false);
     //allocate memory for s->numprocs particle lists in plist;
     //initialize ParticleList plist[to] for all processes to;
     ParticleList * plist;
@@ -877,7 +861,7 @@ void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s) {
     //}
 
     //if (s->myrank == ) {
-    output_tree(root, false);
+    //output_tree(root, false);
     //}
 
     //MPI_Allreduce(..., {mass, moments} of the lowest domainList nodes, MPI_SUM, ...);

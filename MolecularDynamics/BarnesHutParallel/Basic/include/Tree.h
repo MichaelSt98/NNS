@@ -30,17 +30,19 @@ typedef enum { particle, pseudoParticle, domainList } nodetype;
 struct NodeList {
     nodetype node;
     Particle p;
-    struct NodeList *next;
+    NodeList *next;
 
     NodeList();
-    ~NodeList();
+    //~NodeList();
 };
 
 struct TreeNode {
     Particle p;
     Box box;
-    struct TreeNode *son[POWDIM];
+    TreeNode *son[POWDIM];
     nodetype node;
+
+    TreeNode();
 };
 
 typedef unsigned long keytype;
@@ -56,13 +58,25 @@ struct SubDomainKeyTree {
 keytype key(TreeNode *t); // DUMMY
 //keytype key(TreeNode *t, TreeNode *&keynode, keytype k=0UL, int level=0);
 
-void deleteNodeList(NodeList * nLst);
+//void deleteNodeList(NodeList * nLst);
+/*
+ void deleteNodeList(NodeList * nLst) {
+    while (nLst->next)
+    {
+        NodeList* old = nLst;
+        nLst = nLst->next;
+        delete old;
+    }
+    if (nLst) {
+        delete nLst;
+    }
+}
+ */
 
 void getParticleKeysSimple(TreeNode *t, keytype *p, int &pCounter, keytype k=1UL, int level=0);
 
 void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k=0UL, int level=0);
 
-void createRanges(TreeNode *root, int N, SubDomainKeyTree *s, int K);
 void createRanges(TreeNode *root, int N, SubDomainKeyTree *s);
 
 int key2proc(keytype k, SubDomainKeyTree *s);

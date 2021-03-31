@@ -21,10 +21,10 @@ struct Particle {
 
 struct ParticleList {
     Particle p;
-    struct ParticleList *next;
+    ParticleList *next;
 
     ParticleList();
-    ~ParticleList();
+    //~ParticleList();
 };
 
 void deleteParticleList(ParticleList * pLst);

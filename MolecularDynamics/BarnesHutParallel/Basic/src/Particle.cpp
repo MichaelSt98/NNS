@@ -24,9 +24,9 @@ ParticleList::ParticleList() {
     next = NULL;
 }
 
-ParticleList::~ParticleList() {
-    delete next;
-}
+//ParticleList::~ParticleList() {
+//    delete next;
+//}
 
 void deleteParticleList(ParticleList * pLst) {
     while (pLst->next)

@@ -29,6 +29,7 @@ struct structlog {
     bool headers = false;
     typelog level = WARN;
     int myrank = -1; // don't use MPI by default
+    int outputRank = -1;
 };
 
 extern structlog LOGCFG;
@@ -40,7 +41,7 @@ public:
     ~Logger();
 
     template<class T> Logger &operator<<(const T &msg) {
-        if(msglevel >= LOGCFG.level) {
+        if (msglevel >= LOGCFG.level && LOGCFG.myrank == LOGCFG.outputRank) {
             std::cout << msg;
             opened = true;
         }
