@@ -141,7 +141,10 @@ void initParticles(SubDomainKeyTree *s, Box *domain, Particle *pArray, int ppp, 
     uniform_real_distribution<float> randRadius (0.0, systemSize/2.0);
     uniform_real_distribution<float> randHeight (0.0, systemSize/1000.0);
     std::random_device rd;
-    std::default_random_engine gen (rd());
+    std::cout << "rd(): " << rd() << std::endl;
+    //std::default_random_engine gen (rd());
+    unsigned int seed = 2568239274 + s->myrank*1000;
+    std::default_random_engine gen (seed);
     float angle;
     float radius;
     float radiusOffset;
@@ -239,6 +242,8 @@ int main(int argc, char *argv[]) {
     //    }
     //}
 
+    MPI_Barrier(MPI_COMM_WORLD);
+
     MPI_Gather(pArray, ppp, mpiParticle, &pArrayAll[0], ppp, mpiParticle, 0, MPI_COMM_WORLD);
 
     if (s.myrank == 0) {
@@ -279,6 +284,8 @@ int main(int argc, char *argv[]) {
         s.range = new keytype[s.numprocs+1];
     }
 
+    MPI_Barrier(MPI_COMM_WORLD);
+
     MPI_Bcast(s.range, s.numprocs+1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
 
     //if (s.myrank == 1) {
@@ -317,10 +324,12 @@ int main(int argc, char *argv[]) {
     Logger(ERROR) << "BEFORE SENDING PARTICLES";
     output_tree(root, false);
 
+    MPI_Barrier(MPI_COMM_WORLD);
+
     sendParticles(root, &s);
 
     Logger(ERROR) << "AFTER SENDING PARTICLES";
-    //output_tree(root, false);
+    output_tree(root, false);
     //output_particles(root);
 
     //compPseudoParticlespar(root, &s);

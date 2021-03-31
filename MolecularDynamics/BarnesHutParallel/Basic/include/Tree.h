@@ -96,9 +96,11 @@ NodeList* build_tree_list(TreeNode *t, NodeList *nLst);
 
 ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst);
 
+int getParticleListLength(ParticleList *plist);
+
 int get_tree_node_number(TreeNode *root);
 
-int get_tree_array(TreeNode *root, Particle *p, nodetype *n);
+int get_tree_array(TreeNode *root, Particle *&p, nodetype *&n);
 
 void get_particle_array(TreeNode *root, Particle *p);
 

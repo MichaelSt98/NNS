@@ -251,7 +251,7 @@ void insertTree(Particle *p, TreeNode *t) {
             //} //end of parallel change
             //else {
 
-            t->son[b]->box = sonbox; //?
+            //t->son[b]->box = sonbox; //?
             insertTree(p, t->son[b]);
 
         }
@@ -441,6 +441,7 @@ void output_tree(TreeNode *t, bool detailed) {
     int nNodes = get_tree_node_number(t);
     Particle * pArray;
     nodetype * nArray;
+    Logger(ERROR) << "nNodes: " << nNodes;
     pArray = new Particle[nNodes];
     nArray = new nodetype[nNodes];
     get_tree_array(t, pArray, nArray);
@@ -536,7 +537,10 @@ void get_domain_list_nodes(TreeNode *t, ParticleList *pList, int &pCounter) {
 }
 
 int get_tree_node_number(TreeNode *root) {
-    auto nLst = new NodeList;
+    //auto nLst = new NodeList;
+    NodeList * nLst;
+    nLst = new NodeList;
+
     build_tree_list(root, nLst);
     NodeList * current;
     current = nLst;
@@ -549,8 +553,11 @@ int get_tree_node_number(TreeNode *root) {
     return nIndex;
 }
 
-int get_tree_array(TreeNode *root, Particle *p, nodetype *n) {
-    auto nLst = new NodeList;
+int get_tree_array(TreeNode *root, Particle *&p, nodetype *&n) {
+    //auto nLst = new NodeList;
+    NodeList * nLst;
+    nLst = new NodeList;
+
     build_tree_list(root, nLst);
     int nIndex { 0 };
     while(nLst->next){
@@ -564,7 +571,10 @@ int get_tree_array(TreeNode *root, Particle *p, nodetype *n) {
 }
 
 void get_particle_array(TreeNode *root, Particle *p){
-    auto pLst = new ParticleList;
+    //auto pLst = new ParticleList;
+    ParticleList * pLst;
+    pLst = new ParticleList;
+
     build_particle_list(root, pLst);
     int pIndex { 0 };
     while(pLst->next){
@@ -647,8 +657,14 @@ int getParticleListLength(ParticleList *plist) {
     int count = 0;
     while (current) {
         count++;
-        current = current->next;
+        if (current->next) {
+            current = current->next;
+        }
+        else {
+            break;
+        }
     }
+    //count++; //TODO: while(current) or while(current->next)
     return count;
 }
 
@@ -711,18 +727,19 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     }
 
     int reqCounter = 0;
-    MPI_Request req[s->numprocs-1];
-    MPI_Status stat[s->numprocs-1];
+    MPI_Request reqMessageLengths[s->numprocs-1];
+    MPI_Status statMessageLengths[s->numprocs-1];
 
     //send plistLengthSend and receive plistLengthReceive
     for (int proc=0; proc < s->numprocs; proc++) {
         if (proc != s->myrank) {
-            MPI_Isend(&plistLengthSend[proc], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &req[reqCounter]);
-            MPI_Recv(&plistLengthReceive[proc], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &stat[reqCounter]);
+            MPI_Isend(&plistLengthSend[proc], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &reqMessageLengths[reqCounter]);
+            MPI_Recv(&plistLengthReceive[proc], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &statMessageLengths[reqCounter]);
             reqCounter++;
         }
     }
-    MPI_Waitall(s->numprocs-1, req, stat);
+    MPI_Waitall(s->numprocs-1, reqMessageLengths, statMessageLengths);
+    MPI_Barrier(MPI_COMM_WORLD);
 
     //sum over to get total amount of particles to receive
     int receiveLength = 0;
@@ -739,24 +756,28 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     // allocate missing (sub)array for process rank
     pArray[s->myrank] = new Particle[receiveLength];
 
+    MPI_Request reqParticles[s->numprocs-1];
+    MPI_Status statParticles[s->numprocs-1];
+
     //send and receive particles
     reqCounter = 0;
     int receiveOffset = 0;
     for (int proc=0; proc < s->numprocs; proc++) {
         if (proc != s->myrank) {
             if (plistLengthSend[proc] > 0) {
-                MPI_Isend(pArray[proc], plistLengthSend[proc], mpiParticle, proc, 17, MPI_COMM_WORLD, &req[reqCounter]);
+                MPI_Isend(pArray[proc], plistLengthSend[proc], mpiParticle, proc, 17, MPI_COMM_WORLD, &reqParticles[reqCounter]);
             }
             if (plistLengthReceive[proc] > 0) {
                 MPI_Recv(pArray[s->myrank] + receiveOffset, plistLengthReceive[proc], mpiParticle, proc, 17,
                          MPI_COMM_WORLD,
-                         &stat[reqCounter]);
+                         &statParticles[reqCounter]);
             }
             receiveOffset += plistLengthReceive[proc];
             reqCounter++;
         }
     }
-    MPI_Waitall(s->numprocs-1, req, stat);
+    MPI_Waitall(s->numprocs-1, reqParticles, statParticles);
+    MPI_Barrier(MPI_COMM_WORLD);
 
     /*for (int i=1; i<s->numprocs; i++) {
         int to = (s->myrank+i)%s->numprocs;
