@@ -422,8 +422,8 @@ void repairTree(TreeNode *t) {
                 // the son node is deleted directly
                 t->p = t->son[d]->p;
                 //std::cout << "t->son[d]->p.x[0] = " << t->son[d]->p.x[0] << std::endl;
-                //free(&t->son[d]->p); //TODO: free son or free son's particle
-                free(t->son[d]);
+                free(&t->son[d]->p); //TODO: free son or free son's particle
+                //free(t->son[d]);
             }
         }
     }
@@ -667,7 +667,8 @@ void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist) {
 
  */
 
-int getParticleListLength(ParticleList *plist) {
+//backup version: working but count is too large (+1)
+/*int getParticleListLength(ParticleList *plist) {
     ParticleList * current = plist;
     int count = 0;
     while (current) {
@@ -678,6 +679,17 @@ int getParticleListLength(ParticleList *plist) {
         else {
             break;
         }
+    }
+    //count++; //TODO: while(current) or while(current->next)
+    return count;
+}*/
+
+int getParticleListLength(ParticleList *plist) {
+    ParticleList * current = plist;
+    int count = 0;
+    while (current->next) {
+        count++;
+        current = current->next;
     }
     //count++; //TODO: while(current) or while(current->next)
     return count;
@@ -705,16 +717,22 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     Logger(INFO) << "Range    = " << std::bitset<64>(s->range[1]);
     buildSendlist(root, root, s, plist, pIndex, 0UL, 0); //TODO: something to be changed?
 
+    //for (int proc=0; proc<s->numprocs; proc++) {
+    //    if (proc != s->myrank) {
+    //        Logger(ERROR) << "pIndex: " << pIndex[proc];
+    //    }
+    //}
+
     for (int proc = 0; proc < s->numprocs; proc++) {
         ParticleList *current = &plist[proc]; // needed not to 'consume' plist
-        for (int i=0; i<pIndex[proc];i++){
+        for (int i=0; i<pIndex[proc]; i++){
             //Logger(DEBUG) << "x2send = ("
               //                  << current->p.x[0] << ", " << current->p.x[1] << ", " << current->p.x[2] << ")";
             current = current->next;
         }
     }
 
-    repairTree(root); // here, domainList nodes may not be deleted //TODO: something to be changed?
+    //repairTree(root); // here, domainList nodes may not be deleted //TODO: something to be changed?
 
     Particle ** pArray = new Particle*[s->numprocs];
 
@@ -764,12 +782,22 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
         }
     }
 
+    Logger(INFO) << "receiveLength: " << receiveLength;
+
     //if (s.myrank == outputRank) {
     //    std::cout << "receiveLength = " << receiveLength << std::endl;
     //}
 
     // allocate missing (sub)array for process rank
     pArray[s->myrank] = new Particle[receiveLength];
+
+    for (int proc=0; proc<s->numprocs; proc++) {
+        if (proc != s->myrank) {
+            for (int i = 0; i < plistLengthSend[proc]; i++) {
+                Logger(INFO) << "Sending particle pArray[" << proc << "][" << i << "] : " << pArray[proc][i].x[0];
+            }
+        }
+    }
 
     MPI_Request reqParticles[s->numprocs-1];
     MPI_Status statParticles[s->numprocs-1];
@@ -779,20 +807,14 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     int receiveOffset = 0;
     for (int proc=0; proc < s->numprocs; proc++) {
         if (proc != s->myrank) {
-            if (plistLengthSend[proc] > 0) {
-                MPI_Isend(pArray[proc], plistLengthSend[proc], mpiParticle, proc, 17, MPI_COMM_WORLD, &reqParticles[reqCounter]);
-            }
-            if (plistLengthReceive[proc] > 0) {
-                MPI_Recv(pArray[s->myrank] + receiveOffset, plistLengthReceive[proc], mpiParticle, proc, 17,
-                         MPI_COMM_WORLD,
-                         &statParticles[reqCounter]);
-            }
+            MPI_Isend(pArray[proc], plistLengthSend[proc], mpiParticle, proc, 17, MPI_COMM_WORLD, &reqParticles[reqCounter]);
+            MPI_Recv(pArray[s->myrank] + receiveOffset, plistLengthReceive[proc], mpiParticle, proc, 17,
+                         MPI_COMM_WORLD, &statParticles[reqCounter]);
             receiveOffset += plistLengthReceive[proc];
             reqCounter++;
         }
     }
     MPI_Waitall(s->numprocs-1, reqParticles, statParticles);
-    //MPI_Barrier(MPI_COMM_WORLD);
 
     /*for (int i=1; i<s->numprocs; i++) {
         int to = (s->myrank+i)%s->numprocs;
@@ -807,6 +829,7 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
 
     //Logger(ERROR) << "particles to be send = " << receiveLength;
     for (int i=0; i<receiveLength; i++) {
+        Logger(INFO) << "Inserting particle pArray[" << i << "] : " << pArray[s->myrank][i].x[0];
         insertTree(&pArray[s->myrank][i], root);
     }
 
@@ -839,6 +862,7 @@ void buildSendlist(TreeNode *root, TreeNode *t, SubDomainKeyTree *s, ParticleLis
             for (int i=0; i<pIndex[proc]; i++) {
                 current = current->next;
             }
+            //Logger(INFO) << "Adding particle to send: " << t->p.x[0];
             current->p = t->p;
             current->next = new ParticleList; //TODO: similar problem as with get_particle_array() ?!
             //mark t->p as to be deleted;
