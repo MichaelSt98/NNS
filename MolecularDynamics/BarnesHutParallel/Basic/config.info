@@ -5,7 +5,7 @@ timeStep .2
 timeEnd 100.
 initMass 1200000.
 initVel .1
-outputRank 1
+outputRank -1
 dummyDomains 2
 
 

@@ -41,7 +41,7 @@ public:
     ~Logger();
 
     template<class T> Logger &operator<<(const T &msg) {
-        if (msglevel >= LOGCFG.level && LOGCFG.myrank == LOGCFG.outputRank) {
+        if (msglevel >= LOGCFG.level && (LOGCFG.myrank == LOGCFG.outputRank || LOGCFG.outputRank == -1)) {
             std::cout << msg;
             opened = true;
         }

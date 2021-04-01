@@ -73,6 +73,17 @@ keytype key(TreeNode *t); // DUMMY
 }
  */
 
+/** First step in the path key creation done explicitly [p. 343f]
+ * - Starting at the root node 1
+ * - Each level needs 3 bits => [0,7] are the labels of the sons
+ * - The labels [0,7] are shifted 3 x level times
+ *
+ * @param t Current node in recursion, should be initialized with root
+ * @param p Container to be filled with path keys of all leaves (keytype[N])
+ * @param pCounter Global counter by reference
+ * @param k default=1UL (root node)
+ * @param level default=0
+ */
 void getParticleKeysSimple(TreeNode *t, keytype *p, int &pCounter, keytype k=1UL, int level=0);
 
 void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k=0UL, int level=0);

@@ -37,7 +37,6 @@ TreeNode::TreeNode() {
 
 const char* get_node_type(int nodetype)
 {
-    //particle, pseudoParticle, domainList
     switch (nodetype)
     {
         case 0: return "particle      ";
@@ -88,17 +87,6 @@ keytype key(TreeNode *t){
     return KEY_MAX;
 }*/
 
-/** First step in the path key creation done explicitly [p. 343f]
- * - Starting at the root node 1
- * - Each level needs 3 bits => [0,7] are the labels of the sons
- * - The labels [0,7] are shifted 3 x level times
- *
- * @param t Current node in recursion, should be initialized with root
- * @param p Container to be filled with path keys of all leaves (keytype[N])
- * @param pCounter Global counter by reference
- * @param k default=1UL (root node)
- * @param level default=0
- */
 void getParticleKeysSimple(TreeNode *t, keytype *p, int &pCounter, keytype k, int level){
     if (t != NULL){
         for (int i = 0; i < POWDIM; i++) {
@@ -182,14 +170,9 @@ void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s) {
     t->node = domainList;
     int p1 = key2proc(k, s);
     int p2 = key2proc(k | ~(~0L << DIM*(maxlevel-level)),s);
-    //Logger(INFO) << "p1 = " << p1 << "    p2 = " << p2;
     if (p1 != p2) {
         for (int i = 0; i < POWDIM; i++) {
             t->son[i] = (TreeNode *) calloc(1, sizeof(TreeNode));
-            //t->son[i]->p.x[0] = 0.f;
-            //t->son[i]->p.x[1] = 0.f;
-            //t->son[i]->p.x[2] = 0.f;
-            //t->son[i]->p.m = 0.f;
             createDomainList(t->son[i], level + 1,  k + i << DIM*(maxlevel-level-1), s);
         }
     }
@@ -221,10 +204,6 @@ void insertTree(Particle *p, TreeNode *t) {
     int b = sonNumber(&t->box, &sonbox, p);
 
     if (t->node == domainList && t->son[b] != NULL) {
-        //Logger(ERROR) << "I am domainList";
-        /*if (t->son[b] == NULL) {
-            t->son[b] = (TreeNode *) calloc(1, sizeof(TreeNode));
-        }*/
         t->son[b]->box = t->box; //sonbox; //t->box; //sonbox; //TODO: sonbox or t->box ?
         insertTree(p, t->son[b]);
     }
@@ -232,32 +211,18 @@ void insertTree(Particle *p, TreeNode *t) {
         if (t->son[b] == NULL) {
             if (isLeaf(t) && t->node != domainList) {
                 Particle p2 = t->p;
-                //if (t->son[b] == NULL) {
                 t->son[b] = (TreeNode *) calloc(1, sizeof(TreeNode));
-                //}
                 t->son[b]->p = *p;
                 t->son[b]->box = sonbox;
                 insertTree(&p2, t);
             } else {
-                //if (t->son[b] == NULL) {
                 t->son[b] = (TreeNode *) calloc(1, sizeof(TreeNode));
-                //}
                 t->son[b]->p = *p;
                 t->son[b]->box = sonbox;
             }
         } else {
-
-            //parallel change
-            //if (t->son[b]->node == domainList) {
-            //    Logger(ERROR) << "I am domainList";
-            //    t->son[b]->box = t->box;
-            //    insertTree(p, t->son[b]);
-            //} //end of parallel change
-            //else {
-
-            t->son[b]->box = sonbox; //?
+            t->son[b]->box = sonbox;
             insertTree(p, t->son[b]);
-
         }
     }
 }
@@ -274,7 +239,6 @@ int sonNumber(Box *box, Box *sonbox, Particle *p) {
             sonbox->lower[d] = .5 * (box->upper[d] + box->lower[d]);
             sonbox->upper[d] = box->upper[d];
         }
-        //return b;
     }
     return b;
 }
@@ -393,7 +357,6 @@ void moveLeaf(TreeNode *t, TreeNode *root) {
 
 //parallel change: do not delete if domainList node
 void repairTree(TreeNode *t) {
-
     if (t != NULL) {
         for (int i=0; i<POWDIM; i++) {
             repairTree(t->son[i]); // recursive call according to algorithm 8.1
@@ -404,7 +367,8 @@ void repairTree(TreeNode *t) {
             for (int i = 0; i < POWDIM; i++) {
                 if (t->son[i] != NULL) {
                     if (t->son[i]->p.todelete) {
-                        free(t->son[i]);
+                        //free(t->son[i]);
+                        free(&t->son[i]->p);
                     }
                     else {
                         numberofsons++;
@@ -420,21 +384,12 @@ void repairTree(TreeNode *t) {
                 // *t adopts the role of its only son node and
                 // the son node is deleted directly
                 t->p = t->son[d]->p;
-                //std::cout << "t->son[d]->p.x[0] = " << t->son[d]->p.x[0] << std::endl;
-                free(&t->son[d]->p); //TODO: free son or free son's particle
                 //free(t->son[d]);
+                free(&t->son[d]->p);
             }
         }
     }
 }
-
-/*void output_tree(TreeNode *t) {
-        std::cout << "\tnodetype: " << get_node_type(t->node) << "  x = (" << t->p.x[0] << ", " << t->p.x[1] << ", " << t->p.x[2] << ")" << std::endl;
-        for (int i = 0; i<POWDIM; i++) {
-            output_tree(t->son[i]);
-        }
-    }
-}*/
 
 void output_tree(TreeNode *t, bool detailed) {
 
@@ -445,7 +400,6 @@ void output_tree(TreeNode *t, bool detailed) {
     int nNodes = get_tree_node_number(t);
     Particle * pArray;
     nodetype * nArray;
-    //Logger(ERROR) << "nNodes: " << nNodes;
     pArray = new Particle[nNodes];
     nArray = new nodetype[nNodes];
     get_tree_array(t, pArray, nArray);
@@ -483,12 +437,10 @@ void output_tree(TreeNode *t, bool detailed) {
 void output_particles(TreeNode *t) {
     if (t != NULL) {
         for (int i = 0; i < POWDIM; i++) {
-            //Logger(DEBUG) << "t->p = " << t->p.x[0];
             output_particles(t->son[i]);
 
         }
         if (isLeaf(t)) {
-            //if (!isnan(t->p.x[0]))
             std::cout << "\tx = (" << t->p.x[0] << ", " << t->p.x[1] << ", " << t->p.x[2] << ")" << std::endl;
         }
     }
@@ -531,20 +483,16 @@ void get_domain_list_nodes(TreeNode *t, ParticleList *pList, int &pCounter) {
                 current = current->next;
             }
             current->p = t->p;
-            //Logger(WARN) << "m = " << t->p.m << "  nodetype: " << t->node;
             current->next = new ParticleList;
             pCounter++;
         }
         for (int i = 0; i < POWDIM; i++) {
-            //if (t->son[i] != NULL && t->son[i]->node == domainList) {
             get_domain_list_nodes(t->son[i], pList, pCounter);
-            //}
         }
     }
 }
 
 int get_tree_node_number(TreeNode *root) {
-    //auto nLst = new NodeList;
     NodeList * nLst;
     nLst = new NodeList;
     int nIndex = 0;
@@ -560,7 +508,6 @@ int get_tree_node_number(TreeNode *root) {
 }
 
 int get_tree_array(TreeNode *root, Particle *&p, nodetype *&n) {
-    //auto nLst = new NodeList;
     NodeList * nLst;
     nLst = new NodeList;
     int nIndex = 0;
@@ -581,7 +528,6 @@ int get_tree_array(TreeNode *root, Particle *&p, nodetype *&n) {
 }
 
 void get_particle_array(TreeNode *root, Particle *p){
-    //auto pLst = new ParticleList;
     ParticleList * pLst;
     pLst = new ParticleList;
 
@@ -606,7 +552,6 @@ int get_domain_list_array(TreeNode *root, Particle *&pArray) {
         ParticleList* old = pList;
         pList = pList->next;
         delete old;
-        //Logger(INFO) << "m[" << i << "]  = " << pArray[i].m << "   x = " << pArray[i].x[0];
     }
     //delete pList; //deleteParticleList(pList);
     return pCounter;
@@ -666,23 +611,6 @@ void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist) {
 
  */
 
-//backup version: working but count is too large (+1)
-/*int getParticleListLength(ParticleList *plist) {
-    ParticleList * current = plist;
-    int count = 0;
-    while (current) {
-        count++;
-        if (current->next) {
-            current = current->next;
-        }
-        else {
-            break;
-        }
-    }
-    //count++; //TODO: while(current) or while(current->next)
-    return count;
-}*/
-
 int getParticleListLength(ParticleList *plist) {
     ParticleList * current = plist;
     int count = 0;
@@ -690,7 +618,7 @@ int getParticleListLength(ParticleList *plist) {
         count++;
         current = current->next;
     }
-    //count++; //TODO: while(current) or while(current->next)
+    //count++;
     return count;
 }
 
@@ -698,16 +626,11 @@ int getParticleListLength(ParticleList *plist) {
 // determine right amount of memory which has to be allocated for the `buffer`,
 // by e.g. communicating the length of the message as prior message or by using other MPI commands
 void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
-
-    //Logger(ERROR) << "At start of sendParticles";
-    //output_tree(root, false);
     //allocate memory for s->numprocs particle lists in plist;
     //initialize ParticleList plist[to] for all processes to;
     ParticleList * plist;
     plist = new ParticleList[s->numprocs];
 
-    //int * pIndex;
-    //pIndex = new int[s->numprocs];
     int pIndex[s->numprocs];
     for (int proc = 0; proc < s->numprocs; proc++) {
         pIndex[proc] = 0;
@@ -717,21 +640,18 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     buildSendlist(root, root, s, plist, pIndex, 0UL, 0); //TODO: something to be changed?
 
     //for (int proc=0; proc<s->numprocs; proc++) {
-    //    if (proc != s->myrank) {
-    //        Logger(ERROR) << "pIndex: " << pIndex[proc];
-    //    }
+    //    Logger(ERROR) << "pIndex: " << pIndex[proc];
     //}
 
     for (int proc = 0; proc < s->numprocs; proc++) {
         ParticleList *current = &plist[proc]; // needed not to 'consume' plist
         for (int i=0; i<pIndex[proc]; i++){
-            //Logger(DEBUG) << "x2send = ("
-              //                  << current->p.x[0] << ", " << current->p.x[1] << ", " << current->p.x[2] << ")";
+            //Logger(DEBUG) << "x2send = (" << current->p.x[0] << ", " << current->p.x[1] << ", " << current->p.x[2] << ")";
             current = current->next;
         }
     }
 
-    //repairTree(root); // here, domainList nodes may not be deleted //TODO: something to be changed?
+    repairTree(root); // here, domainList nodes may not be deleted //TODO: something to be changed?
 
     Particle ** pArray = new Particle*[s->numprocs];
 
@@ -771,7 +691,6 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
         }
     }
     MPI_Waitall(s->numprocs-1, reqMessageLengths, statMessageLengths);
-    //MPI_Barrier(MPI_COMM_WORLD);
 
     //sum over to get total amount of particles to receive
     int receiveLength = 0;
@@ -783,18 +702,15 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
 
     Logger(INFO) << "receiveLength: " << receiveLength;
 
-    //if (s.myrank == outputRank) {
-    //    std::cout << "receiveLength = " << receiveLength << std::endl;
-    //}
+
+    Logger(INFO) << "receiveLength = " << receiveLength;
 
     // allocate missing (sub)array for process rank
     pArray[s->myrank] = new Particle[receiveLength];
 
     //for (int proc=0; proc<s->numprocs; proc++) {
-    //    if (proc != s->myrank) {
-    //        for (int i = 0; i < plistLengthSend[proc]; i++) {
-    //            Logger(INFO) << "Sending particle pArray[" << proc << "][" << i << "] : " << pArray[proc][i].x[0];
-    //        }
+    //    for (int i = 0; i < plistLengthSend[proc]; i++) {
+    //        Logger(INFO) << "Sending particle pArray[" << proc << "][" << i << "] : " << pArray[proc][i].x[0];
     //    }
     //}
 
@@ -815,21 +731,10 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     }
     MPI_Waitall(s->numprocs-1, reqParticles, statParticles);
 
-    /*for (int i=1; i<s->numprocs; i++) {
-        int to = (s->myrank+i)%s->numprocs;
-        int from = (s->myrank+s->numprocs-i)%s->numprocs;
-        //send particle data from plist[to] to process to;
-        //receive particle data from process from;
-        //insert all received particles p into the tree using insertTree(&p, root);
-    }*/
-
-    //Logger(ERROR) << "particles to be send = " << receiveLength;
     for (int i=0; i<receiveLength; i++) {
         //Logger(INFO) << "Inserting particle pArray[" << i << "] : " << pArray[s->myrank][i].x[0];
         insertTree(&pArray[s->myrank][i], root);
     }
-
-    //output_tree(root, false);
 
     delete [] plist; //deleteParticleList(plist); //delete [] plist; //delete plist;
     delete [] plistLengthSend;
@@ -843,7 +748,6 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
 //TODO: implement buildSendlist (Sending Particles to Their Owners and Inserting Them in the Local Tree)
 void buildSendlist(TreeNode *root, TreeNode *t, SubDomainKeyTree *s, ParticleList *plist, int *pIndex, keytype k, int level) {
     ParticleList * current;
-    //current = plist;
     if (t != NULL) {
         // start of the operation on *t
         int proc;

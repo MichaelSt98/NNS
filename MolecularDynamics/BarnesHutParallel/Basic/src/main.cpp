@@ -21,20 +21,20 @@ int outputRank = 0;
 
 // function declarations
 Renderer* initRenderer(ConfigParser &confP);
+void createParticleDatatype(MPI_Datatype *datatype);
 
+//create MPI datatype for Particle struct
 void createParticleDatatype(MPI_Datatype *datatype) {
-    //create MPI datatype for Particle struct
     int mpiParticleLengths[6] = {1, DIM, DIM, DIM, 1, 1};
-    // not properly working
     //const MPI_Aint mpiParticleDisplacements[6] ={ 0, sizeof(float), 2*sizeof(float), 3*sizeof(float), 4*sizeof(float), 4*sizeof(float) + sizeof(bool) };
-    // properly working
     const MPI_Aint mpiParticleDisplacements[6] ={ offsetof(Particle, m), offsetof(Particle, x), offsetof(Particle, v),
                                                   offsetof(Particle, F), offsetof(Particle, moved), offsetof(Particle, todelete) };
     MPI_Datatype mpiParticleTypes[6] = { MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_CXX_BOOL, MPI_CXX_BOOL }; // MPI_C_BOOL ?
     MPI_Type_create_struct(6, mpiParticleLengths, mpiParticleDisplacements, mpiParticleTypes, datatype);
     MPI_Type_commit(datatype);
 }
-void initParticles(SubDomainKeyTree *s, Box *domain, Particle *pArray, int ppp, ConfigParser &confP) {
+
+void initParticles(SubDomainKeyTree *s, Particle *pArray, int ppp, ConfigParser &confP) {
     //pArray = new Particle[ppp];
     using std::uniform_real_distribution;
     //float systemSize = confP.//getSystemSize(domain);
@@ -107,8 +107,6 @@ int main(int argc, char *argv[]) {
 
     createParticleDatatype(&mpiParticle);
 
-    //TODO: needed to be called by every process?
-    // initialize logger
     LOGCFG.headers = true;
     LOGCFG.level = DEBUG;
     LOGCFG.myrank = s.myrank;
@@ -137,98 +135,43 @@ int main(int argc, char *argv[]) {
     Particle *pArray;
     pArray = new Particle[ppp];
 
-    initParticles(&s, &domain, pArray, ppp, confP);
-
-
-    //for (int i=0; i<ppp; i++) {
-      //  Logger(INFO) << "pArray[" << i << "].x = (" << pArray[i].x[0] << ", " << pArray[i].x[1] << ", " << pArray[i].x[2] << ")";
-    //}
-
-
-    //MPI_Barrier(MPI_COMM_WORLD);
+    initParticles(&s, pArray, ppp, confP);
 
     MPI_Gather(pArray, ppp, mpiParticle, &pArrayAll[0], ppp, mpiParticle, 0, MPI_COMM_WORLD);
 
     if (s.myrank == 0) {
-        for (int i = 0; i < N; i++) {
-            //Logger(INFO) << "pArrayAll[" << i << "].x = (" << pArrayAll[i].x[0] << ", " << pArrayAll[i].x[1] << ", "
-              //           << pArrayAll[i].x[2] << ")";
-        }
-
 
         TreeNode *rootAll;
         rootAll = (TreeNode *) calloc(1, sizeof(TreeNode));
 
-        //rootAll->p = pArrayAll[0]; //(first particle with number i=1); //1
         rootAll->box = domain;
-        //rootAll->p = rootParticle;
 
         for (int i = 0; i < N; i++) {
             insertTree(&pArrayAll[i], rootAll);
         }
 
-        //createRanges(root, N, &s, confP.getVal<int>("dummyDomains"));
         createRanges(rootAll, N, &s);
-        //createDomainList(rootAll, 0, 0, &s);
-        //compPseudoParticles(rootAll);
-
-        //output_tree(rootAll, false);
-        //freeTree_BH(rootAll);
     }
-
-    //send ranges to all processes
-    //MPI_UNSIGNED_LONG
-    //keytype *range[s.numprocs+1];
-
-    //if (s.myrank == 0) {
-    //    range = s.range;
-    //}
 
     if (s.myrank != 0) {
         s.range = new keytype[s.numprocs+1];
     }
 
-    //MPI_Barrier(MPI_COMM_WORLD);
-
     MPI_Bcast(s.range, s.numprocs+1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
-
-    //if (s.myrank == 1) {
-    //    for (int i=0; i<s.numprocs+1; i++) {
-    //        Logger(INFO) << std::bitset<64>(s.range[i]);
-    //    }
-    //}
 
     TreeNode *root;
     root = (TreeNode *) calloc(1, sizeof(TreeNode));
 
     createDomainList(root, 0, 0, &s);
 
-    //root->p = pArray[0]; //(first particle with number i=1); //1
     root->box = domain;
-    //root->p = rootParticle;
 
     for (int i = 0; i < ppp; i++) {
-        //Logger(INFO) << "Insert particle: " << i;
         insertTree(&pArray[i], root);
     }
 
-    //createRanges(root, N, &s, confP.getVal<int>("dummyDomains"));
-    //createRanges(rootAll, N, &s);
-    //createDomainList(root, 0, 0, &s);
-    //compPseudoParticles(root);
-
-    //compPseudoParticlespar(root, &s);
-
-    //if (s.myrank == outputRank) {
-    //    output_tree(root, true);
-    //}
-
-    //output_tree(root, false);
-
     Logger(DEBUG) << "BEFORE SENDING PARTICLES";
     output_tree(root, false);
-
-    //MPI_Barrier(MPI_COMM_WORLD);
 
     sendParticles(root, &s);
 
@@ -236,44 +179,10 @@ int main(int argc, char *argv[]) {
     output_tree(root, false);
 
 
-    //output_particles(root);
-
     //compPseudoParticlespar(root, &s);
 
 
-    /*if (s.myrank == outputRank) {
-        ConfigParser confP{ConfigParser("config.info")};
-
-        int width = confP.getVal<int>("width");
-        int height = confP.getVal<int>("height");
-
-        char *image = new char[width * height * 3];
-        double *hdImage = new double[width * height * 3];
-
-        const float systemSize{confP.getVal<float>("systemSize")};
-        TreeNode *root;
-        Box box;
-        for (int i = 0; i < DIM; i++) {
-            box.lower[i] = -systemSize;
-            box.upper[i] = systemSize;
-        }
-
-        const float delta_t{confP.getVal<float>("timeStep")};
-        const float t_end{confP.getVal<float>("timeEnd")};
-        const int N{confP.getVal<int>("numParticles")};
-
-        Renderer *renderer = initRenderer(confP);
-
-        //inputParameters_BH(&delta_t, &t_end, &box, &theta, &N);
-
-        initData_BH(&root, &box, &s, N, confP);
-
-        //TODO: timeIntegration_BH(0, delta_t, t_end, root, box, &s);
-
-        //free resources
-        freeTree_BH(root);
-    }*/
-
+    //FINALIZING
     //freeTree_BH(root);
 
     MPI_Finalize();
