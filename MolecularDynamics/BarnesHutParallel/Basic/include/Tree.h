@@ -144,7 +144,11 @@ void buildSendlist(TreeNode *root, TreeNode *t, SubDomainKeyTree *s, ParticleLis
 
 int get_domain_list_array(TreeNode *root, Particle *&pArray);
 
+int get_lowest_domain_list_array(TreeNode *root, Particle *&pArray);
+
 void get_domain_list_nodes(TreeNode *t, ParticleList *pList, int &pCounter);
+
+void get_lowest_domain_list_nodes(TreeNode *t, ParticleList *pList, int &pCounter);
 
 int get_domain_moments_array(TreeNode *root, float * moments);
 

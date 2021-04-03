@@ -478,6 +478,24 @@ ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst){
 void get_domain_list_nodes(TreeNode *t, ParticleList *pList, int &pCounter) {
     if (t != NULL){
         ParticleList * current;
+        if (t->node == domainList) { // && isLowestDomainListNode(t)) {
+            current = pList;
+            for (int j=0; j<pCounter; j++) {
+                current = current->next;
+            }
+            current->p = t->p;
+            current->next = new ParticleList;
+            pCounter++;
+        }
+        for (int i = 0; i < POWDIM; i++) {
+            get_domain_list_nodes(t->son[i], pList, pCounter);
+        }
+    }
+}
+
+void get_lowest_domain_list_nodes(TreeNode *t, ParticleList *pList, int &pCounter) {
+    if (t != NULL){
+        ParticleList * current;
         if (t->node == domainList && isLowestDomainListNode(t)) {
             current = pList;
             for (int j=0; j<pCounter; j++) {
@@ -547,6 +565,22 @@ int get_domain_list_array(TreeNode *root, Particle *&pArray) {
     ParticleList *pList;
     pList = new ParticleList;
     get_domain_list_nodes(root, pList, pCounter);
+    pArray = new Particle[pCounter];
+    for (int i=0; i<pCounter; i++) {
+        pArray[i] = pList->p;
+        ParticleList* old = pList;
+        pList = pList->next;
+        delete old;
+    }
+    //delete pList; //deleteParticleList(pList);
+    return pCounter;
+}
+
+int get_lowest_domain_list_array(TreeNode *root, Particle *&pArray) {
+    int pCounter = 0;
+    ParticleList *pList;
+    pList = new ParticleList;
+    get_lowest_domain_list_nodes(root, pList, pCounter);
     pArray = new Particle[pCounter];
     for (int i=0; i<pCounter; i++) {
         pArray[i] = pList->p;
@@ -783,7 +817,8 @@ void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s) {
     compLocalPseudoParticlespar(root);
 
     Particle * pArray;
-    int pLength = get_domain_list_array(root, pArray);
+    //int pLength = get_domain_list_array(root, pArray);
+    int pLength = get_lowest_domain_list_array(root, pArray);
 
     Logger(INFO) << "pLength = " << pLength;
     for (int i=0; i<pLength; i++) {
@@ -805,13 +840,35 @@ void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s) {
     //compDomainListPseudoParticlespar(root);
 }
 
-bool isLowestDomainListNode(TreeNode *t){
+/*bool isLowestDomainListNode(TreeNode *t){
     if (t != NULL){
-        if (t->node == domainList && !isLeaf(t)){
+        if (t->node == domainList && !isLeaf(t)) {
             for (int i=0; i<POWDIM; i++){
-                if (t->son[i] && t->son[i]->node == domainList) return false;
+                if (t->son[i] && t->son[i]->node == domainList) {
+                    return false;
+                }
             }
             return true;
+        }
+    }
+    return false;
+}*/
+
+bool isLowestDomainListNode(TreeNode *t){
+    if (t != NULL){
+        if (t->node == domainList) { //&& !isLeaf(t)){
+            if (isLeaf(t)) {
+                return true;
+            } else {
+                for (int i = 0; i < POWDIM; i++) {
+                    if (t->son[i]) { // && t->son[i]->node == domainList) {
+                        if (t->son[i]->node == domainList) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
         }
     }
     return false;
@@ -825,7 +882,8 @@ void compLocalPseudoParticlespar(TreeNode *t) {
             compLocalPseudoParticlespar(t->son[i]);
         }
         // start of the operation on *t
-        if (((!isLeaf(t)) && (t->node != domainList)) || isLowestDomainListNode(t)) {
+        //if ((!isLeaf(t)) && (((t->node != domainList) || isLowestDomainListNode(t)))) {
+        if (!isLeaf(t) && t->node != domainList || isLowestDomainListNode(t)) {
             // operations analogous to Algorithm 8.5 (see below)
             if (!isLowestDomainListNode(t)) {
                 t->node = pseudoParticle;
