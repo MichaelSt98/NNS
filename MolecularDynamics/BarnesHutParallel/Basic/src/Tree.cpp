@@ -367,8 +367,8 @@ void repairTree(TreeNode *t) {
             for (int i = 0; i < POWDIM; i++) {
                 if (t->son[i] != NULL) {
                     if (t->son[i]->p.todelete) {
-                        //free(t->son[i]);
-                        free(&t->son[i]->p);
+                        free(t->son[i]);
+                        t->son[i] = NULL;
                     }
                     else {
                         numberofsons++;
@@ -384,8 +384,9 @@ void repairTree(TreeNode *t) {
                 // *t adopts the role of its only son node and
                 // the son node is deleted directly
                 t->p = t->son[d]->p;
-                //free(t->son[d]);
-                free(&t->son[d]->p);
+                //free(&t->son[d]->p);
+                free(t->son[d]);
+                t->son[d] = NULL;
             }
         }
     }
@@ -477,7 +478,7 @@ ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst){
 void get_domain_list_nodes(TreeNode *t, ParticleList *pList, int &pCounter) {
     if (t != NULL){
         ParticleList * current;
-        if (t->node == domainList) {
+        if (t->node == domainList && isLowestDomainListNode(t)) {
             current = pList;
             for (int j=0; j<pCounter; j++) {
                 current = current->next;
@@ -765,6 +766,7 @@ void buildSendlist(TreeNode *root, TreeNode *t, SubDomainKeyTree *s, ParticleLis
             current->p = t->p;
             current->next = new ParticleList; //TODO: similar problem as with get_particle_array() ?!
             //mark t->p as to be deleted;
+            //Logger(ERROR) << "buildSendList to be deleted!";
             t->p.todelete = true;
             pIndex[proc]++;
         }
@@ -780,13 +782,13 @@ void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s) {
 
     compLocalPseudoParticlespar(root);
 
-    /*Particle * pArray;
-    int pLength = get_domain_list_array(root, pArray);*/
+    Particle * pArray;
+    int pLength = get_domain_list_array(root, pArray);
 
-    //Logger(INFO) << "pLength = " << pLength;
-    //for (int i=0; i<pLength; i++) {
-    //    Logger(ERROR) << "m[" << i << "]  = " << pArray[i].m << "   x = " << pArray[i].x[0];
-    //}
+    Logger(INFO) << "pLength = " << pLength;
+    for (int i=0; i<pLength; i++) {
+        Logger(ERROR) << "m[" << i << "]  = " << pArray[i].m << "   x = " << pArray[i].x[0];
+    }
 
     //if (s->myrank == ) {
     //output_tree(root, false);
@@ -825,7 +827,9 @@ void compLocalPseudoParticlespar(TreeNode *t) {
         // start of the operation on *t
         if (((!isLeaf(t)) && (t->node != domainList)) || isLowestDomainListNode(t)) {
             // operations analogous to Algorithm 8.5 (see below)
-            if (!isLowestDomainListNode(t)) t->node = pseudoParticle;
+            if (!isLowestDomainListNode(t)) {
+                t->node = pseudoParticle;
+            }
             t->p.m = 0;
             for (int d = 0; d < DIM; d++) {
                 t->p.x[d] = 0;

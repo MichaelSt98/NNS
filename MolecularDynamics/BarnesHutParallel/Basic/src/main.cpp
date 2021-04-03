@@ -170,16 +170,15 @@ int main(int argc, char *argv[]) {
         insertTree(&pArray[i], root);
     }
 
-    Logger(DEBUG) << "BEFORE SENDING PARTICLES";
-    output_tree(root, false);
-
     sendParticles(root, &s);
 
-    Logger(DEBUG) << "AFTER SENDING PARTICLES";
-    output_tree(root, false);
+    Logger(DEBUG) << "BEFORE COMPUTING PSUEDOPARTICLES";
+    output_tree(root, true);
 
+    compPseudoParticlespar(root, &s);
 
-    //compPseudoParticlespar(root, &s);
+    Logger(DEBUG) << "AFTER COMPUTING PSUEDOPARTICLES";
+    output_tree(root, true);
 
 
     //FINALIZING
