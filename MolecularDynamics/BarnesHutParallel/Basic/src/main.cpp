@@ -173,12 +173,12 @@ int main(int argc, char *argv[]) {
     sendParticles(root, &s);
 
     Logger(DEBUG) << "BEFORE COMPUTING PSUEDOPARTICLES";
-    output_tree(root, true);
+    output_tree(root, false);
 
     compPseudoParticlespar(root, &s);
 
     Logger(DEBUG) << "AFTER COMPUTING PSUEDOPARTICLES";
-    output_tree(root, true);
+    output_tree(root, false);
 
 
     //FINALIZING

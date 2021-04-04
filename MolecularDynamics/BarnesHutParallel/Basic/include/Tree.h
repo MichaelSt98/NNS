@@ -47,6 +47,11 @@ struct TreeNode {
 
 typedef unsigned long keytype;
 
+struct KeyList {
+    keytype k;
+    KeyList *next;
+};
+
 const int maxlevel = (sizeof(keytype)*CHAR_BIT - 1)/DIM;
 
 struct SubDomainKeyTree {
@@ -146,9 +151,14 @@ int get_domain_list_array(TreeNode *root, Particle *&pArray);
 
 int get_lowest_domain_list_array(TreeNode *root, Particle *&pArray);
 
+int get_lowest_domain_list_array(TreeNode *root, Particle *&pArray, keytype *&kArray);
+
 void get_domain_list_nodes(TreeNode *t, ParticleList *pList, int &pCounter);
 
 void get_lowest_domain_list_nodes(TreeNode *t, ParticleList *pList, int &pCounter);
+
+void get_lowest_domain_list_nodes(TreeNode *t, ParticleList *pList, KeyList *kList,
+                                  int &pCounter, keytype k=0UL, int level=0);
 
 int get_domain_moments_array(TreeNode *root, float * moments);
 
@@ -159,6 +169,8 @@ void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s);
 void compLocalPseudoParticlespar(TreeNode *t);
 
 void compDomainListPseudoParticlespar(TreeNode *t);
+
+float smallestDistance(TreeNode *td, TreeNode *t);
 
 void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, SubDomainKeyTree *s);
 
