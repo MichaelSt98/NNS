@@ -1099,6 +1099,24 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, S
     }
 }
 
+void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, SubDomainKeyTree *s,
+                   int &pCounter, keytype k, int level) {
+
+    if ((t != NULL) && (key2proc(k, s) == s->myrank)) {
+        // the key of *t can be computed step by step in the recursion insert t->p into list plist;
+        //TODO: insert t->p into list plist (where?)
+
+        float r = smallestDistance(td, t); //IMPLEMENT: smallest distance from t->p.x to cell td->box;
+        if (diam >= theta * r) {
+            for (int i = 0; i < POWDIM; i++) {
+                symbolicForce(td, t->son[i], .5 * diam, plist, s, pCounter,
+                              (unsigned long)(k + i << DIM*(maxlevel-level-1)), level+1); //TODO: is that correct?
+            }
+        }
+    }
+}
+
+
 /*
  * NOTE: Force computation:
  *
@@ -1111,7 +1129,7 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, S
  */
 
 //TODO: implement compF_BHpar (Parallel Force Computation)
-void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
+/*void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
     //allocate memory for s->numprocs particle lists in plist;
     //initialize ParticleList plist[to] for all processes to;
     //TODO: compTheta(root, root, s, plist, diam);
@@ -1123,17 +1141,129 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
     }
     //TODO: delete plist;
     //TODO: compF_BH(root, diam);
+}*/
+
+//compF_BHpar analog to sendParticles()
+void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
+    //allocate memory for s->numprocs particle lists in plist;
+    //initialize ParticleList plist[to] for all processes to;
+    ParticleList * plist;
+    plist = new ParticleList[s->numprocs];
+
+    int pIndex[s->numprocs];
+    for (int proc = 0; proc < s->numprocs; proc++) {
+        pIndex[proc] = 0;
+    }
+
+    compTheta(root, root, s, plist, diam);
+
+    for (int proc = 0; proc < s->numprocs; proc++) {
+        ParticleList *current = &plist[proc]; // needed not to 'consume' plist
+        for (int i=0; i<pIndex[proc]; i++){
+            //Logger(DEBUG) << "x2send = (" << current->p.x[0] << ", " << current->p.x[1] << ", " << current->p.x[2] << ")";
+            current = current->next;
+        }
+    }
+
+    Particle ** pArray = new Particle*[s->numprocs];
+
+    int *plistLengthSend;
+    plistLengthSend = new int[s->numprocs];
+    plistLengthSend[s->myrank] = -1;
+
+    int *plistLengthReceive;
+    plistLengthReceive = new int[s->numprocs];
+    plistLengthReceive[s->myrank] = -1; // nothing to receive from yourself
+
+    for (int proc=0; proc < s->numprocs; proc++) {
+        if (proc != s->myrank) {
+            plistLengthSend[proc] = getParticleListLength(&plist[proc]);
+
+            Logger(INFO) << "plistLengthSend[" << proc << "] = " << plistLengthSend[proc];
+
+            pArray[proc] = new Particle[plistLengthSend[proc]];
+            ParticleList * current = &plist[proc];
+            for (int i = 0; i < plistLengthSend[proc]; i++) {
+                pArray[proc][i] = current->p;
+                current = current->next;
+            }
+        }
+    }
+
+    int reqCounter = 0;
+    MPI_Request reqMessageLengths[s->numprocs-1];
+    MPI_Status statMessageLengths[s->numprocs-1];
+
+    //send plistLengthSend and receive plistLengthReceive
+    for (int proc=0; proc < s->numprocs; proc++) {
+        if (proc != s->myrank) {
+            MPI_Isend(&plistLengthSend[proc], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &reqMessageLengths[reqCounter]);
+            MPI_Recv(&plistLengthReceive[proc], 1, MPI_INT, proc, 17, MPI_COMM_WORLD, &statMessageLengths[reqCounter]);
+            reqCounter++;
+        }
+    }
+    MPI_Waitall(s->numprocs-1, reqMessageLengths, statMessageLengths);
+
+    //sum over to get total amount of particles to receive
+    int receiveLength = 0;
+    for (int proc=0; proc < s->numprocs; proc++) {
+        if (proc != s->myrank) {
+            receiveLength += plistLengthReceive[proc];
+        }
+    }
+
+    Logger(INFO) << "receiveLength = " << receiveLength;
+
+    // allocate missing (sub)array for process rank
+    pArray[s->myrank] = new Particle[receiveLength];
+
+    //for (int proc=0; proc<s->numprocs; proc++) {
+    //    for (int i = 0; i < plistLengthSend[proc]; i++) {
+    //        Logger(INFO) << "Sending particle pArray[" << proc << "][" << i << "] : " << pArray[proc][i].x[0];
+    //    }
+    //}
+
+    MPI_Request reqParticles[s->numprocs-1];
+    MPI_Status statParticles[s->numprocs-1];
+
+    //send and receive particles
+    reqCounter = 0;
+    int receiveOffset = 0;
+    for (int proc=0; proc < s->numprocs; proc++) {
+        if (proc != s->myrank) {
+            MPI_Isend(pArray[proc], plistLengthSend[proc], mpiParticle, proc, 17, MPI_COMM_WORLD, &reqParticles[reqCounter]);
+            MPI_Recv(pArray[s->myrank] + receiveOffset, plistLengthReceive[proc], mpiParticle, proc, 17,
+                     MPI_COMM_WORLD, &statParticles[reqCounter]);
+            receiveOffset += plistLengthReceive[proc];
+            reqCounter++;
+        }
+    }
+    MPI_Waitall(s->numprocs-1, reqParticles, statParticles);
+
+    for (int i=0; i<receiveLength; i++) {
+        //Logger(INFO) << "Inserting particle pArray[" << i << "] : " << pArray[s->myrank][i].x[0];
+        insertTree(&pArray[s->myrank][i], root);
+    }
+
+    delete [] plist; //deleteParticleList(plist); //delete [] plist; //delete plist;
+    delete [] plistLengthSend;
+    delete [] plistLengthReceive;
+    for (int proc=0; proc < s->numprocs; proc++) {
+        delete [] pArray[proc];
+    }
+    delete [] pArray;
 }
 
 //TODO: implement compTheta (Parallel Force Computation)
 void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *plist, float diam) {
     //called recursively as in Algorithm 8.1;
     if (t != NULL) {
-        for (int i = 0; i < POWDIM; i++)
+        for (int i = 0; i < POWDIM; i++) {
             compTheta(t->son[i], root, s, plist, diam);
+        }
         // start of the operation on *t
         int proc;
-        if ((true/* TODO: *t is a domainList node*/) && ((proc = key2proc(key(t), s)) != s->myrank)) {
+        if ((t->node == domainList) && ((proc = key2proc(key(t), s)) != s->myrank)) {
             // the key of *t can be computed step by step in the recursion
             symbolicForce(t, root, diam, &plist[proc], s);
         }
@@ -1144,8 +1274,8 @@ void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *p
 
 /*
  * NOTE: Remaining parts:
- * The remaining parts needed to complete the parallel pro- gram can be implemented in a straightforward way.
- * After the force com- putation, copies of particles from other processes have to be removed. The routine for the
+ * The remaining parts needed to complete the parallel program can be implemented in a straightforward way.
+ * After the force computation, copies of particles from other processes have to be removed. The routine for the
  * time integration can be reused from the sequential case. It only processes all particles that belong to the process.
  * Particles are moved in two phases. First, the sequential routine is used to re-sort particles that have left their
  * cell in the local tree. Afterwards, particles that have left the process have to be sent to other processes

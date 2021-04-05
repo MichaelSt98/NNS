@@ -174,6 +174,9 @@ float smallestDistance(TreeNode *td, TreeNode *t);
 
 void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, SubDomainKeyTree *s);
 
+void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, SubDomainKeyTree *s,
+                   int &pCounter, keytype k, int level);
+
 void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s);
 
 void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *plist, float diam);
