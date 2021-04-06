@@ -160,6 +160,8 @@ void get_lowest_domain_list_nodes(TreeNode *t, ParticleList *pList, int &pCounte
 void get_lowest_domain_list_nodes(TreeNode *t, ParticleList *pList, KeyList *kList,
                                   int &pCounter, keytype k=0UL, int level=0);
 
+void update_lowest_domain_list_nodes(TreeNode *t, int &pCounter, float * masses, float * moments);
+
 int get_domain_moments_array(TreeNode *root, float * moments);
 
 bool isLowestDomainListNode(TreeNode *t);

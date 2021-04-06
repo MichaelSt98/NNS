@@ -441,8 +441,8 @@ void output_particles(TreeNode *t) {
             output_particles(t->son[i]);
 
         }
-        if (isLeaf(t)) {
-            std::cout << "\tx = (" << t->p.x[0] << ", " << t->p.x[1] << ", " << t->p.x[2] << ")" << std::endl;
+        if (isLeaf(t) && t->node != domainList) {
+            std::cout << "\tparticle x = (" << t->p.x[0] << ", " << t->p.x[1] << ", " << t->p.x[2] << ")" << std::endl;
         }
     }
 }
@@ -538,6 +538,25 @@ void get_lowest_domain_list_nodes(TreeNode *t, ParticleList *pList, KeyList *kLi
         for (int i = 0; i < POWDIM; i++) {
             get_lowest_domain_list_nodes(t->son[i], pList, kList, pCounter,
                                          (unsigned long)(k + i << DIM*(maxlevel-level-1)), level+1);
+        }
+    }
+}
+
+void update_lowest_domain_list_nodes(TreeNode *t, int &pCounter, float * masses, float * moments) {
+    if (t != NULL){
+        if (t->node == domainList && isLowestDomainListNode(t)) {
+
+            if (masses[pCounter] > 0) {
+                t->p.x[0] = moments[pCounter * 3] / masses[pCounter];
+                t->p.x[1] = moments[pCounter * 3 + 1] / masses[pCounter];
+                t->p.x[2] = moments[pCounter * 3 + 2] / masses[pCounter];
+            }
+            t->p.m = masses[pCounter];
+
+            pCounter++;
+        }
+        for (int i = 0; i < POWDIM; i++) {
+            update_lowest_domain_list_nodes(t->son[i], pCounter, masses, moments);
         }
     }
 }
@@ -883,8 +902,21 @@ void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s) {
 
     Logger(INFO) << "pLength = " << pLength;
     for (int i=0; i<pLength; i++) {
-        Logger(ERROR) << "pArray k[" << i << "]  = " << kArray[i] << "   x = " << pArray[i].x[0];
+        Logger(ERROR) << "pArray k[" << i << "]  = " << std::bitset<64>(kArray[i]) << "   x = " << pArray[i].x[0];
     }
+
+    float moments[pLength*3];
+    float global_moments[3*pLength];
+    float masses[pLength];
+    float global_masses[pLength];
+
+    for (int i=0; i<pLength; i++) {
+        moments[3*i] = pArray[i].x[0] * pArray[i].m;
+        moments[3*i+1] = pArray[i].x[1] * pArray[i].m;
+        moments[3*i+2] = pArray[i].x[2] * pArray[i].m;
+        masses[i] = pArray[i].m;
+    }
+
 
     /*Particle * pArrayDomainList;
     int pLengthDomainList = get_domain_list_array(root, pArrayDomainList);
@@ -907,7 +939,20 @@ void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s) {
             MPI_Datatype datatype,
             MPI_Op op,
             MPI_Comm communicator)*/
-    //compDomainListPseudoParticlespar(root);
+
+    MPI_Allreduce(&moments, &global_moments, 3*pLength, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&masses, &global_masses, pLength, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+
+    /*for (int i=0; i<pLength; i++) {
+        Logger(INFO) << "       masses[" << i << "] = " << masses[i];
+        Logger(INFO) << "global masses[" << i << "] = " << global_masses[i];
+    }*/
+
+    int pCounter = 0;
+    update_lowest_domain_list_nodes(root, pCounter, masses, moments);
+
+
+    compDomainListPseudoParticlespar(root);
 }
 
 /*bool isLowestDomainListNode(TreeNode *t){
@@ -950,10 +995,10 @@ void compLocalPseudoParticlespar(TreeNode *t) {
             compLocalPseudoParticlespar(t->son[i]);
         }
         // start of the operation on *t
-        if ((!isLeaf(t)) && (((t->node != domainList) || isLowestDomainListNode(t)))) {
-        //if (!isLeaf(t) && t->node != domainList || isLowestDomainListNode(t)) {
+        //if ((!isLeaf(t)) && (((t->node != domainList) || isLowestDomainListNode(t)))) {
+        if (!isLeaf(t) && t->node != domainList || isLowestDomainListNode(t)) {
             // operations analogous to Algorithm 8.5 (see below)
-            if (!isLowestDomainListNode(t)) { //TODO: or t->node != domainList
+            if (t->node != domainList) { //TODO: or !isLowestDomainListNode(t)
                 t->node = pseudoParticle;
             }
             t->p.m = 0;
@@ -1105,6 +1150,14 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, S
     if ((t != NULL) && (key2proc(k, s) == s->myrank)) {
         // the key of *t can be computed step by step in the recursion insert t->p into list plist;
         //TODO: insert t->p into list plist (where?)
+        ParticleList * current;
+        current = plist;
+        for (int i=0; i<pCounter; i++) {
+            current = current->next;
+        }
+        current->p = t->p;
+        current->next = new ParticleList;
+        pCounter++;
 
         float r = smallestDistance(td, t); //IMPLEMENT: smallest distance from t->p.x to cell td->box;
         if (diam >= theta * r) {
