@@ -15,6 +15,7 @@
 #include <algorithm> // for sorting particle keys
 #include <climits> // for ulong_max
 #include <mpi.h>
+#include <set>
 
 #define KEY_MAX ULONG_MAX
 
@@ -52,7 +53,7 @@ struct KeyList {
     KeyList *next;
 };
 
-const int maxlevel = (sizeof(keytype)*CHAR_BIT - 1)/DIM;
+const int maxlevel = (sizeof(keytype)*CHAR_BIT-1)/DIM;
 
 struct SubDomainKeyTree {
     int myrank;
@@ -160,6 +161,12 @@ void get_lowest_domain_list_nodes(TreeNode *t, ParticleList *pList, int &pCounte
 void get_lowest_domain_list_nodes(TreeNode *t, ParticleList *pList, KeyList *kList,
                                   int &pCounter, keytype k=0UL, int level=0);
 
+void zero_lowest_domain_list_nodes(TreeNode *t);
+
+void update_lowest_domain_list_nodes_moments_masses(TreeNode *t, int &pCounter, float * masses, float * moments);
+
+void update_lowest_domain_list_nodes_com(TreeNode *t);
+
 void update_lowest_domain_list_nodes(TreeNode *t, int &pCounter, float * masses, float * moments);
 
 int get_domain_moments_array(TreeNode *root, float * moments);
@@ -177,10 +184,15 @@ float smallestDistance(TreeNode *td, TreeNode *t);
 void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, SubDomainKeyTree *s);
 
 void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, SubDomainKeyTree *s,
-                   int &pCounter, keytype k, int level);
+                   int &pCounter, keytype k=0UL, int level=0);
 
 void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s);
 
-void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *plist, float diam);
+//void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *plist, float diam);
+
+void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *plist, int *& pCounter, float diam,
+               keytype k=0UL, int level=0);
+
+bool compareParticles(Particle p1, Particle p2);
 
 #endif //BARNESHUTSERIAL_TREE_H

@@ -12,6 +12,6 @@
 #include <cmath>
 
 //TODO: Box *box or Box box ?
-void timeIntegration_BH(float t, float delta_t, float t_end, TreeNode *root, Box box, SubDomainKeyTree *s);
+void timeIntegration_BH(float t, float delta_t, float t_end, float diam, TreeNode *root, SubDomainKeyTree *s);
 
 #endif //BARNESHUTSERIAL_INTEGRATOR_H

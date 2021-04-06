@@ -60,12 +60,17 @@ void initParticles(SubDomainKeyTree *s, Particle *pArray, int ppp, ConfigParser 
         radius = sqrt(systemSize-radiusOffset); //*sqrt(randRadius(gen));
         //velocity = pow(((G*(SOLAR_MASS+((radius)/systemSize)*SOLAR_MASS)) / (radius*TO_METERS)), 0.5);
 
+        std::uniform_real_distribution<float> dist(-systemSize, systemSize);
+
         velocity = confP.getVal<float>("initVel");
 
         current = &(pArray[i]);
         current->x[0] =  radius*cos(angle);
         current->x[1] =  radius*sin(angle);
         current->x[2] =  randHeight(gen)-systemSize/2000.0;
+        /*current->x[0] = dist(gen);
+        current->x[1] = dist(gen);
+        current->x[2] = dist(gen);*/
         current->v[0] =  velocity*sin(angle);
         current->v[1] = -velocity*cos(angle);
         current->v[2] = 0.0;
@@ -126,6 +131,10 @@ int main(int argc, char *argv[]) {
 
     int N = confP.getVal<int>("numParticles"); //100;
 
+    Logger(ERROR) << "----------------------------------";
+    Logger(ERROR) << "AMOUNT OF PARTICLES: " << N;
+    Logger(ERROR) << "----------------------------------";
+
     Particle *pArrayAll;
     if (s.myrank == 0) {
         pArrayAll = new Particle[N];
@@ -144,13 +153,19 @@ int main(int argc, char *argv[]) {
         TreeNode *rootAll;
         rootAll = (TreeNode *) calloc(1, sizeof(TreeNode));
 
+        rootAll->p = pArrayAll[0];
         rootAll->box = domain;
 
-        for (int i = 0; i < N; i++) {
+        for (int i = 1; i < N; i++) {
             insertTree(&pArrayAll[i], rootAll);
         }
 
+        output_tree(rootAll, true);
+
         createRanges(rootAll, N, &s);
+
+        createDomainList(rootAll, 0, 0, &s);
+        //exit(0);
     }
 
     if (s.myrank != 0) {
@@ -177,15 +192,31 @@ int main(int argc, char *argv[]) {
     Logger(DEBUG) << "BEFORE COMPUTING PSUEDOPARTICLES";
     output_tree(root, false);
 
-    //output_particles(root);
-
-    //compPseudoParticlespar(root, &s);
-
-    compPseudoParticles(root);
+    compPseudoParticlespar(root, &s);
 
     Logger(DEBUG) << "AFTER COMPUTING PSUEDOPARTICLES";
     output_tree(root, false);
 
+    /*Particle * dArray2;
+    int dLength2 = get_domain_list_array(root, dArray2);
+
+    for (int i = 0; i < dLength2; i++) {
+        Logger(INFO) << "Domain dArray[" << i << "].x = " << dArray2[i].x[0];
+    }*/
+
+    //output_particles(root);
+
+    //float diam = 5;
+    Logger(ERROR) << "Init diam = " << root->box.upper[0] - root->box.lower[0];
+    compF_BHpar(root, root->box.upper[0] - root->box.lower[0], &s);
+
+    /*float t = 0;
+    float delta_t = 0.01;
+    float t_end = 0.1;
+
+    timeIntegration_BH(t, delta_t, t_end, diam, root, &s);*/
+
+    output_tree(root, true);
 
     //FINALIZING
     //freeTree_BH(root);
