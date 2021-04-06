@@ -1258,6 +1258,30 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, S
     }
 }
 
+void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleMap &pmap, SubDomainKeyTree *s,
+                   keytype k, int level) {
+
+    //Logger(INFO) << "symbolicForce: " << std::bitset<64>(k) << " mapped to proc " << key2proc(k, s);
+    if (t != NULL && (key2proc(k, s) == s->myrank || t->node == domainList)) {
+
+        // the key of *t can be computed step by step in the recursion insert t->p into list plist;
+        //TODO: insert t->p into list plist (where?)
+        if (t->node != domainList) {
+            //Logger(INFO) << "symbolicForce insert x = " << t->p.x[0];
+            pmap[k] = t->p; // insert into map which has unique keys (will overwrite)
+        }
+
+        float r = smallestDistance(td, t); //IMPLEMENT: smallest distance from t->p.x to cell td->box;
+        //Logger(DEBUG) << "diam = " << diam << "  theta * r = " << theta * r;
+        //Logger(DEBUG) << "Current node key = " << std::bitset<64>(k);
+        if (diam >= theta * r) {
+            for (int i = 0; i < POWDIM; i++) {
+                symbolicForce(td, t->son[i], .5 * diam, pmap, s,
+                              (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))), level+1); //TODO: is that correct?
+            }
+        }
+    }
+}
 
 /*
  * NOTE: Force computation:
@@ -1305,6 +1329,9 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
     ParticleList * uniquePlist;
     uniquePlist = new ParticleList[s->numprocs];
 
+    ParticleMap * pmap;
+    pmap = new ParticleMap[s->numprocs];
+
     int * pIndex;
     pIndex = new int[s->numprocs];
     //int pIndex[s->numprocs];
@@ -1312,19 +1339,27 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
         pIndex[proc] = 0;
     }
 
-    compTheta(root, root, s, plist, pIndex, diam);
+    //compTheta(root, root, s, plist, pIndex, diam);
+    compTheta(root, root, s, pmap, diam);
     //TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *plist, float diam, keytype k, int level
 
     for (int proc = 0; proc < s->numprocs; proc++) {
-        ParticleList *current = &plist[proc]; // needed not to 'consume' plist
+        //ParticleList *current = &plist[proc]; // needed not to 'consume' plist
 
+        ParticleMap::iterator pit;
+        Logger(WARN) << "pListSendLength[" << proc << "] = " << pmap[proc].size();
 
-        //TODO: remove duplicates!!
+        for (pit = pmap[proc].begin(); pit != pmap[proc].end(); pit++)
+        {
+            Logger(INFO) << "pmap[" << std::bitset<64>(pit->first) << "] = ("
+                << pit->second.x[0] << ", " << pit->second.x[1] << ", " << pit->second.x[2] << "), "
+                << "m = " << pit->second.m;
+        }
 
-        for (int i=0; i<pIndex[proc]; i++){
+        /*for (int i=0; i<pIndex[proc]; i++){
             Logger(DEBUG) << "BH_par2send = (" << current->p.x[0] << ", " << current->p.x[1] << ", " << current->p.x[2] << ")";
             current = current->next;
-        }
+        }*/
     }
 
     /*Particle ** pArray = new Particle*[s->numprocs];
@@ -1433,6 +1468,23 @@ void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *p
             // the key of *t can be computed step by step in the recursion
             Logger(WARN) << "td x[0] = " << t->p.x[0] << ", " << std::bitset<64>(k);
             symbolicForce(t, root, diam, &plist[proc], s, pCounter[proc], 0UL, 0);
+        }
+    }
+// end of the operation on *t
+}
+
+void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleMap *pmap, float diam, keytype k, int level) {
+    //Logger(INFO) << "compTheta() ..";
+    //called recursively as in Algorithm 8.1;
+    if (t != NULL) {
+        for (int i = 0; i < POWDIM; i++) {
+            compTheta(t->son[i], root, s, pmap, diam, (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))), level+1);
+        }
+        // start of the operation on *t
+        int proc;
+        if ((t->node == domainList) && ((proc = key2proc(k, s)) != s->myrank)) {
+            // the key of *t can be computed step by step in the recursion
+            symbolicForce(t, root, diam, pmap[proc], s, 0UL, 0);
         }
     }
 // end of the operation on *t

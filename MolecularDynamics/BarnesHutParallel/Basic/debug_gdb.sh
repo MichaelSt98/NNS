@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-mpirun -np 2 xterm -e gdb bin/runner -x initPipeUntilSeg.gdb
+mpirun -np 4 xterm -e gdb bin/runner -x initPipe.gdb

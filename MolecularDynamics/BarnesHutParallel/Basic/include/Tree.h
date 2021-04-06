@@ -15,7 +15,7 @@
 #include <algorithm> // for sorting particle keys
 #include <climits> // for ulong_max
 #include <mpi.h>
-#include <set>
+#include <map>
 
 #define KEY_MAX ULONG_MAX
 
@@ -47,6 +47,7 @@ struct TreeNode {
 };
 
 typedef unsigned long keytype;
+typedef std::map<keytype, Particle> ParticleMap;
 
 struct KeyList {
     keytype k;
@@ -186,11 +187,17 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, S
 void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, SubDomainKeyTree *s,
                    int &pCounter, keytype k=0UL, int level=0);
 
+void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleMap &pmap, SubDomainKeyTree *s,
+                   keytype k=0UL, int level=0);
+
 void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s);
 
 //void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *plist, float diam);
 
 void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *plist, int *& pCounter, float diam,
+               keytype k=0UL, int level=0);
+
+void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleMap *pmap, float diam,
                keytype k=0UL, int level=0);
 
 bool compareParticles(Particle p1, Particle p2);

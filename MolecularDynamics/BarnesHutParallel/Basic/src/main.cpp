@@ -207,7 +207,7 @@ int main(int argc, char *argv[]) {
     //output_particles(root);
 
     //float diam = 5;
-    Logger(ERROR) << "Init diam = " << root->box.upper[0] - root->box.lower[0];
+    //Logger(ERROR) << "Init diam = " << root->box.upper[0] - root->box.lower[0];
     compF_BHpar(root, root->box.upper[0] - root->box.lower[0], &s);
 
     /*float t = 0;
