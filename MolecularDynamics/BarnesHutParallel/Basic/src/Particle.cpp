@@ -4,6 +4,8 @@
 
 #include "../include/Particle.h"
 
+float smoothing = 0.1;
+
 Particle::Particle() {
     m = 0.f;
     x[0] = 0.f;
@@ -48,7 +50,7 @@ void force(Particle *i, Particle *j) {
     for (int d=0; d<DIM; d++)
         //r += sqrt(abs(j->x[d] - i->x[d]));
         r += (j->x[d] - i->x[d]) * (j->x[d] - i->x[d]);
-    float f = i->m * j->m /(sqrt(r) * r);
+    float f = i->m * j->m /(sqrt(r) * r + smoothing);
     if (r < 1e-20){
         Logger(WARN) << "In force: encountered very low value of r";
     }

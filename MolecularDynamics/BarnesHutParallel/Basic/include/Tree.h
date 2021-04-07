@@ -125,7 +125,7 @@ void moveLeaf(TreeNode *t, TreeNode *root);
 
 void repairTree(TreeNode *t);
 
-void output_tree(TreeNode *root, bool detailed=false);
+void output_tree(TreeNode *root, bool detailed=false, bool onlyParticles=false);
 
 void output_particles(TreeNode *root);
 
@@ -202,6 +202,6 @@ void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleMap *pm
 
 bool compareParticles(Particle p1, Particle p2);
 
-void gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll);
+int gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll);
 
 #endif //BARNESHUTSERIAL_TREE_H

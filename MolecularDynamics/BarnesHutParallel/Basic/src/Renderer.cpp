@@ -74,15 +74,17 @@ void Renderer::renderBodies(Particle* p, double* hdImage)
                 vMag += current->v[d] * current->v[d];
             }
             vMag = sqrt(vMag); //magnitude(current->velocity);
+            if (index%50 == 0) {
+                Logger(DEBUG) << "vMag = " << vMag;
+            }
             colorDot(current->x[0], current->x[1], vMag, hdImage);
 
-            /**
-            for (int i_x = int(current->position.x*100 - ((renderScale*systemSize)*100)/200); i_x < int(current->position.x*100 + ((renderScale*systemSize)*100)/200); i_x++) {
-                for (int i_y = int(current->position.x*100 - ((renderScale*systemSize)*100)/200); i_y < int(current->position.x*100 + ((renderScale*systemSize)*100)/200); i_y++) {
+
+            for (int i_x = int(current->x[0]*100 - ((renderScale*systemSize)*100)/200); i_x < int(current->x[0]*100 + ((renderScale*systemSize)*100)/200); i_x++) {
+                for (int i_y = int(current->x[1]*100 - ((renderScale*systemSize)*100)/200); i_y < int(current->x[1]*100 + ((renderScale*systemSize)*100)/200); i_y++) {
                     colorDot(i_x/100.0, i_y/100.0, vMag, hdImage);
                 }
             }
-            **/
         }
     }
 }

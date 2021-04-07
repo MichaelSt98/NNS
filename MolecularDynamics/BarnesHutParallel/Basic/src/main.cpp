@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
     float delta_t = 0.2;
     float diam = root->box.upper[0] - root->box.lower[0];
     float t = 0;
-    float t_end = 10;
+    float t_end = 25.0;
 
     timeIntegration_BH_par(t, delta_t, t_end, root->box.upper[0] - root->box.lower[0], root, &s,
                            renderer, image, hdImage);

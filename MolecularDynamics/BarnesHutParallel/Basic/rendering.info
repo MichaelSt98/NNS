@@ -1,7 +1,7 @@
 width 1024
 height 1024
 renderScale 2.5
-maxVelColor 100
+maxVelColor 1
 minVelColor 0
 particleBrightness .35
 particleSharpness 1

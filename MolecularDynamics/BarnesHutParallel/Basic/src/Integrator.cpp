@@ -21,7 +21,8 @@ void timeIntegration_BH(float t, float delta_t, float t_end, TreeNode *root, Box
         {
             //Particle prtcls[renderer->getNumParticles()];
             Particle *prtcls;
-            get_particle_array(root, prtcls);
+            int N = get_particle_array(root, prtcls);
+            Logger(INFO) << "scurr N = " << N;
             renderer->createFrame(image, hdImage, prtcls, step);
         }
 
@@ -56,8 +57,14 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
         {
             //Particle prtcls[renderer->getNumParticles()];
             Particle *prtcls;
-            gatherParticles(root, s, prtcls);
+            int N = gatherParticles(root, s, prtcls);
             if (s->myrank == 0) {
+                for (int i=0; i<N; i++) {
+                    if (prtcls[i].x[0] <= 0.01 && prtcls[i].x[0] >= -0.01) {
+                        Logger(INFO) << "SCURR x = ("  << prtcls[i].x[0] << ", " << prtcls[i].x[1] << ", " << prtcls[i].x[2] << ")";
+                    }
+                    //Logger(INFO) << "SCURR (spass) x = ("  << prtcls[i].x[0] << ", " << prtcls[i].x[1] << ", " << prtcls[i].x[2] << ")";
+                }
                 renderer->createFrame(image, hdImage, prtcls, step);
                 delete [] prtcls;
             }
@@ -81,7 +88,7 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
         sendParticles(root, s);
         compLocalPseudoParticlespar(root);
 
-        output_tree(root, false);
+        output_tree(root, true, true);
         //Logger(DEBUG) << "AFTER sendParticles()";
         //repairTree(root);
     }

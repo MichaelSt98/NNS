@@ -427,7 +427,7 @@ void repairTree(TreeNode *t) {
     }
 }
 
-void output_tree(TreeNode *t, bool detailed) {
+void output_tree(TreeNode *t, bool detailed, bool onlyParticles) {
 
     int counterParticle = 0;
     int counterPseudoParticle = 0;
@@ -453,10 +453,22 @@ void output_tree(TreeNode *t, bool detailed) {
             counterDomainList++;
         }
         if (detailed) {
-            Logger(INFO) << "\tnodetype: " << get_node_type(nArray[i]) << " [" << (pArray[i].todelete ? "true " : "false")
-                        << "]  x = (" << pArray[i].x[0] << ", "
-                      << pArray[i].x[1] << ", "
-                      << pArray[i].x[2] << ")";
+            if (onlyParticles) {
+                if (nArray[i] == particle) {
+                    Logger(INFO) << "\tnodetype: " << get_node_type(nArray[i]) << " ["
+                                 << (pArray[i].todelete ? "true " : "false")
+                                 << "]  x = (" << pArray[i].x[0] << ", "
+                                 << pArray[i].x[1] << ", "
+                                 << pArray[i].x[2] << ")";
+                }
+            }
+            else {
+                Logger(INFO) << "\tnodetype: " << get_node_type(nArray[i]) << " ["
+                             << (pArray[i].todelete ? "true " : "false")
+                             << "]  x = (" << pArray[i].x[0] << ", "
+                             << pArray[i].x[1] << ", "
+                             << pArray[i].x[2] << ")";
+            }
         }
     }
 
@@ -1542,7 +1554,7 @@ void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleMap *pm
 // end of the operation on *t
 }
 
-void gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll) {
+int gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll) {
     Particle * pArray;
     int pLength = get_particle_array(root, pArray);
 
@@ -1606,6 +1618,8 @@ void gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll) 
         delete[] pArrayReceiveLength;
         delete[] pArrayDisplacements;
     }
+
+    return totalReceiveLength;
 }
 
 /*
