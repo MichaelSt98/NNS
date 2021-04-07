@@ -6,6 +6,7 @@
 #define BARNESHUTSERIAL_PARTICLE_H
 
 #include "Constants.h"
+#include <iostream>
 #include <cmath>
 
 typedef struct {

@@ -6,6 +6,7 @@
 #define BARNESHUTSERIAL_PARTICLE_H
 
 #include "Constants.h"
+#include "Logger.h"
 #include <cmath>
 
 struct Particle {
@@ -13,6 +14,7 @@ struct Particle {
     float x[DIM];
     float v[DIM];
     float F[DIM];
+    float F_old[DIM];
     bool moved;
     bool todelete;
 

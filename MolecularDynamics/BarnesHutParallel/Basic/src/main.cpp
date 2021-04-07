@@ -63,17 +63,26 @@ void initParticles(SubDomainKeyTree *s, Particle *pArray, int ppp, ConfigParser 
         std::uniform_real_distribution<float> dist(-systemSize, systemSize);
 
         velocity = confP.getVal<float>("initVel");
-
         current = &(pArray[i]);
-        current->x[0] =  radius*cos(angle);
-        current->x[1] =  radius*sin(angle);
-        current->x[2] =  randHeight(gen)-systemSize/2000.0;
+        if (false) { //(i < (int)(ppp)/5) {
+            current->x[0] = radius * cos(angle) / 20;
+            current->x[1] = radius * sin(angle) / 20;
+            current->x[2] = randHeight(gen) - systemSize / 2000.0;
+            current->v[0] =  velocity*sin(angle)/20;
+            current->v[1] = -velocity*cos(angle)/20;
+            current->v[2] = 0.0;
+        }
+        else {
+            current->x[0] = radius * cos(angle);
+            current->x[1] = radius * sin(angle);
+            current->x[2] = randHeight(gen) - systemSize / 2000.0;
+            current->v[0] =  velocity*sin(angle);
+            current->v[1] = -velocity*cos(angle);
+            current->v[2] = 0.0;
+        }
         /*current->x[0] = dist(gen);
         current->x[1] = dist(gen);
         current->x[2] = dist(gen);*/
-        current->v[0] =  velocity*sin(angle);
-        current->v[1] = -velocity*cos(angle);
-        current->v[2] = 0.0;
         current->F[0] = 0.0;
         current->F[1] = 0.0;
         current->F[2] = 0.0;
@@ -120,6 +129,15 @@ int main(int argc, char *argv[]) {
     int width = confP.getVal<int>("width");
     int height = confP.getVal<int>("height");
 
+    char *image;
+    double *hdImage;
+    Renderer *renderer;
+
+    // TODO: only initialize in rank 0 process if possible
+    image = new char[width * height * 3];
+    hdImage = new double[width * height * 3];
+    renderer = initRenderer(confP);
+
     //Particle rootParticle {};
 
     const float systemSize{confP.getVal<float>("systemSize")};
@@ -160,7 +178,7 @@ int main(int argc, char *argv[]) {
             insertTree(&pArrayAll[i], rootAll);
         }
 
-        output_tree(rootAll, true);
+        //output_tree(rootAll, true);
 
         createRanges(rootAll, N, &s);
 
@@ -185,38 +203,28 @@ int main(int argc, char *argv[]) {
         insertTree(&pArray[i], root);
     }
 
-    //output_particles(root);
-
     sendParticles(root, &s);
-
-    Logger(DEBUG) << "BEFORE COMPUTING PSUEDOPARTICLES";
-    output_tree(root, false);
 
     compPseudoParticlespar(root, &s);
 
-    Logger(DEBUG) << "AFTER COMPUTING PSUEDOPARTICLES";
+    //Logger(DEBUG) << "AFTER COMPUTING PSUEDOPARTICLES";
     output_tree(root, false);
 
-    /*Particle * dArray2;
-    int dLength2 = get_domain_list_array(root, dArray2);
 
-    for (int i = 0; i < dLength2; i++) {
-        Logger(INFO) << "Domain dArray[" << i << "].x = " << dArray2[i].x[0];
-    }*/
+    float delta_t = 0.2;
+    float diam = root->box.upper[0] - root->box.lower[0];
+    float t = 0;
+    float t_end = 10;
 
-    //output_particles(root);
+    timeIntegration_BH_par(t, delta_t, t_end, root->box.upper[0] - root->box.lower[0], root, &s,
+                           renderer, image, hdImage);
 
-    //float diam = 5;
-    //Logger(ERROR) << "Init diam = " << root->box.upper[0] - root->box.lower[0];
-    compF_BHpar(root, root->box.upper[0] - root->box.lower[0], &s);
+    //output_tree(root, true);
 
-    /*float t = 0;
-    float delta_t = 0.01;
-    float t_end = 0.1;
+    //Logger(DEBUG) << "REPAIRING TREE";
+    //repairTree(root);
 
-    timeIntegration_BH(t, delta_t, t_end, diam, root, &s);*/
-
-    output_tree(root, true);
+    //output_tree(root, true);
 
     //FINALIZING
     //freeTree_BH(root);

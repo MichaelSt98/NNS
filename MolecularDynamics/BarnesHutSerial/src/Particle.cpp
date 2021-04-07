@@ -14,6 +14,7 @@ void force(Particle *i, Particle *j) {
 }
 
 void updateX(Particle *p, float delta_t) {
+    std::cout << "Force = (" << p->F[0] << ", " << p->F[1] << ", " << p->F[2] << ")" << std::endl;
     float a = delta_t * .5 / p->m;
     for (int d=0; d<DIM; d++) {
         p->x[d] += delta_t * (p->v[d] + a * p->F[d]); // according to (3.22)

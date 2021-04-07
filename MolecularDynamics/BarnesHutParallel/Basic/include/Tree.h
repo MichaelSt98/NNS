@@ -109,7 +109,7 @@ int sonNumber(Box *box, Box *sonbox, Particle *p);
 
 void compPseudoParticles(TreeNode *t);
 
-void compF_BH(TreeNode *t, TreeNode *root, float diam, SubDomainKeyTree *s);
+void compF_BH(TreeNode *t, TreeNode *root, float diam, SubDomainKeyTree *s, keytype k=0UL, int level=0);
 
 void force_tree(TreeNode *tl, TreeNode *t, float diam);
 
@@ -139,7 +139,7 @@ int get_tree_node_number(TreeNode *root);
 
 int get_tree_array(TreeNode *root, Particle *&p, nodetype *&n);
 
-void get_particle_array(TreeNode *root, Particle *p);
+int get_particle_array(TreeNode *root, Particle *&p);
 
 void freeTree_BH(TreeNode *root);
 
@@ -201,5 +201,7 @@ void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleMap *pm
                keytype k=0UL, int level=0);
 
 bool compareParticles(Particle p1, Particle p2);
+
+void gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll);
 
 #endif //BARNESHUTSERIAL_TREE_H

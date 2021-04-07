@@ -139,6 +139,7 @@ void createRanges(TreeNode *root, int N, SubDomainKeyTree *s) {
     for (int i=1; i<s->numprocs; i++){
         s->range[i] = pKeys[i*ppr];
         Logger(DEBUG) << "Computed range[" << i << "] = " << std::bitset<64>(s->range[i]);
+        Logger(DEBUG) << s->range[i];
     }
     s->range[s->numprocs] = KEY_MAX;
 
@@ -218,6 +219,7 @@ void insertTree(Particle *p, TreeNode *t) {
         if (t->son[b] == NULL) {
             if (isLeaf(t) && t->node != domainList) {
                 Particle p2 = t->p;
+                t->node = pseudoParticle;
                 t->son[b] = (TreeNode *) calloc(1, sizeof(TreeNode));
                 t->son[b]->p = *p;
                 t->son[b]->box = sonbox;
@@ -279,30 +281,43 @@ void compPseudoParticles(TreeNode *t) {
 }
 
 // adapted to parallel implementation
-void compF_BH(TreeNode *t, TreeNode *root, float diam, SubDomainKeyTree *s) {
+void compF_BH(TreeNode *t, TreeNode *root, float diam, SubDomainKeyTree *s, keytype k, int level) {
     if (t != NULL) {
         for (int i = 0; i < POWDIM; i++) {
-            compF_BH(t->son[i], root, diam, s);
+            compF_BH(t->son[i], root, diam, s, (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))), level+1);
         }
         // start of the operation on *t
-        if (isLeaf(t) && (key2proc(key(t), s) == s->myrank)) {
+        // TODO: check if domainList check is needed
+        if (isLeaf(t) && key2proc(k, s) == s->myrank && t->node != domainList) {
             for (int d = 0; d < DIM; d++) {
                 t->p.F[d] = 0;
             }
+            //Logger(DEBUG) << "compF_BH(): Calculation force";
             force_tree(t, root, diam);
         }
     }
 }
 
 void force_tree(TreeNode *tl, TreeNode *t, float diam) {
-    if ((t != tl) && (t != NULL)) {
+    //if (t == tl){
+    //    Logger(INFO) << "Catching same particle should work.";
+    //}
+    //if ((t != tl) && (t != NULL)) {
+    if (t != NULL) {
         float r = 0;
         for (int d=0; d<DIM; d++) {
-            r += sqrt(abs(t->p.x[d] - tl->p.x[d]));
+            //r += sqrt(abs(t->p.x[d] - tl->p.x[d]));
+            r += (t->p.x[d] - tl->p.x[d])*(t->p.x[d] - tl->p.x[d]);
         }
         r = sqrt(r);
-        if ((isLeaf(t)) || (diam < theta * r)) {
-            force(&tl->p, &t->p);
+        if (((isLeaf(tl)) || (diam < theta * r)) && tl->node != domainList) {
+            // check if radius is zero, which means force should not be computed
+            if (r == 0){
+                Logger(WARN) << "Zero radius has been encoutered.";
+            } else {
+                //Logger(DEBUG) << "force_tree(): calling force";
+                force(&tl->p, &t->p);
+            }
         } else {
             for (int i = 0; i < POWDIM; i++) {
                 force_tree(t, t->son[i], .5 * diam);
@@ -315,7 +330,7 @@ void compX_BH(TreeNode *t, float delta_t) {
     if (t != NULL) {
         for (int i = 0; i < POWDIM; i++)
             compX_BH(t->son[i], delta_t);
-        if (isLeaf(t)) {
+        if (isLeaf(t) && t->node != domainList) {
             updateX(&t->p, delta_t);
         }
     }
@@ -352,9 +367,9 @@ void moveLeaf(TreeNode *t, TreeNode *root) {
         for (int i = 0; i < POWDIM; i++) {
             moveLeaf(t->son[i], root);
         }
-        if ((isLeaf(t)) && (!t->p.moved)) {
+        if ((isLeaf(t)) && t->node != domainList && (!t->p.moved)) {
             t->p.moved = true;
-            if (particleWithinBox(t->p, t->box)) {
+            if (!particleWithinBox(t->p, t->box)) {
                 insertTree(&t->p, root);
                 t->p.todelete = true;
             }
@@ -374,7 +389,7 @@ void repairTree(TreeNode *t) {
             for (int i = 0; i < POWDIM; i++) {
                 if (t->son[i] != NULL && t->son[i]->node != domainList) {
                     if (t->son[i]->p.todelete) {
-                        //Logger(ERROR) << "delete (2) t-son x = " << t->son[i]->p.x[0];
+                        //Logger(ERROR) << "delete (0) t-son x = " << t->son[i]->p.x[0];
                         free(t->son[i]);
                         t->son[i] = NULL;
                     }
@@ -393,16 +408,18 @@ void repairTree(TreeNode *t) {
                     // *t adopts the role of its only son node and
                     // the son node is deleted directly
                     //Logger(ERROR) << "parent x = " << t->p.x[0] << ", node = " << t->node;
-                    t->p = t->son[d]->p;
-                    //t->p.todelete = false;
-                    t->node = t->son[d]->node;
-                    //free(&t->son[d]->p);
-                    if (t->son[d]->node != domainList) {
-                        //Logger(ERROR) << "delete (1) t-son x = " << t->son[d]->p.x[0] << ", node = " << t->son[d]->node;
-                        t->son[d]->p.todelete = true;
-                        //free(t->son[d]);
+                    if (t->son[d]->node != domainList && isLeaf(t->son[d])) {
+                        // son is an only son and particle
+                        t->p = t->son[d]->p;
+                        //t->p.todelete = false;
+                        t->node = t->son[d]->node;
                         //free(&t->son[d]->p);
-                        //t->son[d] = NULL;
+                        //Logger(ERROR) << "delete (1) t-son x = " << t->son[d]->p.x[0]
+                          //                  << ", node = " << get_node_type(t->son[d]->node);
+                        //t->son[d]->p.todelete = true;
+                        free(t->son[d]); // TODO: Check if this makes any sense at all ?!
+                        //free(&t->son[d]->p);
+                        t->son[d] = NULL; // TODO: May be redundant
                     }
                 }
             }
@@ -436,7 +453,8 @@ void output_tree(TreeNode *t, bool detailed) {
             counterDomainList++;
         }
         if (detailed) {
-            Logger(INFO) << "\tnodetype: " << get_node_type(nArray[i]) << "  x = (" << pArray[i].x[0] << ", "
+            Logger(INFO) << "\tnodetype: " << get_node_type(nArray[i]) << " [" << (pArray[i].todelete ? "true " : "false")
+                        << "]  x = (" << pArray[i].x[0] << ", "
                       << pArray[i].x[1] << ", "
                       << pArray[i].x[2] << ")";
         }
@@ -480,7 +498,7 @@ NodeList* build_tree_list(TreeNode *t, NodeList *nLst) {
 
 ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst){
     if (t != NULL) {
-        if (isLeaf(t)) {
+        if (isLeaf(t) && t->node != domainList) {
             pLst->p = t->p;
             pLst->next = new ParticleList;
             return pLst->next;
@@ -653,18 +671,33 @@ int get_tree_array(TreeNode *root, Particle *&p, nodetype *&n) {
     return nIndex;
 }
 
-void get_particle_array(TreeNode *root, Particle *p){
+int get_particle_array(TreeNode *root, Particle *&p){
     ParticleList * pLst;
     pLst = new ParticleList;
 
     build_particle_list(root, pLst);
+
+    ParticleList * current;
+    current = pLst;
+
+    int pLength = 0;
+    while(current->next) {
+        pLength++;
+        current = current->next;
+    }
+
+    p = new Particle[pLength];
+
     int pIndex { 0 };
     while(pLst->next){
         p[pIndex] = pLst->p;
+        ParticleList * old = pLst;
         //Logger(DEBUG) << "Adding to *p: x = (" << p[pIndex].x[0] << ", " << p[pIndex].x[1] << ", " << p[pIndex].x[2] << ")";
         pLst = pLst->next;
+        delete old;
         ++pIndex;
     }
+    return pIndex;
 }
 
 int get_domain_list_array(TreeNode *root, Particle *&pArray) {
@@ -822,7 +855,13 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
         }
     }
 
+    //Logger(WARN) << "sendParticles(): BEFORE repairTree()";
+    //output_tree(root);
+
     repairTree(root); // here, domainList nodes may not be deleted //TODO: something to be changed?
+
+    //Logger(WARN) << "sendParticles(): AFTER repairTree()";
+    //output_tree(root);
 
     Particle ** pArray = new Particle*[s->numprocs];
 
@@ -1268,7 +1307,16 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleMap &pmap, Sub
         //TODO: insert t->p into list plist (where?)
         if (t->node != domainList) {
             //Logger(INFO) << "symbolicForce insert x = " << t->p.x[0];
-            pmap[k] = t->p; // insert into map which has unique keys (will overwrite)
+            bool insert = true;
+            for (ParticleMap::iterator pit = pmap.begin(); pit != pmap.end(); pit++)
+            {
+                if (pit->second.x[0] == t->p.x[0] && pit->second.x[1] == t->p.x[1] && pit->second.x[2] == t->p.x[2]) {
+                    insert = false;
+                }
+            }
+            if (insert) {
+                pmap[k] = t->p; // insert into map which has unique keys (will overwrite)
+            }
         }
 
         float r = smallestDistance(td, t); //IMPLEMENT: smallest distance from t->p.x to cell td->box;
@@ -1346,15 +1394,7 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
     for (int proc = 0; proc < s->numprocs; proc++) {
         //ParticleList *current = &plist[proc]; // needed not to 'consume' plist
 
-        ParticleMap::iterator pit;
-        Logger(WARN) << "pListSendLength[" << proc << "] = " << pmap[proc].size();
-
-        for (pit = pmap[proc].begin(); pit != pmap[proc].end(); pit++)
-        {
-            Logger(INFO) << "pmap[" << std::bitset<64>(pit->first) << "] = ("
-                << pit->second.x[0] << ", " << pit->second.x[1] << ", " << pit->second.x[2] << "), "
-                << "m = " << pit->second.m;
-        }
+        //Logger(WARN) << "pListSendLength[" << proc << "] = " << (int)pmap[proc].size();
 
         /*for (int i=0; i<pIndex[proc]; i++){
             Logger(DEBUG) << "BH_par2send = (" << current->p.x[0] << ", " << current->p.x[1] << ", " << current->p.x[2] << ")";
@@ -1362,7 +1402,7 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
         }*/
     }
 
-    /*Particle ** pArray = new Particle*[s->numprocs];
+    Particle ** pArray = new Particle*[s->numprocs];
 
     int *plistLengthSend;
     plistLengthSend = new int[s->numprocs];
@@ -1374,18 +1414,28 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
 
     for (int proc=0; proc < s->numprocs; proc++) {
         if (proc != s->myrank) {
-            plistLengthSend[proc] = getParticleListLength(&plist[proc]);
+            plistLengthSend[proc] = (int)pmap[proc].size(); //getParticleListLength(&plist[proc]);
 
             Logger(INFO) << "compF_BHpar(): plistLengthSend[" << proc << "] = " << plistLengthSend[proc];
 
             pArray[proc] = new Particle[plistLengthSend[proc]];
             ParticleList * current = &plist[proc];
-            for (int i = 0; i < plistLengthSend[proc]; i++) {
+            /*for (int i = 0; i < plistLengthSend[proc]; i++) {
                 pArray[proc][i] = current->p;
                 current = current->next;
+            }*/
+            int counter = 0;
+            for (ParticleMap::iterator pit = pmap[proc].begin(); pit != pmap[proc].end(); pit++)
+            {
+                //Logger(INFO) << "pmap[" << pit->first << "] = ("
+                  //           << pit->second.x[0] << ", " << pit->second.x[1] << ", " << pit->second.x[2] << "), "
+                    //         << "m = " << pit->second.m;
+                pArray[proc][counter] = pit->second;
+                counter++;
             }
         }
     }
+
 
     int reqCounter = 0;
     MPI_Request reqMessageLengths[s->numprocs-1];
@@ -1439,19 +1489,21 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
 
     for (int i=0; i<receiveLength; i++) {
         //Logger(INFO) << "Inserting particle pArray[" << i << "] : " << pArray[s->myrank][i].x[0];
+        pArray[s->myrank][i].todelete = true;
         insertTree(&pArray[s->myrank][i], root);
     }
 
     delete [] plist; //deleteParticleList(plist); //delete [] plist; //delete plist;
     delete [] plistLengthSend;
     delete [] plistLengthReceive;
+    delete [] pmap;
     for (int proc=0; proc < s->numprocs; proc++) {
         delete [] pArray[proc];
     }
     delete [] pArray;
 
     compF_BH(root, root, diam, s);
-     */
+
 }
 
 //TODO: implement compTheta (Parallel Force Computation)
@@ -1488,6 +1540,72 @@ void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleMap *pm
         }
     }
 // end of the operation on *t
+}
+
+void gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll) {
+    Particle * pArray;
+    int pLength = get_particle_array(root, pArray);
+
+    //for (int i=0; i<pCounter; i++) {
+    //    Logger(DEBUG) << "pArray[" << i << "].x[0] = " << pArray[i].x[0];
+    //}
+
+    //MPI_Request reqMessageLengths[s->numprocs-1];
+    //MPI_Status statMessageLengths[s->numprocs-1];
+
+    int *pArrayReceiveLength;
+    int *pArrayDisplacements;
+    if (s->myrank == 0) {
+        pArrayReceiveLength = new int[s->numprocs];
+        pArrayDisplacements = new int[s->numprocs];
+        pArrayDisplacements[0] = 0;
+    }
+
+    MPI_Gather(&pLength,
+            1,
+            MPI_INT,
+            pArrayReceiveLength,
+            1,
+            MPI_INT,
+            0,
+            MPI_COMM_WORLD);
+
+    int totalReceiveLength = 0;
+    if (s->myrank == 0) {
+        for (int i=0; i<s->numprocs; i++) {
+            Logger(DEBUG) << "receiveLength[" << i << "] = " << pArrayReceiveLength[i];
+            totalReceiveLength += pArrayReceiveLength[i];
+        }
+    }
+
+
+    if (s->myrank == 0) {
+        for (int i=1; i<s->numprocs; i++) {
+            //Logger(DEBUG) << "receiveLength[" << i << "] = " << pArrayReceiveLength[i];
+            pArrayDisplacements[i] = pArrayReceiveLength[i-1] + pArrayDisplacements[i-1];
+            Logger(DEBUG) << "Displacements: " << pArrayDisplacements[i];
+        }
+    }
+
+    //Particle * pArrayAll;
+    if (s->myrank == 0) {
+        pArrayAll = new Particle[totalReceiveLength];
+    }
+
+    MPI_Gatherv(pArray, pLength, mpiParticle, pArrayAll, pArrayReceiveLength,
+                pArrayDisplacements, mpiParticle, 0, MPI_COMM_WORLD);
+
+    /*if (s->myrank == 0) {
+        for (int i = 0; i < totalReceiveLength; i++) {
+            Logger(DEBUG) << "pArrayAll[" << i << "].x[0] = " << pArrayAll[i].x[0];
+        }
+    }*/
+
+    delete [] pArray;
+    if (s->myrank == 0) {
+        delete[] pArrayReceiveLength;
+        delete[] pArrayDisplacements;
+    }
 }
 
 /*
