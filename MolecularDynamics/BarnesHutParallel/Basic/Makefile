@@ -14,6 +14,7 @@ IDEASDIR    := ./ideas
 TESTDIR     := ./test
 DOCDIR      := ./doc
 DOCUMENTSDIR:= ./documents
+IMAGESDIR := ./images
 
 SRCEXT      := cpp
 DEPEXT      := d
@@ -59,6 +60,17 @@ clean:
 #clean objects and binaries
 cleaner: clean
 	@$(RM) -rf $(TARGETDIR)
+
+#creating a new video of the particle N-body simulation
+movie: $(TARGET) | $(IMAGESDIR)
+	@echo "Creating video ..."
+	@rm $(IMAGESDIR)/*.ppm
+	@mpirun -np 2 bin/runner
+	@./createMP4
+	@echo "... done."
+
+$(IMAGESDIR):
+	@mkdir -p $@
 
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS:.$(OBJEXT)=.$(DEPEXT)) #$(INCDIR)/matplotlibcpp.h
@@ -111,4 +123,4 @@ doc: doxyfile.inc
 	cp -r "./doc/html/" "./docs/"
 
 #Non-File Targets
-.PHONY: all remake clean cleaner resources sources directories ideas tester doc
+.PHONY: all remake clean cleaner resources sources directories ideas tester doc movie

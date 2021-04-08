@@ -1,10 +1,10 @@
 
-numParticles 100
+numParticles 200
 systemSize 3.
 timeStep .25
-timeEnd 25.
-initMass 1e-3
-initVel 1.5e-1
+timeEnd 100.
+initMass 1e-4
+initVel .05
 outputRank 0
 dummyDomains 2
 

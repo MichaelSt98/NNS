@@ -41,7 +41,7 @@ void initParticles(SubDomainKeyTree *s, Particle *pArray, int ppp, ConfigParser 
     float systemSize{confP.getVal<float>("systemSize")};
     uniform_real_distribution<float> randAngle (0.0, 200.0 * PI);
     uniform_real_distribution<float> randRadius (0.0, systemSize/2.0);
-    uniform_real_distribution<float> randHeight (0.0, systemSize/1000.0);
+    uniform_real_distribution<float> randHeight (0.0, systemSize/5.0);
     std::random_device rd;
     std::cout << "rd(): " << rd() << std::endl;
     //std::default_random_engine gen (rd());
@@ -75,10 +75,10 @@ void initParticles(SubDomainKeyTree *s, Particle *pArray, int ppp, ConfigParser 
         else {
             current->x[0] = radius * cos(angle);
             current->x[1] = radius * sin(angle);
-            current->x[2] = randHeight(gen) - systemSize / 2000.0;
+            current->x[2] = randHeight(gen) - systemSize/10.;
             current->v[0] =  velocity*sin(angle);
             current->v[1] = -velocity*cos(angle);
-            current->v[2] = 0.0;
+            current->v[2] = dist(gen)/75.;
         }
         /*current->x[0] = dist(gen);
         current->x[1] = dist(gen);
@@ -97,6 +97,7 @@ Renderer* initRenderer(ConfigParser &confP){
             confP.getVal<int>("numParticles"),
             confP.getVal<int>("width"),
             confP.getVal<int>("height"),
+                    confP.getVal<int>("depth"),
             confP.getVal<double>("renderScale"),
             confP.getVal<double>("maxVelColor"),
             confP.getVal<double>("minVelColor"),
@@ -134,8 +135,8 @@ int main(int argc, char *argv[]) {
     Renderer *renderer;
 
     // TODO: only initialize in rank 0 process if possible
-    image = new char[width * height * 3];
-    hdImage = new double[width * height * 3];
+    image = new char[2 * width * height * 3];
+    hdImage = new double[2 * width * height * 3];
     renderer = initRenderer(confP);
 
     //Particle rootParticle {};

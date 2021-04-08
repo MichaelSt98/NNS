@@ -23,7 +23,7 @@ void timeIntegration_BH(float t, float delta_t, float t_end, TreeNode *root, Box
             Particle *prtcls;
             int N = get_particle_array(root, prtcls);
             Logger(DEBUG) << "Rendering timestep #" << step << ": N = " << N;
-            renderer->createFrame(image, hdImage, prtcls, step);
+            renderer->createFrame(image, hdImage, prtcls, step, &root->box);
         }
 
         t += delta_t; // update timestep
@@ -60,7 +60,7 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
             if (s->myrank == 0) {
                 Logger(DEBUG) << "Rendering timestep #" << step << ": N = " << N;
                 renderer->setNumParticles(N);
-                renderer->createFrame(image, hdImage, prtcls, step);
+                renderer->createFrame(image, hdImage, prtcls, step, &root->box);
                 delete [] prtcls;
             }
         }
@@ -83,7 +83,7 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
         sendParticles(root, s);
         compLocalPseudoParticlespar(root);
 
-        output_tree(root, true, true);
+        output_tree(root, false, false);
         //Logger(DEBUG) << "AFTER sendParticles()";
         //repairTree(root);
     }
