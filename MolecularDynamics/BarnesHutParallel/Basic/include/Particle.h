@@ -8,6 +8,7 @@
 #include "Constants.h"
 #include "Logger.h"
 #include <cmath>
+#include <string>
 
 struct Particle {
     float m;
@@ -36,5 +37,7 @@ void force(Particle *i, Particle *j);
 void updateX(Particle *p, float delta_t);
 
 void updateV(Particle *p, float delta_t);
+
+std::string p2str(const Particle &p);
 
 #endif //BARNESHUTSERIAL_PARTICLE_H

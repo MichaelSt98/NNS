@@ -21,7 +21,7 @@ struct color
 class Renderer {
 
 private:
-    const int numParticles;
+    int numParticles; // not const as we have to change it if particles leave domain
     const int width;
     const int height;
     const double renderScale;
@@ -55,6 +55,8 @@ public:
     // Getter
     int getNumParticles() const {return numParticles;}
 
+    // Setter
+    void setNumParticles(int _numParticles) { numParticles = _numParticles; }
 };
 
 

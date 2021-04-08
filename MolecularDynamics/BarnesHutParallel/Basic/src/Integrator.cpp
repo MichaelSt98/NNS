@@ -22,12 +22,11 @@ void timeIntegration_BH(float t, float delta_t, float t_end, TreeNode *root, Box
             //Particle prtcls[renderer->getNumParticles()];
             Particle *prtcls;
             int N = get_particle_array(root, prtcls);
-            Logger(INFO) << "scurr N = " << N;
+            Logger(DEBUG) << "Rendering timestep #" << step << ": N = " << N;
             renderer->createFrame(image, hdImage, prtcls, step);
         }
 
         t += delta_t; // update timestep
-        //std::cout << "\nroot->p.x = (" << root->p.x[0] << ", " << root->p.x[1] << ", " << root->p.x[2] << ")" << std::endl;
         compX_BH(root, delta_t);
         //compF_BH(root, root, getSystemSize(&box));
         compV_BH(root, delta_t);
@@ -59,12 +58,8 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
             Particle *prtcls;
             int N = gatherParticles(root, s, prtcls);
             if (s->myrank == 0) {
-                for (int i=0; i<N; i++) {
-                    if (prtcls[i].x[0] <= 0.01 && prtcls[i].x[0] >= -0.01) {
-                        Logger(INFO) << "SCURR x = ("  << prtcls[i].x[0] << ", " << prtcls[i].x[1] << ", " << prtcls[i].x[2] << ")";
-                    }
-                    //Logger(INFO) << "SCURR (spass) x = ("  << prtcls[i].x[0] << ", " << prtcls[i].x[1] << ", " << prtcls[i].x[2] << ")";
-                }
+                Logger(DEBUG) << "Rendering timestep #" << step << ": N = " << N;
+                renderer->setNumParticles(N);
                 renderer->createFrame(image, hdImage, prtcls, step);
                 delete [] prtcls;
             }

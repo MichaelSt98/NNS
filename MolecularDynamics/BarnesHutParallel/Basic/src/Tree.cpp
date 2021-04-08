@@ -42,6 +42,7 @@ const char* get_node_type(int nodetype)
         case 0: return "particle      ";
         case 1: return "pseudoParticle";
         case 2: return "domainList    ";
+        default: return "not valid     ";
     }
 }
 
@@ -370,7 +371,11 @@ void moveLeaf(TreeNode *t, TreeNode *root) {
         if ((isLeaf(t)) && t->node != domainList && (!t->p.moved)) {
             t->p.moved = true;
             if (!particleWithinBox(t->p, t->box)) {
-                insertTree(&t->p, root);
+                if (!particleWithinBox(t->p, root->box)){
+                    Logger(WARN) << "Particle " << p2str(t->p) << " left system.";
+                } else {
+                    insertTree(&t->p, root);
+                }
                 t->p.todelete = true;
             }
         }
@@ -1583,19 +1588,22 @@ int gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll) {
             MPI_COMM_WORLD);
 
     int totalReceiveLength = 0;
+
     if (s->myrank == 0) {
-        for (int i=0; i<s->numprocs; i++) {
-            Logger(DEBUG) << "receiveLength[" << i << "] = " << pArrayReceiveLength[i];
-            totalReceiveLength += pArrayReceiveLength[i];
+        for (int proc=0; proc<s->numprocs; proc++) {
+            Logger(DEBUG) << "receiveLength[" << proc << "] = " << pArrayReceiveLength[proc];
+            totalReceiveLength += pArrayReceiveLength[proc];
+            if (pArrayReceiveLength[proc] == 0){
+                Logger(ERROR) << "Process " << proc << " ran out of particles. - Not good.";
+            }
         }
     }
 
-
     if (s->myrank == 0) {
-        for (int i=1; i<s->numprocs; i++) {
+        for (int proc=1; proc<s->numprocs; proc++) {
             //Logger(DEBUG) << "receiveLength[" << i << "] = " << pArrayReceiveLength[i];
-            pArrayDisplacements[i] = pArrayReceiveLength[i-1] + pArrayDisplacements[i-1];
-            Logger(DEBUG) << "Displacements: " << pArrayDisplacements[i];
+            pArrayDisplacements[proc] = pArrayReceiveLength[proc-1] + pArrayDisplacements[proc-1];
+            Logger(DEBUG) << "Displacements: " << pArrayDisplacements[proc];
         }
     }
 

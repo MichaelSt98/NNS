@@ -76,3 +76,10 @@ void updateV(Particle *p, float delta_t) {
         p->v[d] += a * (p->F[d] + p->F_old[d]); //+ p->F_old[d]); // according to (3.24)
     }
 }
+
+std::string p2str(const Particle &p) {
+    return "x = (" + std::to_string(p.x[0]) // x
+                    + std::to_string(p.x[1]) // y
+                    + std::to_string(p.x[2]) // z
+                    + "), m = " + std::to_string(p.m);
+}

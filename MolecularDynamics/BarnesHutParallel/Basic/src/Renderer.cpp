@@ -69,20 +69,24 @@ void Renderer::renderBodies(Particle* p, double* hdImage)
         if (x>dotSize && x<width-dotSize &&
             y>dotSize && y<height-dotSize)
         {
+            // vMag needed for coloring
             double vMag = 0.;
             for (int d=0; d<DIM; d++){
                 vMag += current->v[d] * current->v[d];
             }
             vMag = sqrt(vMag); //magnitude(current->velocity);
-            if (index%50 == 0) {
-                Logger(DEBUG) << "vMag = " << vMag;
-            }
-            colorDot(current->x[0], current->x[1], vMag, hdImage);
+            //if (index%50 == 0) {
+            //    Logger(DEBUG) << "vMag = " << vMag;
+            //}
+            //colorDot(current->x[0], current->x[1], vMag, hdImage);
 
+            int i2fPrec = 100;
 
-            for (int i_x = int(current->x[0]*100 - ((renderScale*systemSize)*100)/200); i_x < int(current->x[0]*100 + ((renderScale*systemSize)*100)/200); i_x++) {
-                for (int i_y = int(current->x[1]*100 - ((renderScale*systemSize)*100)/200); i_y < int(current->x[1]*100 + ((renderScale*systemSize)*100)/200); i_y++) {
-                    colorDot(i_x/100.0, i_y/100.0, vMag, hdImage);
+            for (int i_x = int(current->x[0]*i2fPrec - ((renderScale*systemSize)*i2fPrec)/(2*i2fPrec));
+                i_x < int(current->x[0]*i2fPrec + ((renderScale*systemSize)*i2fPrec)/(2*i2fPrec)); i_x++) {
+                for (int i_y = int(current->x[1]*i2fPrec - ((renderScale*systemSize)*i2fPrec)/(2*i2fPrec));
+                    i_y < int(current->x[1]*i2fPrec + ((renderScale*systemSize)*i2fPrec)/(2*i2fPrec)); i_y++) {
+                    colorDot(i_x/(double)i2fPrec, i_y/(double)i2fPrec, vMag, hdImage);
                 }
             }
         }
@@ -99,8 +103,13 @@ void Renderer::colorDot(double x, double y, double vMag, double* hdImage)
     const double velocityMax = maxVelocityColor;
     const double velocityMin = minVelocityColor; //0.0;
 
-    if (vMag < velocityMin)
+    if (vMag < velocityMin){
+        Logger(ERROR) << "In colorDot(): vMag < 0! This should not happen.";
         return;
+    }
+    if ((x > -1e-6 && x < 1e-6) || (y > -1e-6 && y < 1e-6)){
+        //Logger(DEBUG) << "colorDot @ x = (" << x << ", " << y <<")";
+    }
 
     const double vPortion = sqrt((vMag-velocityMin) / velocityMax);
 
@@ -155,6 +164,7 @@ void Renderer::writeRender(char* data, double* hdImage, int step)
     int frame = step/renderInterval + 1;//renderInterval;
     char name[128];
     sprintf(name, "images/Step%05i.ppm", frame);
+
     std::ofstream file (name, std::ofstream::binary);
 
     if (file.is_open())
