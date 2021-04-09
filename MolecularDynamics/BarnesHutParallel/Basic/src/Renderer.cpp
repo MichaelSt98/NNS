@@ -53,6 +53,24 @@ void Renderer::createFrame(char* image, double* hdImage, Particle* p, int step, 
     writeRender(image, hdImage, step);
 }
 
+void Renderer::createFrame(char* image, double* hdImage, Particle* p, int* processNum, int numprocs, int step, Box* box)
+{
+    Logger(INFO) <<  "Writing frame " << step;
+
+
+    Logger(DEBUG) << "Clearing Pixels ...";
+    renderClear(image, hdImage);
+
+    Logger(DEBUG) << "Drawing Domain-Box ...";
+    drawDomainBox(box, hdImage);
+
+    Logger(DEBUG) << "Rendering Particles ...";
+    renderBodies(p, processNum, numprocs, hdImage);
+
+    Logger(DEBUG) << "Writing frame to file ...";
+    writeRender(image, hdImage, step);
+}
+
 void Renderer::renderClear(char* image, double* hdImage)
 {
     memset(image, 0, width*2*height*3);
@@ -222,6 +240,63 @@ void Renderer::renderBodies(Particle* p, double* hdImage)
     }
 
 }
+
+void Renderer::renderBodies(Particle* p, int* processNum, int numprocs, double* hdImage)
+{
+    /** draw x-y-plane **/
+    for(int index=0; index<numParticles; index++)
+    {
+        Particle *current = &p[index];
+
+        int x = toPixelSpace(current->x[0], width);
+        int y = toPixelSpace(current->x[1], height);
+
+        if (x>dotSize && x<width-dotSize &&
+            y>dotSize && y<height-dotSize)
+        {
+
+            double vMag = minVelocityColor + (maxVelocityColor-minVelocityColor)/(numprocs - 1) * processNum[index];
+            //Logger(INFO) << "vMag = " << vMag;
+
+            int i2fPrec = 100; // TODO: rename
+
+            for (int i_x = int(current->x[0]*i2fPrec - ((renderScale*systemSize)*i2fPrec)/(2*i2fPrec));
+                 i_x < int(current->x[0]*i2fPrec + ((renderScale*systemSize)*i2fPrec)/(2*i2fPrec)); i_x++) {
+                for (int i_y = int(current->x[1]*i2fPrec - ((renderScale*systemSize)*i2fPrec)/(2*i2fPrec));
+                     i_y < int(current->x[1]*i2fPrec + ((renderScale*systemSize)*i2fPrec)/(2*i2fPrec)); i_y++) {
+                    colorDotXY(i_x/(double)i2fPrec, i_y/(double)i2fPrec, vMag, hdImage);
+                }
+            }
+        }
+    }
+
+    /** draw x-z-plane **/
+    for(int index=0; index<numParticles; index++)
+    {
+        Particle *current = &p[index];
+
+        int x = toPixelSpace(current->x[0], width);
+        int z = toPixelSpace(current->x[2], depth);
+
+        if (x>dotSize && x<width-dotSize &&
+            z>dotSize && z<depth-dotSize)
+        {
+            double vMag = minVelocityColor + (maxVelocityColor-minVelocityColor)/(numprocs - 1) * processNum[index];
+
+            int i2fPrec = 100; // TODO: rename
+
+            for (int i_x = int(current->x[0]*i2fPrec - ((renderScale*systemSize)*i2fPrec)/(2*i2fPrec));
+                 i_x < int(current->x[0]*i2fPrec + ((renderScale*systemSize)*i2fPrec)/(2*i2fPrec)); i_x++) {
+                for (int i_z = int(current->x[2]*i2fPrec - ((renderScale*systemSize)*i2fPrec)/(2*i2fPrec));
+                     i_z < int(current->x[2]*i2fPrec + ((renderScale*systemSize)*i2fPrec)/(2*i2fPrec)); i_z++) {
+                    colorDotXZ(i_x/(double)i2fPrec, i_z/(double)i2fPrec, vMag, hdImage);
+                }
+            }
+        }
+    }
+
+}
+
 
 double Renderer::toPixelSpace(double p, int size)
 {

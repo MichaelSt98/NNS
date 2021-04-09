@@ -38,6 +38,7 @@ private:
     void renderClear(char* image, double* hdImage);
     void drawDomainBox(Box* box, double* hdImage);
     void renderBodies(Particle* p, double* hdImage);
+    void renderBodies(Particle* p, int* processNum, int numprocs, double* hdImage);
     double toPixelSpace(double p, int size);
     void colorDotXY(double x, double y, double vMag, double* hdImage);
     void colorDotXZ(double x, double z, double vMag, double* hdImage);
@@ -54,6 +55,7 @@ public:
              const double _particleSharpness, const int _dotSize, const double _systemSize, const int _renderInterval);
 
     void createFrame(char* image, double* hdImage, Particle* p, int step, Box* box);
+    void createFrame(char* image, double* hdImage, Particle* p, int* processNum, int numprocs, int step, Box* box);
 
     int getRenderInterval();
 

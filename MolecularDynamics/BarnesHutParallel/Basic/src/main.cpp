@@ -217,8 +217,10 @@ int main(int argc, char *argv[]) {
     float t = 0;
     float t_end = confP.getVal<float>("timeEnd");
 
+    bool processColoring = confP.getVal<bool>("processColoring");
+
     timeIntegration_BH_par(t, delta_t, t_end, root->box.upper[0] - root->box.lower[0], root, &s,
-                           renderer, image, hdImage);
+                           renderer, image, hdImage, processColoring);
 
     //output_tree(root, true);
 

@@ -2,7 +2,7 @@
 numParticles 200
 systemSize 3.
 timeStep .25
-timeEnd 100.
+timeEnd 10.
 initMass 1e-4
 initVel .05
 outputRank 0

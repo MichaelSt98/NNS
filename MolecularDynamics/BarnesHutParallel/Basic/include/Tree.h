@@ -204,4 +204,6 @@ bool compareParticles(Particle p1, Particle p2);
 
 int gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll);
 
+int gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll, int*&processNumber);
+
 #endif //BARNESHUTSERIAL_TREE_H

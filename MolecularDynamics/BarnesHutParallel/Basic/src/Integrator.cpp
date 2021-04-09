@@ -38,7 +38,7 @@ void timeIntegration_BH(float t, float delta_t, float t_end, TreeNode *root, Box
 
 
 void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, TreeNode *root, SubDomainKeyTree *s,
-                            Renderer *renderer, char *image, double *hdImage) {
+                            Renderer *renderer, char *image, double *hdImage, bool processColoring) {
     //compF_basis(p, N);
     //compF_BH(root, root, getSystemSize(&box));
     //output_particles(root);
@@ -56,12 +56,31 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
         {
             //Particle prtcls[renderer->getNumParticles()];
             Particle *prtcls;
-            int N = gatherParticles(root, s, prtcls);
+            int *prtN;
+            int N;
+            //int N = gatherParticles(root, s, prtcls);
+            if (processColoring) {
+                N = gatherParticles(root, s, prtcls, prtN);
+            }
+            else {
+                N = gatherParticles(root, s, prtcls);
+            }
+            //for (int i=0; i<N; i++) {
+            //    Logger(INFO) << "Process number: " << prtN[i];
+            //}
             if (s->myrank == 0) {
                 Logger(DEBUG) << "Rendering timestep #" << step << ": N = " << N;
                 renderer->setNumParticles(N);
-                renderer->createFrame(image, hdImage, prtcls, step, &root->box);
+                //renderer->createFrame(image, hdImage, prtcls, step, &root->box);
+                if (processColoring) {
+                    renderer->createFrame(image, hdImage, prtcls, prtN, s->numprocs, step, &root->box);
+                    delete[] prtN;
+                }
+                else {
+                    renderer->createFrame(image, hdImage, prtcls, step, &root->box);
+                }
                 delete [] prtcls;
+
             }
         }
         ++step;

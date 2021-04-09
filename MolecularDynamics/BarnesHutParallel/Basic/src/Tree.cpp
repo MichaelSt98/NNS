@@ -1630,6 +1630,90 @@ int gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll) {
     return totalReceiveLength;
 }
 
+int gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll, int *&processNumber) {
+    Particle * pArray;
+    int pLength = get_particle_array(root, pArray);
+
+    //for (int i=0; i<pCounter; i++) {
+    //    Logger(DEBUG) << "pArray[" << i << "].x[0] = " << pArray[i].x[0];
+    //}
+
+    //MPI_Request reqMessageLengths[s->numprocs-1];
+    //MPI_Status statMessageLengths[s->numprocs-1];
+
+    int *pArrayReceiveLength;
+    int *pArrayDisplacements;
+    if (s->myrank == 0) {
+        pArrayReceiveLength = new int[s->numprocs];
+        pArrayDisplacements = new int[s->numprocs];
+        pArrayDisplacements[0] = 0;
+    }
+
+    MPI_Gather(&pLength,
+               1,
+               MPI_INT,
+               pArrayReceiveLength,
+               1,
+               MPI_INT,
+               0,
+               MPI_COMM_WORLD);
+
+    int totalReceiveLength = 0;
+
+    if (s->myrank == 0) {
+        for (int proc=0; proc<s->numprocs; proc++) {
+            Logger(DEBUG) << "receiveLength[" << proc << "] = " << pArrayReceiveLength[proc];
+            totalReceiveLength += pArrayReceiveLength[proc];
+            if (pArrayReceiveLength[proc] == 0){
+                Logger(ERROR) << "Process " << proc << " ran out of particles. - Not good.";
+            }
+        }
+    }
+
+    if (s->myrank == 0) {
+        processNumber = new int[totalReceiveLength];
+        for (int proc = 0; proc < s->numprocs; proc++) {
+            for (int i = 0; i < pArrayReceiveLength[proc]; i++) {
+                if (proc == 0) {
+                    processNumber[i] = proc;
+                } else {
+                    processNumber[pArrayReceiveLength[proc - 1] + i] = proc;
+                }
+            }
+        }
+    }
+
+    if (s->myrank == 0) {
+        for (int proc=1; proc<s->numprocs; proc++) {
+            //Logger(DEBUG) << "receiveLength[" << i << "] = " << pArrayReceiveLength[i];
+            pArrayDisplacements[proc] = pArrayReceiveLength[proc-1] + pArrayDisplacements[proc-1];
+            Logger(DEBUG) << "Displacements: " << pArrayDisplacements[proc];
+        }
+    }
+
+    //Particle * pArrayAll;
+    if (s->myrank == 0) {
+        pArrayAll = new Particle[totalReceiveLength];
+    }
+
+    MPI_Gatherv(pArray, pLength, mpiParticle, pArrayAll, pArrayReceiveLength,
+                pArrayDisplacements, mpiParticle, 0, MPI_COMM_WORLD);
+
+    /*if (s->myrank == 0) {
+        for (int i = 0; i < totalReceiveLength; i++) {
+            Logger(DEBUG) << "pArrayAll[" << i << "].x[0] = " << pArrayAll[i].x[0];
+        }
+    }*/
+
+    delete [] pArray;
+    if (s->myrank == 0) {
+        delete[] pArrayReceiveLength;
+        delete[] pArrayDisplacements;
+    }
+
+    return totalReceiveLength;
+}
+
 /*
  * NOTE: Remaining parts:
  * The remaining parts needed to complete the parallel program can be implemented in a straightforward way.
