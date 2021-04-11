@@ -148,9 +148,7 @@ void freeTree_BH(TreeNode *root);
 
 void sendParticles(TreeNode *root, SubDomainKeyTree *s);
 
-//void buildSendlist(TreeNode *root, TreeNode *t, SubDomainKeyTree *s, ParticleList *plist, int *pIndex);
 void buildSendlist(TreeNode *root, TreeNode *t, SubDomainKeyTree *s, ParticleList *plist, int *pIndex, keytype k, int level);
-//void buildSendlist(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist);
 
 int get_domain_list_array(TreeNode *root, Particle *&pArray);
 
@@ -194,8 +192,6 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleMap &pmap, Sub
                    keytype k=0UL, int level=0);
 
 void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s);
-
-//void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *plist, float diam);
 
 void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *plist, int *& pCounter, float diam,
                keytype k=0UL, int level=0);

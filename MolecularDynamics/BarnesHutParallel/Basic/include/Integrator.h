@@ -13,10 +13,7 @@
 #include <cmath>
 #include <string>
 
-void timeIntegration_BH(float t, float delta_t, float t_end, TreeNode *root, Box box,
-                        Renderer *renderer, char *image, double *hdImage);
-
 void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, TreeNode *root, SubDomainKeyTree *s,
-                            Renderer *renderer, char *image, double *hdImage, bool processColoring=false);
+                            Renderer *renderer, char *image, double *hdImage, bool render=true, bool processColoring=false);
 
 #endif //BARNESHUTSERIAL_INTEGRATOR_H

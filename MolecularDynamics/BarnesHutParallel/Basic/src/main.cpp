@@ -10,7 +10,6 @@
 #include <random>
 #include <mpi.h>
 
-
 // extern variable from Logger has to be initialized here
 structlog LOGCFG = {};
 
@@ -35,9 +34,7 @@ void createParticleDatatype(MPI_Datatype *datatype) {
 }
 
 void initParticles(SubDomainKeyTree *s, Particle *pArray, int ppp, ConfigParser &confP) {
-    //pArray = new Particle[ppp];
     using std::uniform_real_distribution;
-    //float systemSize = confP.//getSystemSize(domain);
     float systemSize{confP.getVal<float>("systemSize")};
     uniform_real_distribution<float> randAngle (0.0, 200.0 * PI);
     uniform_real_distribution<float> randRadius (0.0, systemSize/2.0);
@@ -64,25 +61,14 @@ void initParticles(SubDomainKeyTree *s, Particle *pArray, int ppp, ConfigParser 
 
         velocity = confP.getVal<float>("initVel");
         current = &(pArray[i]);
-        if (false) { //(i < (int)(ppp)/5) {
-            current->x[0] = radius * cos(angle) / 20;
-            current->x[1] = radius * sin(angle) / 20;
-            current->x[2] = randHeight(gen) - systemSize / 2000.0;
-            current->v[0] =  velocity*sin(angle)/20;
-            current->v[1] = -velocity*cos(angle)/20;
-            current->v[2] = 0.0;
-        }
-        else {
-            current->x[0] = radius * cos(angle);
-            current->x[1] = radius * sin(angle);
-            current->x[2] = randHeight(gen) - systemSize/10.;
-            current->v[0] =  velocity*sin(angle);
-            current->v[1] = -velocity*cos(angle);
-            current->v[2] = dist(gen)/75. * velocity;
-        }
-        /*current->x[0] = dist(gen);
-        current->x[1] = dist(gen);
-        current->x[2] = dist(gen);*/
+
+        current->x[0] = radius * cos(angle);
+        current->x[1] = radius * sin(angle);
+        current->x[2] = randHeight(gen) - systemSize/10.;
+        current->v[0] =  velocity*sin(angle);
+        current->v[1] = -velocity*cos(angle);
+        current->v[2] = dist(gen)/75. * velocity;
+
         current->F[0] = 0.0;
         current->F[1] = 0.0;
         current->F[2] = 0.0;
@@ -139,8 +125,6 @@ int main(int argc, char *argv[]) {
     hdImage = new double[2 * width * height * 3];
     renderer = initRenderer(confP);
 
-    //Particle rootParticle {};
-
     const float systemSize{confP.getVal<float>("systemSize")};
     Box domain;
     for (int i = 0; i < DIM; i++) {
@@ -178,13 +162,8 @@ int main(int argc, char *argv[]) {
         for (int i = 1; i < N; i++) {
             insertTree(&pArrayAll[i], rootAll);
         }
-
-        //output_tree(rootAll, true);
-
         createRanges(rootAll, N, &s);
-
         createDomainList(rootAll, 0, 0, &s);
-        //exit(0);
     }
 
     if (s.myrank != 0) {
@@ -208,29 +187,18 @@ int main(int argc, char *argv[]) {
 
     compPseudoParticlespar(root, &s);
 
-    //Logger(DEBUG) << "AFTER COMPUTING PSUEDOPARTICLES";
     output_tree(root, false);
-
 
     float delta_t = confP.getVal<float>("timeStep");
     float diam = root->box.upper[0] - root->box.lower[0];
     float t = 0;
     float t_end = confP.getVal<float>("timeEnd");
 
+    bool render = confP.getVal<bool>("render");
     bool processColoring = confP.getVal<bool>("processColoring");
 
     timeIntegration_BH_par(t, delta_t, t_end, root->box.upper[0] - root->box.lower[0], root, &s,
-                           renderer, image, hdImage, processColoring);
-
-    //output_tree(root, true);
-
-    //Logger(DEBUG) << "REPAIRING TREE";
-    //repairTree(root);
-
-    //output_tree(root, true);
-
-    //FINALIZING
-    //freeTree_BH(root);
+                           renderer, image, hdImage, render, processColoring);
 
     MPI_Finalize();
     return 0;

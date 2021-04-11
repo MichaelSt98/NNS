@@ -187,11 +187,7 @@ void Renderer::renderBodies(Particle* p, double* hdImage)
             for (int d=0; d<DIM; d++){
                 vMag += current->v[d] * current->v[d];
             }
-            vMag = sqrt(vMag); //magnitude(current->velocity);
-            //if (index%50 == 0) {
-            //    Logger(DEBUG) << "vMag = " << vMag;
-            //}
-            //colorDot(current->x[0], current->x[1], vMag, hdImage);
+            vMag = sqrt(vMag);
 
             int i2fPrec = 100; // TODO: rename
 
@@ -221,11 +217,7 @@ void Renderer::renderBodies(Particle* p, double* hdImage)
             for (int d=0; d<DIM; d++){
                 vMag += current->v[d] * current->v[d];
             }
-            vMag = sqrt(vMag); //magnitude(current->velocity);
-            //if (index%50 == 0) {
-            //    Logger(DEBUG) << "vMag = " << vMag;
-            //}
-            //colorDot(current->x[0], current->x[1], vMag, hdImage);
+            vMag = sqrt(vMag);
 
             int i2fPrec = 100; // TODO: rename
 
@@ -256,7 +248,6 @@ void Renderer::renderBodies(Particle* p, int* processNum, int numprocs, double* 
         {
 
             double vMag = minVelocityColor + (maxVelocityColor-minVelocityColor)/(numprocs - 1) * processNum[index];
-            //Logger(INFO) << "vMag = " << vMag;
 
             int i2fPrec = 100; // TODO: rename
 
@@ -405,7 +396,7 @@ void Renderer::writeRender(char* data, double* hdImage, int step)
         data[i] = int(255.0*clamp(hdImage[i]));
     }
 
-    int frame = step/renderInterval + 1;//renderInterval;
+    int frame = step/renderInterval + 1;
     char name[128];
     sprintf(name, "images/Step%05i.ppm", frame);
 

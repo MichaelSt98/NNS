@@ -13,7 +13,6 @@ Box::Box() {
     upper[2] = 0.f;
 }
 
-// TODO: check if used/should be used?
 float getSystemSize(Box *b) {
     float systemSize = 0.0;
     float temp;
