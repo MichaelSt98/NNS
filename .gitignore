@@ -5,6 +5,8 @@
 
 **/.idea/
 
+**/log/
+
 *.mp4
 *.csv
 # ignore MPI-debug lldb pipe

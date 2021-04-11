@@ -78,7 +78,7 @@ void initParticles(SubDomainKeyTree *s, Particle *pArray, int ppp, ConfigParser 
             current->x[2] = randHeight(gen) - systemSize/10.;
             current->v[0] =  velocity*sin(angle);
             current->v[1] = -velocity*cos(angle);
-            current->v[2] = dist(gen)/75.;
+            current->v[2] = dist(gen)/75. * velocity;
         }
         /*current->x[0] = dist(gen);
         current->x[1] = dist(gen);

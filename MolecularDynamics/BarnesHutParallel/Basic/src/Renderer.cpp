@@ -36,7 +36,7 @@ int Renderer::getRenderInterval() {
 
 void Renderer::createFrame(char* image, double* hdImage, Particle* p, int step, Box* box)
 {
-    Logger(INFO) <<  "Writing frame " << step;
+    Logger(DEBUG) <<  "Writing frame " << step;
 
 
     Logger(DEBUG) << "Clearing Pixels ...";
@@ -55,7 +55,7 @@ void Renderer::createFrame(char* image, double* hdImage, Particle* p, int step, 
 
 void Renderer::createFrame(char* image, double* hdImage, Particle* p, int* processNum, int numprocs, int step, Box* box)
 {
-    Logger(INFO) <<  "Writing frame " << step;
+    Logger(DEBUG) <<  "Writing frame " << step;
 
 
     Logger(DEBUG) << "Clearing Pixels ...";

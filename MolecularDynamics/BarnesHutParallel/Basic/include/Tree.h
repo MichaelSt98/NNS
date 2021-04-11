@@ -16,6 +16,7 @@
 #include <climits> // for ulong_max
 #include <mpi.h>
 #include <map>
+#include <fstream>
 
 #define KEY_MAX ULONG_MAX
 
@@ -62,7 +63,7 @@ struct SubDomainKeyTree {
     keytype *range;
 };
 
-keytype key(TreeNode *t); // DUMMY
+// keytype key(TreeNode *t); // DUMMY
 //keytype key(TreeNode *t, TreeNode *&keynode, keytype k=0UL, int level=0);
 
 //void deleteNodeList(NodeList * nLst);
@@ -127,6 +128,8 @@ void repairTree(TreeNode *t);
 
 void output_tree(TreeNode *root, bool detailed=false, bool onlyParticles=false);
 
+void output_tree(TreeNode *root, std::string file, bool detailed=false, bool onlyParticles=false);
+
 void output_particles(TreeNode *root);
 
 NodeList* build_tree_list(TreeNode *t, NodeList *nLst);
@@ -164,6 +167,8 @@ void get_lowest_domain_list_nodes(TreeNode *t, ParticleList *pList, KeyList *kLi
 
 void zero_lowest_domain_list_nodes(TreeNode *t);
 
+void zero_domain_list_nodes(TreeNode *t);
+
 void update_lowest_domain_list_nodes_moments_masses(TreeNode *t, int &pCounter, float * masses, float * moments);
 
 void update_lowest_domain_list_nodes_com(TreeNode *t);
@@ -181,8 +186,6 @@ void compLocalPseudoParticlespar(TreeNode *t);
 void compDomainListPseudoParticlespar(TreeNode *t);
 
 float smallestDistance(TreeNode *td, TreeNode *t);
-
-void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, SubDomainKeyTree *s);
 
 void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, SubDomainKeyTree *s,
                    int &pCounter, keytype k=0UL, int level=0);

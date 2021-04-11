@@ -4,6 +4,11 @@
 
 #include "../include/Integrator.h"
 
+void finalize(TreeNode *root) {
+    output_tree(root);
+    MPI_Finalize();
+}
+
 void timeIntegration_BH(float t, float delta_t, float t_end, TreeNode *root, Box box,
                         Renderer *renderer, char *image, double *hdImage) {
     //compF_basis(p, N);
@@ -66,10 +71,12 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
                 N = gatherParticles(root, s, prtcls);
             }
             //for (int i=0; i<N; i++) {
-            //    Logger(INFO) << "Process number: " << prtN[i];
+                //if (prtN[i] < 0) {
+                    //Logger(INFO) << "Process number: " << prtN[i];
+                //}
             //}
             if (s->myrank == 0) {
-                Logger(DEBUG) << "Rendering timestep #" << step << ": N = " << N;
+                Logger(INFO) << "Rendering timestep #" << step << ": N = " << N;
                 renderer->setNumParticles(N);
                 //renderer->createFrame(image, hdImage, prtcls, step, &root->box);
                 if (processColoring) {
@@ -80,13 +87,23 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
                     renderer->createFrame(image, hdImage, prtcls, step, &root->box);
                 }
                 delete [] prtcls;
-
             }
+            output_tree(root, false);
+            /*if (s->myrank == 0) {
+                if (N != 100) {
+                    output_tree(root, true, false);
+                    MPI_Abort(MPI_COMM_WORLD, -1);
+                    //exit(0);
+                }
+            }*/
         }
         ++step;
 
         t += delta_t; // update timestep
         //std::cout << "\nroot->p.x = (" << root->p.x[0] << ", " << root->p.x[1] << ", " << root->p.x[2] << ")" << std::endl;
+        //compF_BHpar(root, diam, s);
+        //repairTree(root); // cleanup local tree by removing symbolicForce-particles
+
         compF_BHpar(root, diam, s);
         repairTree(root); // cleanup local tree by removing symbolicForce-particles
 
@@ -96,13 +113,27 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
 
         moveParticles_BH(root);
 
+        //output_tree(root, true, false);
+        //setFlags(root);
+        //output_tree(root, "log/" + std::to_string(step-1) + "flag" + std::to_string(s->myrank), true, false);
+        //moveLeaf(root, root);
+        //output_tree(root, "log/" + std::to_string(step-1) + "leaf" + std::to_string(s->myrank),true, false);
+        //output_tree(root, true, false);
+
+        //repairTree(root);
+        //output_tree(root, "log/" + std::to_string(step-1) + "repa" + std::to_string(s->myrank),true, false);
+
         //Logger(DEBUG) << "BEFORE sendParticles()";
-        //output_tree(root, true);
+        //output_tree(root, false);
 
         sendParticles(root, s);
-        compLocalPseudoParticlespar(root);
 
-        output_tree(root, false, false);
+        //compLocalPseudoParticlespar(root);
+        compPseudoParticlespar(root, s);
+
+        output_tree(root, true, false);
+
+        //output_tree(root, false, false);
         //Logger(DEBUG) << "AFTER sendParticles()";
         //repairTree(root);
     }

@@ -62,9 +62,9 @@ const char* get_node_type(int nodetype)
 // --> less data needs to be exchanged
 // [range_i, range_i+1) defines a minimal upper part of the tree, that has to be present in all processes as a copy to ensure the consistency of the global tree
 // DUMMY
-keytype key(TreeNode *t){
+/*keytype key(TreeNode *t){
     return KEY_MAX;
-}
+}*/
 
 // t for tree traversal, keynode for comparison if we are at the right key
 /*keytype key(TreeNode *t, TreeNode *&keynode, keytype k, int level) {
@@ -159,7 +159,7 @@ int key2proc(keytype k, SubDomainKeyTree *s) {
             return i;
         }
     }
-    //Logger(ERROR) << "key2proc(k= " << k << "): -1!";
+    Logger(ERROR) << "key2proc(k= " << k << "): -1!";
     return -1; // error
 }
 
@@ -213,7 +213,7 @@ void insertTree(Particle *p, TreeNode *t) {
     int b = sonNumber(&t->box, &sonbox, p);
 
     if (t->node == domainList && t->son[b] != NULL) {
-        t->son[b]->box = t->box; //sonbox; //t->box; //sonbox; //TODO: sonbox or t->box ?
+        t->son[b]->box = sonbox; //TODO: sonbox or t->box ?
         insertTree(p, t->son[b]);
     }
     else {
@@ -229,6 +229,8 @@ void insertTree(Particle *p, TreeNode *t) {
                 t->son[b] = (TreeNode *) calloc(1, sizeof(TreeNode));
                 t->son[b]->p = *p;
                 t->son[b]->box = sonbox;
+                //q
+                // t->son[b]->node = particle;
             }
         } else {
             t->son[b]->box = sonbox;
@@ -341,7 +343,7 @@ void compV_BH(TreeNode *t, float delta_t) {
     if (t != NULL) {
         for (int i = 0; i < POWDIM; i++)
             compV_BH(t->son[i], delta_t);
-        if (isLeaf(t)) {
+        if (isLeaf(t) && t->node != domainList) {
             updateV(&t->p, delta_t);
         }
     }
@@ -368,11 +370,12 @@ void moveLeaf(TreeNode *t, TreeNode *root) {
         for (int i = 0; i < POWDIM; i++) {
             moveLeaf(t->son[i], root);
         }
-        if ((isLeaf(t)) && t->node != domainList && (!t->p.moved)) {
+        if (isLeaf(t) && t->node != domainList && (!t->p.moved)) {
+
             t->p.moved = true;
             if (!particleWithinBox(t->p, t->box)) {
                 if (!particleWithinBox(t->p, root->box)){
-                    Logger(WARN) << "Particle " << p2str(t->p) << " left system.";
+                    Logger(INFO) << "Particle " << p2str(t->p) << " left system.";
                 } else {
                     insertTree(&t->p, root);
                 }
@@ -394,7 +397,10 @@ void repairTree(TreeNode *t) {
             for (int i = 0; i < POWDIM; i++) {
                 if (t->son[i] != NULL && t->son[i]->node != domainList) {
                     if (t->son[i]->p.todelete) {
-                        //Logger(ERROR) << "delete (0) t-son x = " << t->son[i]->p.x[0];
+                        //Logger(INFO) << "delete (0) t-son x = " << t->son[i]->p.x[0];
+                        //if (t->son[i]->node == pseudoParticle) {
+                          //  Logger(INFO) << "Deleting pseudo (1)";
+                        //}
                         free(t->son[i]);
                         t->son[i] = NULL;
                     }
@@ -408,6 +414,7 @@ void repairTree(TreeNode *t) {
                 if (numberofsons == 0) {
                     // *t is an *empty* leaf node and can be deleted
                     t->p.todelete = true;
+                    //Logger(INFO) << "Deleting (3)";
                     //Logger(DEBUG) << "Empty leaf node";
                 } else if (numberofsons == 1) {
                     // *t adopts the role of its only son node and
@@ -419,7 +426,7 @@ void repairTree(TreeNode *t) {
                         //t->p.todelete = false;
                         t->node = t->son[d]->node;
                         //free(&t->son[d]->p);
-                        //Logger(ERROR) << "delete (1) t-son x = " << t->son[d]->p.x[0]
+                        //Logger(INFO) << "delete (1) t-son x = " << t->son[d]->p.x[0]
                           //                  << ", node = " << get_node_type(t->son[d]->node);
                         //t->son[d]->p.todelete = true;
                         free(t->son[d]); // TODO: Check if this makes any sense at all ?!
@@ -462,17 +469,33 @@ void output_tree(TreeNode *t, bool detailed, bool onlyParticles) {
                 if (nArray[i] == particle) {
                     Logger(INFO) << "\tnodetype: " << get_node_type(nArray[i]) << " ["
                                  << (pArray[i].todelete ? "true " : "false")
+                                 << ", " << (pArray[i].moved ? "true " : "false")
                                  << "]  x = (" << pArray[i].x[0] << ", "
                                  << pArray[i].x[1] << ", "
-                                 << pArray[i].x[2] << ")";
+                                 << pArray[i].x[2] << ")"
+                                << "    v = (" << pArray[i].v[0] << ", "
+                                << pArray[i].v[1] << ", "
+                                << pArray[i].v[2] << ")"
+                                << "    F = (" << pArray[i].F[0] << ", "
+                                << pArray[i].F[1] << ", "
+                                << pArray[i].F[2] << ")"
+                                << "    m = " << pArray[i].m;
                 }
             }
             else {
                 Logger(INFO) << "\tnodetype: " << get_node_type(nArray[i]) << " ["
                              << (pArray[i].todelete ? "true " : "false")
+                             << ", " << (pArray[i].moved ? "true " : "false")
                              << "]  x = (" << pArray[i].x[0] << ", "
                              << pArray[i].x[1] << ", "
-                             << pArray[i].x[2] << ")";
+                             << pArray[i].x[2] << ")"
+                             << "    v = (" << pArray[i].v[0] << ", "
+                             << pArray[i].v[1] << ", "
+                             << pArray[i].v[2] << ")"
+                             << "    F = (" << pArray[i].F[0] << ", "
+                             << pArray[i].F[1] << ", "
+                             << pArray[i].F[2] << ")"
+                             << "    m = " << pArray[i].m;
             }
         }
     }
@@ -486,6 +509,68 @@ void output_tree(TreeNode *t, bool detailed, bool onlyParticles) {
 
     delete [] nArray;
     delete [] pArray;
+}
+
+void output_tree(TreeNode *t, std::string file, bool detailed, bool onlyParticles) {
+
+    std::ofstream outf { file };
+
+    if (!outf) {
+        Logger(ERROR) << "An error occurred while opening '" << file << "'";
+    } else {
+        int counterParticle = 0;
+        int counterPseudoParticle = 0;
+        int counterDomainList = 0;
+
+        int nNodes = get_tree_node_number(t);
+        Particle * pArray;
+        nodetype * nArray;
+        pArray = new Particle[nNodes];
+        nArray = new nodetype[nNodes];
+        get_tree_array(t, pArray, nArray);
+
+        for (int i=nNodes-1; i>=0; i--) {
+            if (nArray[i] == 0) {
+                counterParticle++;
+            }
+            else if (nArray[i] == 1) {
+                counterPseudoParticle++;
+            }
+            else {
+                counterDomainList++;
+            }
+            if (detailed) {
+                if (onlyParticles) {
+                    if (nArray[i] == particle) {
+                        outf << "\tnodetype: " << get_node_type(nArray[i]) << " ["
+                             << (pArray[i].todelete ? "true " : "false")
+                             << ", " << (pArray[i].moved ? "true " : "false")
+                             << "]  x = (" << pArray[i].x[0] << ", "
+                             << pArray[i].x[1] << ", "
+                             << pArray[i].x[2] << ")"
+                             << "    v = (" << pArray[i].v[0] << ", "
+                             << pArray[i].v[1] << ", "
+                             << pArray[i].v[2] << ")"
+                             << "    F = (" << pArray[i].F[0] << ", "
+                             << pArray[i].F[1] << ", "
+                             << pArray[i].F[2] << ")"
+                             << "    m = " << pArray[i].m << '\n';
+                    }
+                }
+                else {
+                    outf << "\tnodetype: " << get_node_type(nArray[i]) << " ["
+                         << (pArray[i].todelete ? "true " : "false")
+                         << ", " << (pArray[i].moved ? "true " : "false")
+                         << "]  x = (" << pArray[i].x[0] << ", "
+                         << pArray[i].x[1] << ", "
+                         << pArray[i].x[2] << ")" << '\n';
+                }
+            }
+        }
+
+        delete [] nArray;
+        delete [] pArray;
+    }
 }
 
 void output_particles(TreeNode *t) {
@@ -598,12 +683,24 @@ void get_lowest_domain_list_nodes(TreeNode *t, ParticleList *pList, KeyList *kLi
 void zero_lowest_domain_list_nodes(TreeNode *t) {
     if (t != NULL){
         if (t->node == domainList && isLowestDomainListNode(t)) {
-
             t->p.x[0] = 0;
             t->p.x[1] = 0;
             t->p.x[2] = 0;
             t->p.m = 0;
+        }
+        for (int i = 0; i < POWDIM; i++) {
+            zero_lowest_domain_list_nodes(t->son[i]);
+        }
+    }
+}
 
+void zero_domain_list_nodes(TreeNode *t) {
+    if (t != NULL) {
+        if (t->node == domainList) {
+            t->p.x[0] = 0;
+            t->p.x[1] = 0;
+            t->p.x[2] = 0;
+            t->p.m = 0;
         }
         for (int i = 0; i < POWDIM; i++) {
             zero_lowest_domain_list_nodes(t->son[i]);
@@ -615,11 +712,15 @@ void update_lowest_domain_list_nodes_moments_masses(TreeNode *t, int &pCounter, 
     if (t != NULL){
         if (t->node == domainList && isLowestDomainListNode(t)) {
 
-            t->p.x[0] += moments[pCounter * 3];
-            t->p.x[1] += moments[pCounter * 3 + 1];
-            t->p.x[2] += moments[pCounter * 3 + 2];
+            t->p.x[0] = moments[pCounter * 3];
+            t->p.x[1] = moments[pCounter * 3 + 1];
+            t->p.x[2] = moments[pCounter * 3 + 2];
 
-            t->p.m += masses[pCounter];
+            t->p.m = masses[pCounter];
+            //if (pCounter == 1) {
+            //    Logger(INFO) << "m pCounter = " << pCounter;
+            //}
+            //Logger(INFO) << "update Mass = " << t->p.m;
 
             pCounter++;
         }
@@ -739,7 +840,7 @@ int get_lowest_domain_list_array(TreeNode *root, Particle *&pArray) {
     pList = new ParticleList;
 
     get_lowest_domain_list_nodes(root, pList, pCounter);
-    Logger(INFO) << "pCounter from lowest domain list array: " << pCounter;
+    //Logger(INFO) << "pCounter from lowest domain list array: " << pCounter;
     pArray = new Particle[pCounter];
 
     for (int i=0; i<pCounter; i++) {
@@ -760,7 +861,7 @@ int get_lowest_domain_list_array(TreeNode *root, Particle *&pArray, keytype *&kA
     kList = new KeyList;
 
     get_lowest_domain_list_nodes(root, pList, kList, pCounter);
-    Logger(INFO) << "pCounter from lowest domain list array: " << pCounter;
+    //Logger(INFO) << "pCounter from lowest domain list array: " << pCounter;
     pArray = new Particle[pCounter];
     kArray = new keytype[pCounter];
 
@@ -894,7 +995,7 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
         if (proc != s->myrank) {
             plistLengthSend[proc] = getParticleListLength(&plist[proc]);
 
-            Logger(INFO) << "plistLengthSend[" << proc << "] = " << plistLengthSend[proc];
+            //Logger(INFO) << "plistLengthSend[" << proc << "] = " << plistLengthSend[proc];
 
             pArray[proc] = new Particle[plistLengthSend[proc]];
             ParticleList * current = &plist[proc];
@@ -930,7 +1031,7 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     //Logger(INFO) << "receiveLength: " << receiveLength;
 
 
-    Logger(INFO) << "receiveLength = " << receiveLength;
+    //Logger(INFO) << "receiveLength = " << receiveLength;
 
     // allocate missing (sub)array for process rank
     pArray[s->myrank] = new Particle[receiveLength];
@@ -992,7 +1093,9 @@ void buildSendlist(TreeNode *root, TreeNode *t, SubDomainKeyTree *s, ParticleLis
             current->p = t->p;
             current->next = new ParticleList; //TODO: similar problem as with get_particle_array() ?!
             //mark t->p as to be deleted;
-            //Logger(ERROR) << "buildSendList to be deleted!";
+            //if (t->node == pseudoParticle) {
+              //  Logger(INFO) << "buildSendList to be deleted!";
+            //}
             t->p.todelete = true;
             pIndex[proc]++;
         }
@@ -1006,17 +1109,13 @@ void buildSendlist(TreeNode *root, TreeNode *t, SubDomainKeyTree *s, ParticleLis
 //TODO: implement compPseudoParticlespar (Parallel Computation of the Values of the Pseudoparticles)
 void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s) {
 
+    zero_domain_list_nodes(root);
+
     compLocalPseudoParticlespar(root);
 
     Particle * pArray;
     keytype  * kArray;
-    //int pLength = get_domain_list_array(root, pArray);
     int pLength = get_lowest_domain_list_array(root, pArray, kArray);
-
-    //Logger(INFO) << "pLength = " << pLength;
-    //for (int i=0; i<pLength; i++) {
-        //Logger(ERROR) << "pArray k[" << i << "]  = " << std::bitset<64>(kArray[i]) << "   x = " << pArray[i].x[0];
-    //}
 
     float moments[pLength*3];
     float global_moments[3*pLength];
@@ -1030,51 +1129,25 @@ void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s) {
         masses[i] = pArray[i].m;
     }
 
-
-    /*Particle * pArrayDomainList;
-    int pLengthDomainList = get_domain_list_array(root, pArrayDomainList);
-
-    Logger(INFO) << "pLengthDomainList = " << pLengthDomainList;
-    for (int i=0; i<pLengthDomainList; i++) {
-        Logger(ERROR) << "pArrayDomainList m[" << i << "]  = " << pArrayDomainList[i].m << "   x = "
-                            << pArrayDomainList[i].x[0];
-    }*/
-
-    //if (s->myrank == ) {
-    //output_tree(root, false);
-    //}
-
-    //MPI_Allreduce(..., {mass, moments} of the lowest domainList nodes, MPI_SUM, ...);
-    /*MPI_Allreduce(
-            void* send_data,
-            void* recv_data,
-            int count,
-            MPI_Datatype datatype,
-            MPI_Op op,
-            MPI_Comm communicator)*/
-
     MPI_Allreduce(&moments, &global_moments, 3*pLength, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
     MPI_Allreduce(&masses, &global_masses, pLength, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
 
-    /*for (int i=0; i<pLength; i++) {
-        Logger(INFO) << "       masses[" << i << "] = " << masses[i];
-        Logger(INFO) << "global masses[" << i << "] = " << global_masses[i];
-    }*/
+    //for (int i=0; i<pLength; i++) {
+    //    Logger(INFO) << "masses[" << i << "] = " << masses[i];
+    //    Logger(INFO) << "global_masses[" << i << "] = " << global_masses[i];
+    //}
 
     int dCounter = 0;
 
-    /*Particle * dArray1;
-    int dLength1 = get_domain_list_array(root, dArray1);
-
-    for (int i = 0; i < dLength1; i++) {
-        Logger(INFO) << "Domain dArray1[" << i << "].x = " << dArray1[i].x[0];
-    }*/
-
     update_lowest_domain_list_nodes(root, dCounter, global_masses, global_moments);
 
-    Logger(ERROR) << "dCounter = " << dCounter;
+    //Logger(ERROR) << "dCounter = " << dCounter;
 
     compDomainListPseudoParticlespar(root);
+
+    delete [] pArray;
+    delete [] kArray;
+
 }
 
 /*bool isLowestDomainListNode(TreeNode *t){
@@ -1135,6 +1208,9 @@ void compLocalPseudoParticlespar(TreeNode *t) {
                     }
                 }
             }
+            //if (t->node == domainList) {
+            //    Logger(INFO) << "current mass: " << t->p.m;
+            //}
             for (int d = 0; d < DIM; d++) {
                 t->p.x[d] = t->p.x[d] / t->p.m;
             }
@@ -1159,12 +1235,25 @@ void compDomainListPseudoParticlespar(TreeNode *t) {
             }
             for (int j = 0; j < POWDIM; j++) {
                 if (t->son[j] != NULL) {
+                    //if (isLowestDomainListNode(t->son[j])) {
+                    //    Logger(INFO) << "t->son mass: " << t->son[j]->p.m;
+                    //}
                     t->p.m += t->son[j]->p.m;
                     for (int d = 0; d < DIM; d++) {
                         t->p.x[d] += t->son[j]->p.m * t->son[j]->p.x[d];
                     }
                 }
             }
+            /*if (t->node == domainList) {
+                Logger(INFO) << "!lowest domain mass: " << t->p.m << "(" << t->son[0]->p.m << ", "
+                        << t->son[1]->p.m << ", "
+                        << t->son[2]->p.m << ", "
+                        << t->son[3]->p.m << ", "
+                        << t->son[4]->p.m << ", "
+                        << t->son[5]->p.m << ", "
+                        << t->son[6]->p.m << ", "
+                        << t->son[7]->p.m << ")";
+            }*/
             for (int d = 0; d < DIM; d++) {
                 if (t->p.m != 0) {
                     t->p.x[d] = t->p.x[d] / t->p.m;
@@ -1258,19 +1347,6 @@ float smallestDistance(TreeNode *td, TreeNode *t) {
     return sqrt(dx*dx + dy*dy + dz*dz);
 }
 
-//TODO: implement symbolicForce (Determining Subtrees that are Needed in the Parallel Force Computation)
-void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, SubDomainKeyTree *s) {
-    if ((t != NULL) && (key2proc(key(t), s) == s->myrank)) {
-        // the key of *t can be computed step by step in the recursion insert t->p into list plist;
-        float r = smallestDistance(td, t); //IMPLEMENT: smallest distance from t->p.x to cell td->box;
-        //Logger(DEBUG) << "diam = " << diam << "  theta * r = " << theta * r;
-        if (diam >= theta * r) {
-            for (int i = 0; i < POWDIM; i++) {
-                symbolicForce(td, t->son[i], .5 * diam, plist, s);
-            }
-        }
-    }
-}
 /**
  *
  * @param td : Domain list node which do NOT belong to my process
@@ -1433,7 +1509,7 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
         if (proc != s->myrank) {
             plistLengthSend[proc] = (int)pmap[proc].size(); //getParticleListLength(&plist[proc]);
 
-            Logger(INFO) << "compF_BHpar(): plistLengthSend[" << proc << "] = " << plistLengthSend[proc];
+            //Logger(INFO) << "compF_BHpar(): plistLengthSend[" << proc << "] = " << plistLengthSend[proc];
 
             pArray[proc] = new Particle[plistLengthSend[proc]];
             ParticleList * current = &plist[proc];
@@ -1476,7 +1552,7 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
         }
     }
 
-    Logger(INFO) << "compF_BHpar(): receiveLength = " << receiveLength;
+    //Logger(INFO) << "compF_BHpar(): receiveLength = " << receiveLength;
 
     // allocate missing (sub)array for process rank
     pArray[s->myrank] = new Particle[receiveLength];
@@ -1542,9 +1618,22 @@ void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *p
 // end of the operation on *t
 }
 
+/**
+ * This is the used compTheta function utilizing std::map
+ * @param t
+ * @param root
+ * @param s
+ * @param pmap
+ * @param diam
+ * @param k
+ * @param level
+ */
 void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleMap *pmap, float diam, keytype k, int level) {
     //Logger(INFO) << "compTheta() ..";
     //called recursively as in Algorithm 8.1;
+    if (level >= maxlevel){
+        Logger(ERROR) << "Max tree depth not sufficient. (level = " << level << ")";
+    }
     if (t != NULL) {
         for (int i = 0; i < POWDIM; i++) {
             compTheta(t->son[i], root, s, pmap, diam, (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))), level+1);
@@ -1671,15 +1760,13 @@ int gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll, i
     }
 
     if (s->myrank == 0) {
+        int displacement = 0;
         processNumber = new int[totalReceiveLength];
         for (int proc = 0; proc < s->numprocs; proc++) {
             for (int i = 0; i < pArrayReceiveLength[proc]; i++) {
-                if (proc == 0) {
-                    processNumber[i] = proc;
-                } else {
-                    processNumber[pArrayReceiveLength[proc - 1] + i] = proc;
-                }
+                processNumber[displacement + i] = proc;
             }
+            displacement += pArrayReceiveLength[proc];
         }
     }
 

@@ -11,6 +11,7 @@
 #include "Renderer.h"
 #include "Tree.h"
 #include <cmath>
+#include <string>
 
 void timeIntegration_BH(float t, float delta_t, float t_end, TreeNode *root, Box box,
                         Renderer *renderer, char *image, double *hdImage);
