@@ -19,6 +19,25 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
         Logger(DEBUG) << "t = " << t;
         Logger(DEBUG) << "--------------------------";
 
+        Logger(DEBUG) << "Load balancing ... ";
+
+        //output_tree(root, "log/" + std::to_string(s->myrank) + "before", true, false);
+
+        newLoadDistribution(root, s); // calculate new load distribution
+
+        // update tree with new ranges
+        clearDomainList(root);
+
+        createDomainList(root, 0, 0, s);
+
+        //output_tree(root, "log/" + std::to_string(s->myrank) + "after", true, false);
+        sendParticles(root, s);
+        compPseudoParticlespar(root, s);
+
+        output_tree(root, false, false);
+        Logger(DEBUG) << "... done.";
+        Logger(DEBUG) << "--------------------------";
+
         // rendering
         if (render && step % renderer->getRenderInterval()==0)
         {

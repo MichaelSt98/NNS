@@ -46,6 +46,18 @@ const char* get_node_type(int nodetype)
     }
 }
 
+long countParticles(TreeNode *t, long count){
+     if (t != NULL){
+         if (isLeaf(t) && t->node != domainList){
+             return ++count;
+         } else if (!isLeaf(t)) {
+             for (int i = 0; i < POWDIM; i++) {
+                 count = countParticles(t->son[i], count);
+             }
+         }
+     }
+     return count;
+}
 
 //TODO: create key (!?)
 // simple approach:
@@ -62,24 +74,7 @@ const char* get_node_type(int nodetype)
 // --> less data needs to be exchanged
 // [range_i, range_i+1) defines a minimal upper part of the tree, that has to be present in all processes as a copy to ensure the consistency of the global tree
 // DUMMY
-/*keytype key(TreeNode *t){
-    return KEY_MAX;
-}*/
 
-void getParticleKeysSimple(TreeNode *t, keytype *p, int &pCounter, keytype k, int level){
-    if (t != NULL){
-        for (int i = 0; i < POWDIM; i++) {
-            if (isLeaf(t->son[i])){
-                p[pCounter] = k + (static_cast<keytype>(i) << level*DIM); // inserting key
-                //Logger(DEBUG) << "Inserted particle '" << p[pCounter] << "'@" << pCounter;
-                ++pCounter; // counting inserted particles
-            } else {
-                getParticleKeys(t->son[i], p, pCounter,
-                                k + (static_cast<keytype>(i) << level*DIM), level+1); // go deeper
-            }
-        }
-    }
-}
 
 void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k, int level){
     if (t != NULL){
@@ -129,6 +124,87 @@ void createRanges(TreeNode *root, int N, SubDomainKeyTree *s) {
     delete[] pKeys;
 }
 
+//TODO: Code fragment 8.4: Determining current and new load distribution
+void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s){
+
+    long c = countParticles(root); // count of particles in current process
+    long *oldcount = new long[s->numprocs];
+    // send current particles in each process to all other processes
+    MPI_Allgather(&c, 1, MPI_LONG, oldcount, 1, MPI_LONG, MPI_COMM_WORLD);
+
+    for (int i=0; i<s->numprocs; i++){
+        Logger(INFO) << "Load balancing: oldcount[" << i << "] = " << oldcount[i];
+    }
+
+    long olddist[s->numprocs+1], newdist[s->numprocs+1]; // needed arrays for old and new particle distribution
+
+    olddist[0] = 0;
+    for (int i=0; i<s->numprocs; i++) {
+        olddist[i + 1] = olddist[i] + oldcount[i];
+    }
+
+    for (int i=0; i<=s->numprocs; i++) {
+        newdist[i] = (i * olddist[s->numprocs]) / s->numprocs;
+    }
+
+    for (int i=0; i<=s->numprocs; i++){
+        Logger(INFO) << "Load balancing: olddist[" << i << "] = " << olddist[i];
+        Logger(INFO) << "Load balancing: newdist[" << i << "] = " << newdist[i];
+    }
+
+    for (int i=0; i<=s->numprocs; i++){
+        Logger(DEBUG) << "Load balancing: OLD range[" << i << "] = " << s->range[i];
+    }
+
+    for (int i=0; i<=s->numprocs; i++){
+        s->range[i] = 0; // reset ranges on all processes to zero
+    }
+
+    int p = 0;
+    long n = olddist[s->myrank];
+
+    while (n > newdist[p]) {
+        p++;
+    }
+
+    updateRange(root, &n, &p, s->range, newdist);
+
+    s->range[0] = 0;
+    s->range[s->numprocs] = KEY_MAX;
+
+    keytype sendRange[s->numprocs+1];
+    std::copy(s->range, s->range+s->numprocs+1, sendRange);
+
+    // update new ranges on all processors
+    MPI_Allreduce(sendRange, s->range, s->numprocs+1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+
+    for (int i=0; i<=s->numprocs; i++){
+        Logger(DEBUG) << "Load balancing: NEW range[" << i << "] = " << s->range[i];
+    }
+
+    delete [] oldcount;
+}
+
+void updateRange(TreeNode *t, long *n, int *p, keytype *range, long *newdist, keytype k, int level) {
+    if(t != NULL) {
+        //called recursively as in Algorithm 8.1;
+        // the key of *t can be computed step by step in the recursion
+        for (int i = 0; i < POWDIM; i++) {
+            updateRange(t->son[i], n, p, range, newdist,
+                        (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))), level+1);
+        }
+        // start of the operation on *t
+        if (isLeaf(t) || t->node != domainList) {
+            while (*n >= newdist[*p]) {
+                range[*p] = k;
+                (*p)++;
+            }
+            (*n)++;
+        }
+        // end of the operation on *t
+    }
+}
+
 int key2proc(keytype k, SubDomainKeyTree *s) {
     for (int i=0; i<s->numprocs; i++) { //1
         if (k >= s->range[i] && k < s->range[i+1]) {
@@ -158,11 +234,31 @@ void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s) {
     int p2 = key2proc(k | ~(~0L << DIM*(maxlevel-level)),s);
     if (p1 != p2) {
         for (int i = 0; i < POWDIM; i++) {
-            t->son[i] = (TreeNode *) calloc(1, sizeof(TreeNode));
+            if (t->son[i] == NULL) {
+                t->son[i] = (TreeNode *) calloc(1, sizeof(TreeNode));
+            }
             createDomainList(t->son[i], level + 1,  (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))), s);
         }
     }
 }
+
+void clearDomainList(TreeNode *t){
+    if (t != NULL){
+        if (t->node == domainList){
+            t->node = pseudoParticle; // former domain list node becomes pseudoParticle
+            for (int i=0; i<POWDIM; i++) {
+                if(isLeaf(t->son[i]) && t->son[i]->node == domainList){
+                    free(t->son[i]);
+                    t->son[i] = NULL; // deleting empty domain list nodes directly
+                } else {
+                    clearDomainList(t->son[i]);
+                }
+            }
+        }
+        // no domainList node can exist below another type of particle
+    }
+}
+
 
 bool isLeaf(TreeNode *t) {
     if (t != NULL) {
