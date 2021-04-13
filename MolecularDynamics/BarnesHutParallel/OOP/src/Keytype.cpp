@@ -1,33 +1,47 @@
 #include "../include/Keytype.h"
 
-
 KeyType::KeyType() {
-    getTypeSizes();
-    keyStandard = 0UL;
-    extended = false;
+    key = (keyInteger)0;
+    maxLevel = getMaxLevel();
 }
 
-void KeyType::getTypeSizes() {
-    sizeOfStandardType = sizeof(standardType)*CHAR_BIT;
-    sizeOfExtensionType = sizeof(extensionType)*CHAR_BIT;
-    standardOverhead = sizeOfStandardType % 3;
-    extensionOverhead = sizeOfExtensionType % 3;
-    maxStandard = std::numeric_limits<standardType>::max() >> standardOverhead; // - (standardOverhead << (sizeOfStandardType-1));
-    std::cout << "maxStandard: " << maxStandard << std::endl;
-
-    maxExtension = std::numeric_limits<extensionType>::max() >> extensionOverhead; // - (extensionOverhead << (sizeOfExtensionType-1));
-    std::cout << "maxExtension: " << maxExtension << std::endl;
-
+KeyType::KeyType(keyInteger key_) : KeyType() {
+    key = key_;
 }
 
-int KeyType::getMaxLevel() const {
-    if (extended) {
-        int standardMaxLevel = (sizeOfStandardType-1)/3;
-        std::cout << "keyExtension.size(): " << keyExtension.size() << std::endl;
-        int extensionLevels = (keyExtension.size()*sizeOfExtensionType-1)/3;
-        return standardMaxLevel + extensionLevels;
+int KeyType::getMaxLevel() {
+    return (int)(sizeof(keyInteger)*CHAR_BIT/3);
+}
+
+std::ostream &operator<<(std::ostream &os, const KeyType &key2print) {
+    //std::cout << key2print.key << std::endl;
+    int level[key2print.maxLevel];
+    for (int i=0; i<key2print.maxLevel; i++) {
+        level[i] = key2print.key >> (key2print.maxLevel*3 - 3*(i+1)) & (int)7;
     }
-    else {
-        return (sizeOfStandardType-1)/3;
+    for (int i=0; i<key2print.maxLevel; i++) {
+        os << std::to_string(level[i]);
+        os <<  "|";
     }
+    return os;
+}
+
+KeyType operator<<(KeyType key2Shift, std::size_t n) {
+    return KeyType(key2Shift.key << n);
+}
+
+KeyType operator>>(KeyType key2Shift, std::size_t n) {
+    return KeyType(key2Shift.key >> n);
+}
+
+KeyType operator|(KeyType lhsKey, KeyType rhsKey) {
+    return KeyType(lhsKey.key | rhsKey.key);
+}
+
+KeyType operator&(KeyType lhsKey, KeyType rhsKey) {
+    return KeyType(lhsKey.key & rhsKey.key);
+}
+
+KeyType operator+(KeyType lhsKey, KeyType rhsKey) {
+    return KeyType(lhsKey.key + rhsKey.key);
 }

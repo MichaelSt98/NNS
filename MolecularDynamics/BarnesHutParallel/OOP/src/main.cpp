@@ -1,38 +1,35 @@
 
 #include "../include/Logger.h"
-#include "../include/Keytype.h"
+//#include "../include/Keytype.h"
 #include "../include/Particle.h"
 #include "../include/Tree.h"
 #include "../include/Domain.h"
+#include "../include/SubDomain.h"
 
 #include <iostream>
 #include <climits>
+#include <boost/mpi.hpp>
 
 #define KEY_MAX ULONG_MAX
 
 structlog LOGCFG = {};
 
-int main() {
+int main(int argc, char** argv) {
 
     LOGCFG.headers = true;
     LOGCFG.level = DEBUG;
 
-    Particle p;
-    //std::cout << p << std::endl;
+    boost::mpi::environment env{argc, argv};
+    //boost::mpi::communicator comm;
 
-    //nodeType node(nodeType::pseudoParticle) ; //= nodeType::pseudoParticle;
-    //std::cout << "node = " << node.type << std::endl;
+    SubDomain subDomainHandler;
+    //std::cout << "subDomainHandler.rank = " << subDomainHandler.rank << std::endl;
 
-    Vector3<float> lowerVec {-5, -5, -5};
-    Vector3<float> upperVec {5, 5, 5};
+    //std::cout << "rank = " << comm.rank() << std::endl;
+
+    Vector3<float> lowerVec {-1, -1, -1};
+    Vector3<float> upperVec {1, 1, 1};
     Domain domain { lowerVec, upperVec };
-
-    /*
-    Vector3<float> vec {1, 2, 3};
-
-    bool inside = domain.withinDomain(vec);
-
-    std::cout << "Inside: " << (inside ? "true" : "false")  << std::endl;*/
 
     ParticleList particleList;
 
@@ -43,31 +40,66 @@ int main() {
 
     Vector3<float> root {0, 0, 0};
     Particle rootParticle { root };
-    TreeNode *treeNode = new TreeNode(rootParticle, domain);
+    //TreeNode *treeNode = new TreeNode(rootParticle, domain);
+    TreeNode treeNode(rootParticle, domain);
+    treeNode.node = TreeNode::domainList;
 
-    std::cout << *treeNode << std::endl << std::endl;
+    std::cout << treeNode << std::endl << std::endl;
 
-    /*for (const auto& particle: particleList) {
-        //std::cout << particle;
-        treeNode->insert(particle);
-    }*/
 
     int counter = 0;
     for (auto it = std::begin(particleList); it != std::end(particleList); ++it) {
-        std::cout << "Counter = " << counter << std::endl;
-        treeNode->insert(*it);
-        std::cout << *treeNode << std::endl;
+        treeNode.insert(*it);
         counter++;
     }
 
+    ParticleList pList;
+    treeNode.getTreeList(pList);
+
+
+
+    std::cout << "len(pList) = " << pList.size() << std::endl;
+
+    treeNode.printTreeSummary(true, TreeNode::particle);
+
+    subDomainHandler.root = treeNode;
+
+    KeyList kList;
+    subDomainHandler.getParticleKeys(kList);
+
+    for (auto it = std::begin(kList); it != std::end(kList); ++it) {
+        std::cout << "key = " << *it << std::endl;
+    }
 
     //extensionType test = 2 << 30;
     //Logger(INFO) << "2 << 2 = " << test;
 
 
+
     //KeyType key(KEY_MAX-7);
-    //std::cout << "max level: " << key.getMaxLevel() << std::endl;
-    //std::cout << key << std::endl;
+
+    /*KeyType key(5UL);
+    KeyType shiftedKey = key << 3;
+    KeyType orKey = key | shiftedKey;
+    KeyType andKey = key & shiftedKey;
+    KeyType plusKey = key + shiftedKey;
+
+    std::cout << "key.key: " << key.key << std::endl;
+    std::cout << "key.maxLevel: " << key.maxLevel << std::endl;
+    std::cout << key << std::endl;
+    std::cout << shiftedKey << std::endl;
+    std::cout << orKey << std::endl;
+    std::cout << andKey << std::endl;
+    std::cout << plusKey << std::endl;*/
+
+    /*std::cout << "max level: " << key.getMaxLevel() << std::endl;
+    std::cout << "keyStandard: " << key.keyStandard << std::endl;
+    std::cout << "keyExtension: " << std::endl;
+    for (const auto& val: key.keyExtension) {
+        std::cout << val << std::endl;
+    }
+
+    std::cout << key << std::endl;*/
 
     return 0;
 }

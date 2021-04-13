@@ -23,7 +23,7 @@ OBJEXT      := o
 #Flags, Libraries and Includes
 CXXFLAGS    += -std=c++11 -g #-Wno-conversion -g3 #-std=c++17 -O3 -Wall -pedantic -Wno-vla-extension -I/usr/local/include/ -I/usr/local/include/eigen3/ -I./include -I./src
 LFLAGS      := -std=c++11 -lboost_filesystem -lboost_system #-O3 -Wall -Wno-deprecated -Werror -pedantic -L/usr/local/lib/
-LIB         := -Xpreprocessor -fopenmp #-lomp
+LIB         := -Xpreprocessor -fopenmp -lboost_mpi -lboost_serialization #-lomp
 INC         := -I$(INCDIR) #-I/usr/local/include
 INCDEP      := -I$(INCDIR)
 
