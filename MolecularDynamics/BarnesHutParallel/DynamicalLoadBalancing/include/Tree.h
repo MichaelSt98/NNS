@@ -53,6 +53,8 @@ typedef std::map<keytype, Particle> ParticleMap;
 struct KeyList {
     keytype k;
     KeyList *next;
+
+    KeyList();
 };
 
 const int maxlevel = (sizeof(keytype)*CHAR_BIT-1)/DIM;
@@ -81,26 +83,21 @@ struct SubDomainKeyTree {
 }
  */
 
-/** First step in the path key creation done explicitly [p. 343f]
- * - Starting at the root node 1
- * - Each level needs 3 bits => [0,7] are the labels of the sons
- * - The labels [0,7] are shifted 3 x level times
- *
- * @param t Current node in recursion, should be initialized with root
- * @param p Container to be filled with path keys of all leaves (keytype[N])
- * @param pCounter Global counter by reference
- * @param k default=1UL (root node)
- * @param level default=0
- */
-void getParticleKeysSimple(TreeNode *t, keytype *p, int &pCounter, keytype k=1UL, int level=0);
+long countParticles(TreeNode *t, long count=0);
 
 void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k=0UL, int level=0);
 
 void createRanges(TreeNode *root, int N, SubDomainKeyTree *s);
 
+void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s);
+
+void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, keytype k=0UL, int level=0);
+
 int key2proc(keytype k, SubDomainKeyTree *s);
 
 void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s);
+
+void clearDomainList(TreeNode *t);
 
 bool isLeaf(TreeNode *t);
 
@@ -134,6 +131,8 @@ void output_particles(TreeNode *root);
 
 NodeList* build_tree_list(TreeNode *t, NodeList *nLst);
 
+KeyList* build_tree_list(TreeNode *t, KeyList *kLst, keytype k=0UL, int level=0);
+
 ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst);
 
 int getParticleListLength(ParticleList *plist);
@@ -141,6 +140,8 @@ int getParticleListLength(ParticleList *plist);
 int get_tree_node_number(TreeNode *root);
 
 int get_tree_array(TreeNode *root, Particle *&p, nodetype *&n);
+
+int get_tree_array(TreeNode *root, Particle *&p, nodetype *&n, keytype *&k);
 
 int get_particle_array(TreeNode *root, Particle *&p);
 
