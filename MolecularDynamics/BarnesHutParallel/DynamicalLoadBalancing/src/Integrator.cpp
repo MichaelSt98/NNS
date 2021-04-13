@@ -14,9 +14,29 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
 
     int step = 0;
 
-    while (t < t_end) {
+    while (t <= t_end) {
         Logger(DEBUG) << " ";
         Logger(DEBUG) << "t = " << t;
+        Logger(DEBUG) << "============================";
+
+        Logger(DEBUG) << "--------------------------";
+        Logger(DEBUG) << "Load balancing ... ";
+
+        newLoadDistribution(root, s); // calculate new load distribution
+
+        // update tree with new ranges
+        clearDomainList(root);
+
+        createDomainList(root, 0, 0, s);
+
+        sendParticles(root, s);
+
+        compPseudoParticlespar(root, s);
+
+        output_tree(root, "log/balanced_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
+
+
+        Logger(DEBUG) << "... done.";
         Logger(DEBUG) << "--------------------------";
 
         // rendering
@@ -45,11 +65,18 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
                 }
                 delete [] prtcls;
             }
-            output_tree(root, false);
+            //output_tree(root, false);
         }
+
+        if (t == t_end){
+            break; // done
+        }
+
         ++step;
 
         t += delta_t; // update timestep
+
+        output_tree(root, "log/before_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
 
         compF_BHpar(root, diam, s);
         repairTree(root); // cleanup local tree by removing symbolicForce-particles
@@ -64,8 +91,11 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
 
         compPseudoParticlespar(root, s);
 
+        output_tree(root, "log/after_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
+
         output_tree(root, false, false);
 
+        Logger(DEBUG) << "============================";
     }
     Logger(DEBUG) << "t = " << t << ", FINISHED";
 }
