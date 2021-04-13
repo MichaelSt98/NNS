@@ -89,7 +89,7 @@ void createRanges(TreeNode *root, int N, SubDomainKeyTree *s);
 
 void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s);
 
-void updateRange(TreeNode *t, long *n, int *p, keytype *range, long *newdist, keytype k=0UL, int level=0);
+void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, keytype k=0UL, int level=0);
 
 int key2proc(keytype k, SubDomainKeyTree *s);
 

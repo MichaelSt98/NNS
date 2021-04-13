@@ -132,9 +132,9 @@ void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s){
     // send current particles in each process to all other processes
     MPI_Allgather(&c, 1, MPI_LONG, oldcount, 1, MPI_LONG, MPI_COMM_WORLD);
 
-    for (int i=0; i<s->numprocs; i++){
-        Logger(INFO) << "Load balancing: oldcount[" << i << "] = " << oldcount[i];
-    }
+    //for (int i=0; i<s->numprocs; i++){
+    //    Logger(INFO) << "Load balancing: oldcount[" << i << "] = " << oldcount[i];
+    //}
 
     long olddist[s->numprocs+1], newdist[s->numprocs+1]; // needed arrays for old and new particle distribution
 
@@ -147,14 +147,14 @@ void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s){
         newdist[i] = (i * olddist[s->numprocs]) / s->numprocs;
     }
 
-    for (int i=0; i<=s->numprocs; i++){
-        Logger(INFO) << "Load balancing: olddist[" << i << "] = " << olddist[i];
-        Logger(INFO) << "Load balancing: newdist[" << i << "] = " << newdist[i];
-    }
+    //for (int i=0; i<=s->numprocs; i++){
+    //    Logger(INFO) << "Load balancing: olddist[" << i << "] = " << olddist[i];
+    //    Logger(INFO) << "Load balancing: newdist[" << i << "] = " << newdist[i];
+    //}
 
-    for (int i=0; i<=s->numprocs; i++){
-        Logger(DEBUG) << "Load balancing: OLD range[" << i << "] = " << s->range[i];
-    }
+    //for (int i=0; i<=s->numprocs; i++){
+    //    Logger(DEBUG) << "Load balancing: OLD range[" << i << "] = " << s->range[i];
+    //}
 
     for (int i=0; i<=s->numprocs; i++){
         s->range[i] = 0; // reset ranges on all processes to zero
@@ -167,7 +167,7 @@ void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s){
         p++;
     }
 
-    updateRange(root, &n, &p, s->range, newdist);
+    updateRange(root, n, p, s->range, newdist);
 
     s->range[0] = 0;
     s->range[s->numprocs] = KEY_MAX;
@@ -185,7 +185,7 @@ void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s){
     delete [] oldcount;
 }
 
-void updateRange(TreeNode *t, long *n, int *p, keytype *range, long *newdist, keytype k, int level) {
+void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, keytype k, int level) {
     if(t != NULL) {
         //called recursively as in Algorithm 8.1;
         // the key of *t can be computed step by step in the recursion
@@ -194,12 +194,12 @@ void updateRange(TreeNode *t, long *n, int *p, keytype *range, long *newdist, ke
                         (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))), level+1);
         }
         // start of the operation on *t
-        if (isLeaf(t) || t->node != domainList) {
-            while (*n >= newdist[*p]) {
-                range[*p] = k;
-                (*p)++;
+        if (isLeaf(t) && t->node != domainList) {
+            while (n >= newdist[p]) {
+                range[p] = k;
+                p++;
             }
-            (*n)++;
+            n++;
         }
         // end of the operation on *t
     }
@@ -236,6 +236,11 @@ void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s) {
         for (int i = 0; i < POWDIM; i++) {
             if (t->son[i] == NULL) {
                 t->son[i] = (TreeNode *) calloc(1, sizeof(TreeNode));
+            } else if (isLeaf(t->son[i]) && t->son[i]->node == particle){
+                //Logger(ERROR) << "Deleting particle in createDomainList(): " << k;
+                t->son[i]->node = domainList; // need to be set before inserting into the tree
+                insertTree(&t->son[i]->p, t);
+                continue; // skip recursive call of createDomainList()
             }
             createDomainList(t->son[i], level + 1,  (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))), s);
         }
@@ -247,11 +252,10 @@ void clearDomainList(TreeNode *t){
         if (t->node == domainList){
             t->node = pseudoParticle; // former domain list node becomes pseudoParticle
             for (int i=0; i<POWDIM; i++) {
-                if(isLeaf(t->son[i]) && t->son[i]->node == domainList){
+                clearDomainList(t->son[i]);
+                if(isLeaf(t->son[i]) && t->son[i]->node == pseudoParticle) {
                     free(t->son[i]);
                     t->son[i] = NULL; // deleting empty domain list nodes directly
-                } else {
-                    clearDomainList(t->son[i]);
                 }
             }
         }
@@ -308,6 +312,7 @@ void insertTree(Particle *p, TreeNode *t) {
         } else {
             t->son[b]->box = sonbox;
             insertTree(p, t->son[b]);
+            //insertTree(p, t);
         }
     }
 }
@@ -1572,7 +1577,7 @@ int gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll) {
 
     if (s->myrank == 0) {
         for (int proc=0; proc<s->numprocs; proc++) {
-            Logger(DEBUG) << "receiveLength[" << proc << "] = " << pArrayReceiveLength[proc];
+            //Logger(DEBUG) << "receiveLength[" << proc << "] = " << pArrayReceiveLength[proc];
             totalReceiveLength += pArrayReceiveLength[proc];
             if (pArrayReceiveLength[proc] == 0){
                 Logger(ERROR) << "Process " << proc << " ran out of particles. - Not good...";
@@ -1583,7 +1588,7 @@ int gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll) {
     if (s->myrank == 0) {
         for (int proc=1; proc<s->numprocs; proc++) {
             pArrayDisplacements[proc] = pArrayReceiveLength[proc-1] + pArrayDisplacements[proc-1];
-            Logger(DEBUG) << "Displacements: " << pArrayDisplacements[proc];
+            //Logger(DEBUG) << "Displacements: " << pArrayDisplacements[proc];
         }
     }
 
@@ -1621,7 +1626,7 @@ int gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll, i
 
     if (s->myrank == 0) {
         for (int proc=0; proc<s->numprocs; proc++) {
-            Logger(DEBUG) << "receiveLength[" << proc << "] = " << pArrayReceiveLength[proc];
+            //Logger(DEBUG) << "receiveLength[" << proc << "] = " << pArrayReceiveLength[proc];
             totalReceiveLength += pArrayReceiveLength[proc];
             if (pArrayReceiveLength[proc] == 0){
                 Logger(ERROR) << "Process " << proc << " ran out of particles. - Not good.";
@@ -1643,7 +1648,7 @@ int gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll, i
     if (s->myrank == 0) {
         for (int proc=1; proc<s->numprocs; proc++) {
             pArrayDisplacements[proc] = pArrayReceiveLength[proc-1] + pArrayDisplacements[proc-1];
-            Logger(DEBUG) << "Displacements: " << pArrayDisplacements[proc];
+            //Logger(DEBUG) << "Displacements: " << pArrayDisplacements[proc];
         }
     }
 

@@ -17,11 +17,10 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
     while (t < t_end) {
         Logger(DEBUG) << " ";
         Logger(DEBUG) << "t = " << t;
+        Logger(DEBUG) << "============================";
+
         Logger(DEBUG) << "--------------------------";
-
         Logger(DEBUG) << "Load balancing ... ";
-
-        //output_tree(root, "log/" + std::to_string(s->myrank) + "before", true, false);
 
         newLoadDistribution(root, s); // calculate new load distribution
 
@@ -30,11 +29,13 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
 
         createDomainList(root, 0, 0, s);
 
-        //output_tree(root, "log/" + std::to_string(s->myrank) + "after", true, false);
         sendParticles(root, s);
+
         compPseudoParticlespar(root, s);
 
-        output_tree(root, false, false);
+        //output_tree(root, "log/balanced_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
+
+
         Logger(DEBUG) << "... done.";
         Logger(DEBUG) << "--------------------------";
 
@@ -64,11 +65,14 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
                 }
                 delete [] prtcls;
             }
-            output_tree(root, false);
+            //output_tree(root, false);
         }
+
         ++step;
 
         t += delta_t; // update timestep
+
+        //output_tree(root, "log/before_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
 
         compF_BHpar(root, diam, s);
         repairTree(root); // cleanup local tree by removing symbolicForce-particles
@@ -83,8 +87,11 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
 
         compPseudoParticlespar(root, s);
 
+        //output_tree(root, "log/after_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
+
         output_tree(root, false, false);
 
+        Logger(DEBUG) << "============================";
     }
     Logger(DEBUG) << "t = " << t << ", FINISHED";
 }
