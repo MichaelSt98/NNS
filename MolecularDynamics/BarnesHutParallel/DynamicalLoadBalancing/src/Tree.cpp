@@ -305,6 +305,7 @@ void insertTree(Particle *p, TreeNode *t) {
                 t->node = pseudoParticle;
                 t->son[b] = (TreeNode *) calloc(1, sizeof(TreeNode));
                 t->son[b]->p = *p;
+                t->p.todelete = false;
                 t->son[b]->box = sonbox;
                 insertTree(&p2, t);
             } else {
@@ -448,7 +449,6 @@ void moveLeaf(TreeNode *t, TreeNode *root) {
             moveLeaf(t->son[i], root);
         }
         if (isLeaf(t) && t->node != domainList && (!t->p.moved)) {
-
             t->p.moved = true;
             if (!particleWithinBox(t->p, t->box)) {
                 if (!particleWithinBox(t->p, root->box)){
@@ -456,6 +456,9 @@ void moveLeaf(TreeNode *t, TreeNode *root) {
                 } else {
                     insertTree(&t->p, root);
                 }
+                //if (t->node == pseudoParticle){
+                //    Logger(ERROR) << "Flagging pseudo particle for deletion in moveLeaf(). - Not good.";
+                //}
                 t->p.todelete = true;
             }
         }
@@ -476,7 +479,7 @@ void repairTree(TreeNode *t) {
                     if (t->son[i]->p.todelete) {
                         //Logger(INFO) << "delete (0) t-son x = " << t->son[i]->p.x[0];
                         //if (t->son[i]->node == pseudoParticle) {
-                          //  Logger(INFO) << "Deleting pseudo (1)";
+                        //    Logger(INFO) << "Deleting pseudo (1)";
                         //}
                         free(t->son[i]);
                         t->son[i] = NULL;
@@ -491,24 +494,24 @@ void repairTree(TreeNode *t) {
                 if (numberofsons == 0) {
                     // *t is an *empty* leaf node and can be deleted
                     t->p.todelete = true;
-                    //Logger(INFO) << "Deleting (3)";
-                    //Logger(DEBUG) << "Empty leaf node";
+                    //Logger(INFO) << "Deleting (3):" << get_node_type(t->node);
                 } else if (numberofsons == 1) {
                     // *t adopts the role of its only son node and
                     // the son node is deleted directly
                     //Logger(ERROR) << "parent x = " << t->p.x[0] << ", node = " << t->node;
-                    if (t->son[d]->node != domainList && isLeaf(t->son[d])) {
-                        // son is an only son and particle
+                    if (t->son[d]->node != domainList) {
+                        // son is an only son
                         t->p = t->son[d]->p;
-                        //t->p.todelete = false;
                         t->node = t->son[d]->node;
-                        //free(&t->son[d]->p);
                         //Logger(INFO) << "delete (1) t-son x = " << t->son[d]->p.x[0]
                           //                  << ", node = " << get_node_type(t->son[d]->node);
                         //t->son[d]->p.todelete = true;
-                        free(t->son[d]); // TODO: Check if this makes any sense at all ?!
+                        // TODO: check why only free leafs prevents loosing particles
+                        if (isLeaf(t->son[d])) {
+                            free(t->son[d]);
+                            t->son[d] = NULL;
+                        }
                         //free(&t->son[d]->p);
-                        t->son[d] = NULL; // TODO: May be redundant
                     }
                 }
             }
