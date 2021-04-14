@@ -9,14 +9,26 @@ Particle::Particle() {
     moved = false;
     toDelete = false;
 }
-Particle::Particle(Vector3<pFloat> x) : x { x } {
+Particle::Particle(pVec x) : x { x } {
     m = 0;
     moved = false;
     toDelete = false;
 }
 
-Particle::Particle(Vector3<pFloat> x, Vector3<pFloat> v) : x { x }, v { v }{
+Particle::Particle(pVec x, pFloat m) : x { x } {
+    this->m = m;
+    moved = false;
+    toDelete = false;
+}
+
+Particle::Particle(pVec x, pVec v) : x { x }, v { v }{
     m = 0;
+    moved = false;
+    toDelete = false;
+}
+
+Particle::Particle(pVec x, pVec v, pFloat m) : x { x }, v { v }{
+    this->m = m;
     moved = false;
     toDelete = false;
 }

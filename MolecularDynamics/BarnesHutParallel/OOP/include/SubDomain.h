@@ -11,8 +11,6 @@
 #include <boost/mpi.hpp>
 #include <vector>
 
-typedef std::vector<KeyType> KeyList;
-
 class SubDomain {
 public:
     boost::mpi::communicator comm;
@@ -24,10 +22,33 @@ public:
 
     SubDomain();
 
-    void getParticleKeys(TreeNode &t, KeyList &keyList, KeyType k=0UL, int level=0);
+    void moveParticles();
+
+    //void getParticleKeys(TreeNode &t, KeyList &keyList, KeyType k=0UL, int level=0);
     void getParticleKeys(KeyList &keyList, KeyType k=0UL, int level=0);
 
+    //TODO: implement
+    void key2proc();
+
     void createRanges();
+
+    //TODO: implement
+    void createDomainList();
+
+    //TODO: implement
+    void sendParticles();
+    void buildSendList();
+
+    //TODO: implement
+    void symbolicForce(TreeNode &td, TreeNode &t, float diam, ParticleList pList, KeyType k=0UL, int level=0);
+    void symbolicForce(TreeNode &t, float diam, ParticleList pList, KeyType k=0UL, int level=0);
+    void compPseudoParticles();
+    void compF();
+    void compTheta();
+
+    //TODO: implement
+    void gatherParticles(ParticleList &pList);
+    void gatherParticles(ParticleList &pList, IntList &processList);
 };
 
 

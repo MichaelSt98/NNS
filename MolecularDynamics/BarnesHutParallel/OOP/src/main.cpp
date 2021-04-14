@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     LOGCFG.level = DEBUG;
 
     boost::mpi::environment env{argc, argv};
-    //boost::mpi::communicator comm;
+    boost::mpi::communicator comm;
 
     SubDomain subDomainHandler;
     //std::cout << "subDomainHandler.rank = " << subDomainHandler.rank << std::endl;
@@ -33,9 +33,9 @@ int main(int argc, char** argv) {
 
     ParticleList particleList;
 
-    for (int i=1; i<100; i++) {
+    for (int i=1; i<10+(10*comm.rank()); i++) {
         Vector3<float> x {i/100.f, i/50.f, i/150.f};
-        particleList.push_back(Particle(x));
+        particleList.push_back(Particle(x, comm.rank()));
     }
 
     Vector3<float> root {0, 0, 0};
@@ -45,7 +45,6 @@ int main(int argc, char** argv) {
     treeNode.node = TreeNode::domainList;
 
     std::cout << treeNode << std::endl << std::endl;
-
 
     int counter = 0;
     for (auto it = std::begin(particleList); it != std::end(particleList); ++it) {
@@ -60,16 +59,32 @@ int main(int argc, char** argv) {
 
     std::cout << "len(pList) = " << pList.size() << std::endl;
 
-    treeNode.printTreeSummary(true, TreeNode::particle);
+    //treeNode.printTreeSummary(true, TreeNode::particle);
 
     subDomainHandler.root = treeNode;
 
-    KeyList kList;
+    ParticleList allParticles;
+    IntList procList;
+    subDomainHandler.gatherParticles(allParticles, procList);
+
+    if (comm.rank() == 0) {
+        int pCounter = 0;
+        for (auto it = std::begin(allParticles); it != std::end(allParticles); ++it) {
+            //std::cout << "particle[" << pCounter << "].m = " << it->m << std::endl;
+            pCounter++;
+        }
+        std::cout << "pCounter = " << pCounter << std::endl;
+        for (int i=0; i<allParticles.size(); i++) {
+            std::cout << "particle[" << i << "].m = " << allParticles[i].m << " from proc: " << procList[i] << std::endl;
+        }
+    }
+
+    /*KeyList kList;
     subDomainHandler.getParticleKeys(kList);
 
     for (auto it = std::begin(kList); it != std::end(kList); ++it) {
         std::cout << "key = " << *it << std::endl;
-    }
+    }*/
 
     //extensionType test = 2 << 30;
     //Logger(INFO) << "2 << 2 = " << test;

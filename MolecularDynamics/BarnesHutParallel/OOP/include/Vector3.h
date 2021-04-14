@@ -4,6 +4,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <boost/mpi.hpp>
 
 template <class T>
 class Vector3 {
@@ -29,6 +30,15 @@ public:
     // move constructor
     Vector3(Vector3&& src) : x(src.x ), y(src.y), z(src.z) {
         //src = nullptr;
+    }
+
+    friend class boost::serialization::access;
+
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int version) {
+        ar & x;
+        ar & y;
+        ar & z;
     }
 
     typedef T DataType;

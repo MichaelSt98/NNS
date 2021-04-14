@@ -9,6 +9,8 @@
 
 typedef float pFloat;
 
+typedef Vector3<pFloat> pVec;
+
 class Particle {
 
 public:
@@ -23,8 +25,23 @@ public:
     bool toDelete;
 
     Particle();
-    Particle(Vector3<pFloat> x);
-    Particle(Vector3<pFloat> x, Vector3<pFloat> v);
+    Particle(pVec x);
+    Particle(pVec x, pFloat m);
+    Particle(pVec x, pVec v);
+    Particle(pVec x, pVec v, pFloat m);
+
+    friend class boost::serialization::access;
+
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int version) {
+        ar & m;
+        ar & x;
+        ar & v;
+        ar & F;
+        ar & oldF;
+        ar & moved;
+        ar & toDelete;
+    }
 
     void force(Particle *j);
     void force(Particle &j);

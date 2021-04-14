@@ -132,6 +132,26 @@ bool TreeNode::isLowestDomainList() {
     return false;
 }
 
+tFloat TreeNode::smallestDistance(Particle &particle) {
+    //smallest distance from p.x to cell box
+    tFloat dx;
+    if (particle.x[0] < box.lower[0]) dx = box.lower[0] - particle.x[0];
+    else if (particle.x[0] > box.upper[0]) dx = particle.x[0] - box.upper[0];
+    else dx = (tFloat)0;
+
+    tFloat dy;
+    if (particle.x[1] < box.lower[1]) dy = box.lower[1] - particle.x[1];
+    else if (particle.x[1] > box.upper[1]) dy = particle.x[1] - box.upper[1];
+    else dy = (tFloat)0;
+
+    tFloat dz;
+    if (particle.x[2] < box.lower[2]) dz = box.lower[2] - particle.x[2];
+    else if (particle.x[2] > box.upper[2]) dz = particle.x[2] - box.upper[2];
+    else dz = (tFloat)0;
+
+    return sqrt(dx*dx + dy*dy + dz*dz);
+}
+
 int TreeNode::getSonBox(Particle &particle) {
     int son = 0;
     Vector3<dFloat> center;
@@ -261,6 +281,71 @@ void TreeNode::compV(tFloat deltaT) {
     }
 }
 
+void TreeNode::compPseudoParticles() {
+    for (int i=0; i<POWDIM; i++) {
+        if (son[i] != NULL) {
+            son[i]->compPseudoParticles();
+        }
+    }
+    if (!isLeaf()) {
+        if (!isDomainList()) {
+            node = pseudoParticle;
+        }
+        p.m = 0;
+        p.x = {0, 0, 0};
+        for (int j=0; j<POWDIM; j++) {
+            if (son[j] != NULL) {
+                p.m += son[j]->p.m;
+                p.x += son[j]->p.m * son[j]->p.x;
+            }
+        }
+        p.x = p.x/p.m;
+    }
+}
+
+void TreeNode::compLocalPseudoParticles() {
+    for (int i=0; i<POWDIM; i++) {
+        if (son[i] != NULL) {
+            son[i]->compLocalPseudoParticles();
+        }
+    }
+    if (!isLeaf() && (!isDomainList() || isLowestDomainList())) {
+        if (!isDomainList()) {
+            node = pseudoParticle;
+        }
+        p.m = 0;
+        p.x = {0, 0, 0};
+        for (int j=0; j<POWDIM; j++) {
+            if (son[j] != NULL) {
+                p.m += son[j]->p.m;
+                p.x += son[j]->p.m * son[j]->p.x;
+            }
+        }
+        p.x = p.x/p.m;
+    }
+}
+
+void TreeNode::compDomainListPseudoParticles() {
+    for (int i=0; i<POWDIM; i++) {
+        if (son[i] != NULL) {
+            son[i]->compDomainListPseudoParticles();
+        }
+    }
+    if (isDomainList() && !isLowestDomainList()) {
+        p.m = 0;
+        p.x = {0, 0, 0};
+        for (int j=0; j<POWDIM; j++) {
+            if (son[j] != NULL) {
+                p.m += son[j]->p.m;
+                p.x += son[j]->p.m * son[j]->p.x;
+            }
+        }
+        if (p.m > 0) {
+            p.x = p.x/p.m;
+        }
+    }
+}
+
 void TreeNode::resetParticleFlags() {
     for (int i=0; i<POWDIM; i++) {
         if (son[i] != NULL) {
@@ -324,6 +409,19 @@ void TreeNode::repairTree() {
                     delete son[d];
                     son[d] = NULL;
                 }
+            }
+        }
+    }
+}
+
+void TreeNode::getParticleKeys(KeyList &keyList, KeyType k, int level) {
+    for (int i=0; i<8; i++) {
+        if (son[i] != NULL) {
+            if (son[i]->isLeaf()) {
+                keyList.push_back((k | KeyType((keyInteger) i << (3 * (k.maxLevel - level - 1)))));
+            } else {
+                son[i]->getParticleKeys(keyList, (k | KeyType((keyInteger) i << (3 * (k.maxLevel - level - 1)))),
+                                level + 1);
             }
         }
     }

@@ -23,8 +23,10 @@
 class TreeNode;
 struct Node;
 
+typedef std::vector<int> IntList;
 typedef std::vector<Particle> ParticleList;
 typedef std::vector<Node> NodeList;
+typedef std::vector<KeyType> KeyList;
 
 typedef float tFloat;
 //typedef unsigned long keytype;
@@ -59,6 +61,8 @@ public:
     bool isDomainList();
     bool isLowestDomainList();
 
+    tFloat smallestDistance(Particle &particle);
+
     int getSonBox(Particle &particle);
     int getSonBox(Particle &particle, Domain &sonBox);
 
@@ -67,6 +71,10 @@ public:
     void force(TreeNode &tl, tFloat diam);
     void compX(tFloat deltaT);
     void compV(tFloat deltaT);
+
+    void compPseudoParticles();
+    void compLocalPseudoParticles();
+    void compDomainListPseudoParticles();
 
     void resetParticleFlags();
     void moveLeaf(TreeNode &root);
@@ -77,6 +85,8 @@ public:
     void getTreeList(ParticleList &particleList);
     void getTreeList(NodeList &nodeList);
     void getParticleList(ParticleList &particleList);
+
+    void getParticleKeys(KeyList &keyList, KeyType k=0UL, int level=0);
 
 };
 

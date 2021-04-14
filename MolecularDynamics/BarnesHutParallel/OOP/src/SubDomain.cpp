@@ -9,32 +9,87 @@ SubDomain::SubDomain() {
     numProcesses = comm.size();
 }
 
-void SubDomain::getParticleKeys(TreeNode &t, KeyList &keyList, KeyType k, int level) {
-    for (int i=0; i<8; i++) {
-        if (t.son[i] != NULL) {
-            if (t.son[i]->isLeaf()) {
-                keyList.push_back((k | KeyType((keyInteger) i << (3 * (k.maxLevel - level - 1)))));
-            } else {
-                getParticleKeys(*t.son[i], keyList, (k | KeyType((keyInteger) i << (3 * (k.maxLevel - level - 1)))),
-                                level + 1);
-            }
-        }
-    }
+void SubDomain::moveParticles() {
+    root.resetParticleFlags();
+    root.moveLeaf(root);
+    root.repairTree();
 }
 
 void SubDomain::getParticleKeys(KeyList &keyList, KeyType k, int level) {
-    for (int i=0; i<8; i++) {
-        if (root.son[i] != NULL) {
-            if (root.son[i]->isLeaf()) {
-                keyList.push_back((k | KeyType((keyInteger) i << (3 * (k.maxLevel - level - 1)))));
-            } else {
-                getParticleKeys(*root.son[i], keyList, (k | KeyType((keyInteger) i << (3 * (k.maxLevel - level - 1)))),
-                                level + 1);
-            }
-        }
-    }
+    root.getParticleKeys(keyList, k, level);
 }
 
 void SubDomain::createRanges() {
 
+}
+
+void SubDomain::gatherParticles(ParticleList &pList) {
+
+    ParticleList myProcessParticles;
+    root.getParticleList(myProcessParticles);
+
+    Particle *pArrayLocal = &myProcessParticles[0];
+
+    int localLength = (int)myProcessParticles.size();
+    IntList receiveLengths;
+
+    //boost::mpi::gather(comm, &localLength, 1, receiveLengths, 0);
+    boost::mpi::all_gather(comm, &localLength, 1, receiveLengths);
+
+    int totalReceiveLength = 0;
+    for (auto it = std::begin(receiveLengths); it != std::end(receiveLengths); ++it) {
+        //std::cout << "receiveLengths: " << *it << std::endl;
+        totalReceiveLength += *it;
+    }
+
+    Particle *pArray;
+
+    if (rank == 0) {
+        pArray = new Particle[totalReceiveLength];
+    }
+
+    boost::mpi::gatherv(comm, myProcessParticles, pArray, receiveLengths, 0);
+
+    if (rank == 0) {
+        pList.assign(pArray, pArray + totalReceiveLength);
+        delete [] pArray;
+    }
+}
+
+void SubDomain::gatherParticles(ParticleList &pList, IntList &processList) {
+
+    ParticleList myProcessParticles;
+    root.getParticleList(myProcessParticles);
+
+    Particle *pArrayLocal = &myProcessParticles[0];
+
+    int localLength = (int)myProcessParticles.size();
+    IntList receiveLengths;
+
+    //boost::mpi::gather(comm, &localLength, 1, receiveLengths, 0);
+    boost::mpi::all_gather(comm, &localLength, 1, receiveLengths);
+
+    int totalReceiveLength = 0;
+    for (auto it = std::begin(receiveLengths); it != std::end(receiveLengths); ++it) {
+        //std::cout << "receiveLengths: " << *it << std::endl;
+        totalReceiveLength += *it;
+    }
+
+    Particle *pArray;
+
+    if (rank == 0) {
+        pArray = new Particle[totalReceiveLength];
+    }
+
+    boost::mpi::gatherv(comm, myProcessParticles, pArray, receiveLengths, 0);
+
+    if (rank == 0) {
+        pList.assign(pArray, pArray + totalReceiveLength);
+        IntList helper;
+        for (int proc=0; proc<numProcesses; proc++) {
+            helper.assign(receiveLengths[proc], proc);
+            processList.insert(processList.end(), helper.begin(), helper.end());
+        }
+        delete [] pArray;
+    }
 }
