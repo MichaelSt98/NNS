@@ -185,9 +185,9 @@ int main(int argc, char *argv[]) {
 
     sendParticles(root, &s);
 
-    compPseudoParticlespar(root, &s);
+    compPseudoParticlesPar(root, &s);
 
-    output_tree(root, false);
+    outputTree(root, false);
 
     float delta_t = confP.getVal<float>("timeStep");
     float diam = root->box.upper[0] - root->box.lower[0];

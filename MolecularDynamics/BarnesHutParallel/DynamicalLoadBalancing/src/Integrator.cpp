@@ -5,7 +5,7 @@
 #include "../include/Integrator.h"
 
 void finalize(TreeNode *root) {
-    output_tree(root);
+    outputTree(root);
     MPI_Finalize();
 }
 
@@ -31,9 +31,9 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
 
         sendParticles(root, s);
 
-        compPseudoParticlespar(root, s);
+        compPseudoParticlesPar(root, s);
 
-        //output_tree(root, "log/balanced_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
+        //outputTree(root, "log/balanced_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
 
 
         Logger(DEBUG) << "... done.";
@@ -65,7 +65,7 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
                 }
                 delete [] prtcls;
             }
-            //output_tree(root, false);
+            //outputTree(root, false);
         }
 
         if (t == t_end){
@@ -76,7 +76,7 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
 
         t += delta_t; // update timestep
 
-        //output_tree(root, "log/before_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
+        //outputTree(root, "log/before_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
 
         compF_BHpar(root, diam, s);
         repairTree(root); // cleanup local tree by removing symbolicForce-particles
@@ -85,27 +85,27 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
 
         compV_BH(root, delta_t);
 
-        //output_tree(root, "log/before_move" + std::to_string(step) + "proc" + std::to_string(s->myrank),
+        //outputTree(root, "log/before_move" + std::to_string(step) + "proc" + std::to_string(s->myrank),
         //            true, false);
 
         setFlags(root);
         moveLeaf(root, root);
 
-        //output_tree(root, "log/after_move" + std::to_string(step) + "proc" + std::to_string(s->myrank),
+        //outputTree(root, "log/after_move" + std::to_string(step) + "proc" + std::to_string(s->myrank),
         //            true, false);
 
         repairTree(root);
 
-        //output_tree(root, "log/after_repair" + std::to_string(step) + "proc" + std::to_string(s->myrank),
+        //outputTree(root, "log/after_repair" + std::to_string(step) + "proc" + std::to_string(s->myrank),
         //            true, false);
 
         //moveParticles_BH(root);
 
         sendParticles(root, s);
 
-        compPseudoParticlespar(root, s);
+        compPseudoParticlesPar(root, s);
 
-        output_tree(root, false, false);
+        outputTree(root, false, false);
 
         Logger(DEBUG) << "============================";
     }

@@ -35,7 +35,6 @@ struct NodeList {
     NodeList *next;
 
     NodeList();
-    //~NodeList();
 };
 
 struct TreeNode {
@@ -65,28 +64,15 @@ struct SubDomainKeyTree {
     keytype *range;
 };
 
-// keytype key(TreeNode *t); // DUMMY
-//keytype key(TreeNode *t, TreeNode *&keynode, keytype k=0UL, int level=0);
-
-//void deleteNodeList(NodeList * nLst);
-/*
- void deleteNodeList(NodeList * nLst) {
-    while (nLst->next)
-    {
-        NodeList* old = nLst;
-        nLst = nLst->next;
-        delete old;
-    }
-    if (nLst) {
-        delete nLst;
-    }
-}
- */
+/** TREE TRAVERSING AND CORE FUNTIONS **/
 
 long countParticles(TreeNode *t, long count=0);
 
+long countNodes(TreeNode *t, long count=0);
+
 void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k=0UL, int level=0);
 
+// TODO: replace usage of createRanges() by newLoadDistribution()
 void createRanges(TreeNode *root, int N, SubDomainKeyTree *s);
 
 void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s);
@@ -109,7 +95,7 @@ void compPseudoParticles(TreeNode *t);
 
 void compF_BH(TreeNode *t, TreeNode *root, float diam, SubDomainKeyTree *s, keytype k=0UL, int level=0);
 
-void force_tree(TreeNode *tl, TreeNode *t, float diam);
+void forceTree(TreeNode *tl, TreeNode *t, float diam);
 
 void compX_BH(TreeNode *t, float delta_t);
 
@@ -123,84 +109,85 @@ void moveLeaf(TreeNode *t, TreeNode *root);
 
 void repairTree(TreeNode *t);
 
-void output_tree(TreeNode *root, bool detailed=false, bool onlyParticles=false);
-
-void output_tree(TreeNode *root, std::string file, bool detailed=false, bool onlyParticles=false);
-
-void output_particles(TreeNode *root);
-
-NodeList* build_tree_list(TreeNode *t, NodeList *nLst);
-
-KeyList* build_tree_list(TreeNode *t, KeyList *kLst, keytype k=0UL, int level=0);
-
-ParticleList* build_particle_list(TreeNode *t, ParticleList *pLst);
-
-int getParticleListLength(ParticleList *plist);
-
-int get_tree_node_number(TreeNode *root);
-
-int get_tree_array(TreeNode *root, Particle *&p, nodetype *&n);
-
-int get_tree_array(TreeNode *root, Particle *&p, nodetype *&n, keytype *&k);
-
-int get_particle_array(TreeNode *root, Particle *&p);
-
 void freeTree_BH(TreeNode *root);
 
 void sendParticles(TreeNode *root, SubDomainKeyTree *s);
 
-void buildSendlist(TreeNode *root, TreeNode *t, SubDomainKeyTree *s, ParticleList *plist, int *pIndex, keytype k, int level);
+void buildSendList(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist,
+                   int *pIndex, keytype k, int level);
 
-int get_domain_list_array(TreeNode *root, Particle *&pArray);
+/** OUTPUT FUNCTIONS FOR DEBUGGING AND MONITORING **/
 
-int get_lowest_domain_list_array(TreeNode *root, Particle *&pArray);
+void outputTree(TreeNode *root, bool detailed=false, bool onlyParticles=false);
 
-int get_lowest_domain_list_array(TreeNode *root, Particle *&pArray, keytype *&kArray);
+void outputTree(TreeNode *root, std::string file, bool detailed=false, bool onlyParticles=false);
 
-void get_domain_list_nodes(TreeNode *t, ParticleList *pList, int &pCounter);
+//void outputParticles(TreeNode *root);
 
-void get_lowest_domain_list_nodes(TreeNode *t, ParticleList *pList, int &pCounter);
+/** FUNCTIONS ACCESSING TREE DATA **/
 
-void get_lowest_domain_list_nodes(TreeNode *t, ParticleList *pList, KeyList *kList,
+NodeList* buildTreeList(TreeNode *t, NodeList *nLst);
+
+int getTreeArray(TreeNode *root, Particle *&p, nodetype *&n);
+
+KeyList* buildTreeList(TreeNode *t, KeyList *kLst, keytype k=0UL, int level=0);
+
+int getTreeArray(TreeNode *root, Particle *&p, nodetype *&n, keytype *&k);
+
+ParticleList* buildParticleList(TreeNode *t, ParticleList *pLst);
+
+int getParticleListLength(ParticleList *plist); // replaceable by countParticles()
+
+int getParticleArray(TreeNode *root, Particle *&p);
+
+//void getDomainListNodes(TreeNode *t, ParticleList *pList, int &pCounter);
+
+//int getDomainListArray(TreeNode *root, Particle *&pArray);
+
+//void getLowestDomainListNodes(TreeNode *t, ParticleList *pList, int &pCounter);
+
+//int getLowestDomainListArray(TreeNode *root, Particle *&pArray);
+
+void getLowestDomainListNodes(TreeNode *t, ParticleList *pList, KeyList *kList,
                                   int &pCounter, keytype k=0UL, int level=0);
 
-void zero_lowest_domain_list_nodes(TreeNode *t);
+int getLowestDomainListArray(TreeNode *root, Particle *&pArray, keytype *&kArray);
 
-void zero_domain_list_nodes(TreeNode *t);
+/** FUNCTIONS FOR UPDATING DOMAIN LIST NODES **/
 
-void update_lowest_domain_list_nodes_moments_masses(TreeNode *t, int &pCounter, float * masses, float * moments);
+void zeroLowestDomainListNodes(TreeNode *t);
 
-void update_lowest_domain_list_nodes_com(TreeNode *t);
+void zeroDomainListNodes(TreeNode *t);
 
-void update_lowest_domain_list_nodes(TreeNode *t, int &pCounter, float * masses, float * moments);
+void updateLowestDomainListNodesMomentsMasses(TreeNode *t, int &pCounter, float * masses, float * moments);
 
-int get_domain_moments_array(TreeNode *root, float * moments);
+void updateLowestDomainListNodesCom(TreeNode *t);
+
+void updateLowestDomainListNodes(TreeNode *t, int &pCounter, float * masses, float * moments);
 
 bool isLowestDomainListNode(TreeNode *t);
 
-void compPseudoParticlespar(TreeNode *root, SubDomainKeyTree *s);
+/** FUNCTIONS FOR FORCE CALCULATION **/
 
-void compLocalPseudoParticlespar(TreeNode *t);
+void compPseudoParticlesPar(TreeNode *root, SubDomainKeyTree *s);
 
-void compDomainListPseudoParticlespar(TreeNode *t);
+void compLocalPseudoParticlesPar(TreeNode *t);
+
+void compDomainListPseudoParticlesPar(TreeNode *t);
 
 float smallestDistance(TreeNode *td, TreeNode *t);
-
-void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList *plist, SubDomainKeyTree *s,
-                   int &pCounter, keytype k=0UL, int level=0);
 
 void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleMap &pmap, SubDomainKeyTree *s,
                    keytype k=0UL, int level=0);
 
 void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s);
 
-void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleList *plist, int *& pCounter, float diam,
-               keytype k=0UL, int level=0);
-
 void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleMap *pmap, float diam,
                keytype k=0UL, int level=0);
 
-bool compareParticles(Particle p1, Particle p2);
+//** MISC **/
+
+//bool compareParticles(Particle p1, Particle p2);
 
 int gatherParticles(TreeNode *root, SubDomainKeyTree *s, Particle *&pArrayAll);
 
