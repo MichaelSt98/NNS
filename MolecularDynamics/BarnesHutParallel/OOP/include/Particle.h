@@ -9,7 +9,10 @@
 
 typedef float pFloat;
 
+class Particle;
+
 typedef Vector3<pFloat> pVec;
+typedef std::vector<Particle> ParticleList;
 
 class Particle {
 

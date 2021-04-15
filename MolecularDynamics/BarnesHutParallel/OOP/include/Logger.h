@@ -48,25 +48,6 @@ public:
         return *this;
     }
 
-    /*Logger &operator<<(const unsigned long &key) {
-        int level = 21;
-        if (msglevel >= LOGCFG.level && (LOGCFG.myrank == LOGCFG.outputRank || LOGCFG.outputRank == -1)) {
-            int levels [level];
-            for (int i = 0; i<level; i++) {
-                levels[i] = (key >> 3*i) & (unsigned long)7;
-            }
-            std::string msg = "#|";
-            for (int i = level-1; i>=0; i--) {
-                msg += std::to_string(levels[i]);
-                msg += "|";
-            }
-            std::cout << msg;
-            opened = true;
-        }
-        return *this;
-    }*/
-
-
 
 private:
     bool opened = false;

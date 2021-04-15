@@ -39,11 +39,11 @@ public:
     void sendParticles();
     void buildSendList(TreeNode &t, ParticleList *pList, KeyType k, int level);
 
-    //TODO: implement
     void symbolicForce(TreeNode &td, TreeNode &t, float diam, ParticleMap &pMap, KeyType k=0UL, int level=0);
     //void symbolicForce(TreeNode &t, float diam, ParticleList pList, KeyType k=0UL, int level=0);
     void compPseudoParticles();
-    void compF(float diam);
+    void compF(TreeNode &t, float diam, KeyType k=0UL, int level=0);
+    void compFParallel(float diam);
     void compTheta(TreeNode &t, ParticleMap *pMap, float diam, KeyType k=0UL, int level=0);
 
     void gatherKeys(KeyList &keyList, IntList &lengths, KeyList &localKeyList);

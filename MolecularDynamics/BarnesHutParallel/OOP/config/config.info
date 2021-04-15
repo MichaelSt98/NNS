@@ -6,6 +6,5 @@ timeEnd 50
 initMass 1e-4
 initVel .075
 outputRank 0
-dummyDomains 2
 
-#include "rendering.info"
+#include "config/rendering.info"

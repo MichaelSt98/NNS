@@ -138,6 +138,7 @@ void SubDomain::sendParticles() {
         root.insert(pArray[rank][i]);
     }
 
+    delete [] particleLists;
     delete [] pLengthReceive;
     delete [] pLengthSend;
     for (int proc=0; proc<numProcesses; proc++) {
@@ -221,8 +222,99 @@ void SubDomain::compPseudoParticles() {
     root.compDomainListPseudoParticles();
 }
 
-void SubDomain::compF(float diam) {
+void SubDomain::compF(TreeNode &t, float diam, KeyType k, int level) {
+    for (int i=0; i<POWDIM; i++) {
+        if (t.son[i] != NULL) {
+            compF(*t.son[i], diam, KeyType(k | ((keyInteger) i << (DIM * (k.maxLevel - level - 1)))),
+                  level + 1);
+        }
+        if (t.isLeaf() && key2proc(k) == rank && !t.isDomainList()) {
+            t.p.F = { 0, 0, 0 };
+            root.force(t, diam);
+        }
+    }
+}
 
+void SubDomain::compFParallel(float diam) {
+
+    ParticleMap * pMaps;
+    pMaps = new ParticleMap[numProcesses];
+
+    compTheta(root, pMaps, diam);
+
+    Particle ** pArray = new Particle*[numProcesses];
+
+    int *pLengthSend;
+    pLengthSend = new int[numProcesses];
+    pLengthSend[rank] = -1;
+
+    int *pLengthReceive;
+    pLengthReceive = new int[numProcesses];
+    pLengthReceive[rank] = -1;
+
+    for (int proc=0; proc<numProcesses; proc++) {
+        if (proc != rank) {
+            pLengthSend[proc] = (int)pMaps[proc].size();
+            pArray[proc] = new Particle[pLengthSend[proc]];
+            int counter = 0;
+            for (ParticleMap::iterator pit = pMaps[proc].begin(); pit != pMaps[proc].end(); pit++) {
+                pArray[proc][counter] = pit->second;
+                counter++;
+            }
+        }
+    }
+
+    std::vector<boost::mpi::request> reqMessageLengths;
+    std::vector<boost::mpi::status> statMessageLengths;
+
+    for (int proc=0; proc<numProcesses; proc++) {
+        if (proc != rank) {
+            reqMessageLengths.push_back(comm.isend(proc, 17, &pLengthSend[proc], 1));
+            statMessageLengths.push_back(comm.recv(proc, 17, &pLengthReceive[proc], 1));
+        }
+    }
+
+    boost::mpi::wait_all(reqMessageLengths.begin(), reqMessageLengths.end());
+
+    int totalReceiveLength = 0;
+    for (int proc=0; proc<numProcesses; proc++) {
+        //Logger(INFO) << "Receive length[" << proc << "]: " << pLengthReceive[proc];
+        if (proc != rank) {
+            totalReceiveLength += pLengthReceive[proc];
+        }
+    }
+
+    pArray[rank] = new Particle[totalReceiveLength];
+
+    std::vector<boost::mpi::request> reqParticles;
+    std::vector<boost::mpi::status> statParticles;
+
+    int offset = 0;
+    for (int proc=0; proc<numProcesses; proc++) {
+        if (proc != rank) {
+            reqParticles.push_back(comm.isend(proc, 17, pArray[proc], pLengthSend[proc]));
+            statParticles.push_back(comm.recv(proc, 17, pArray[rank] + offset, pLengthReceive[proc]));
+            offset += pLengthReceive[proc];
+        }
+    }
+
+    boost::mpi::wait_all(reqParticles.begin(), reqParticles.end());
+
+    for (int i=0; i<totalReceiveLength; i++) {
+        //Logger(INFO) << "Inserting particle pArray[" << i << "].x : " << pArray[rank][i].x;
+        pArray[rank][i].toDelete = true;
+        root.insert(pArray[rank][i]);
+    }
+
+    delete [] pMaps;
+    delete [] pLengthReceive;
+    delete [] pLengthSend;
+    for (int proc=0; proc<numProcesses; proc++) {
+        delete [] pArray[proc];
+    }
+    delete [] pArray;
+
+    compF(root, diam);
 }
 
 void SubDomain::compTheta(TreeNode &t, ParticleMap *pMap, float diam, KeyType k, int level) {

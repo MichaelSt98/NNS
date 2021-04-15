@@ -24,7 +24,6 @@ class TreeNode;
 struct Node;
 
 typedef std::vector<int> IntList;
-typedef std::vector<Particle> ParticleList;
 typedef std::vector<Node> NodeList;
 typedef std::vector<KeyType> KeyList;
 
@@ -51,6 +50,7 @@ public:
     void resetSons();
 
     TreeNode();
+    TreeNode(Domain &box);
     TreeNode(Particle &p, Domain &box, nodeType node_=particle);
     ~TreeNode();
 
@@ -84,7 +84,6 @@ public:
     void resetParticleFlags();
     void moveLeaf(TreeNode &root);
     void repairTree();
-
     //void createDomain();
 
     void getTreeList(ParticleList &particleList);

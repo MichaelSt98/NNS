@@ -13,6 +13,7 @@ class Domain {
 public:
     Domain();
     Domain(dFloat lowerX, dFloat lowerY, dFloat lowerZ, dFloat upperX, dFloat upperY, dFloat upperZ);
+    Domain(dFloat size);
     Domain(Vector3<dFloat> lowerVec, Vector3<dFloat> upperVec);
     Domain(Domain &domain);
 

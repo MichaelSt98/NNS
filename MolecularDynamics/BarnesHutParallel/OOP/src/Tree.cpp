@@ -29,7 +29,12 @@ TreeNode::TreeNode() {
     node = particle;
 }
 
-TreeNode::TreeNode(Particle &p, Domain &box, nodeType node_) : p { p }, box{ box } {
+TreeNode::TreeNode(Domain &box) : box { box } {
+    resetSons();
+    node = particle;
+}
+
+TreeNode::TreeNode(Particle &p, Domain &box, nodeType node_) : p { p }, box { box } {
     resetSons();
     node = node_;
 }
