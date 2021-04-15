@@ -37,8 +37,8 @@ void initParticles(SubDomainKeyTree *s, Particle *pArray, int ppp, ConfigParser 
     using std::uniform_real_distribution;
     float systemSize{confP.getVal<float>("systemSize")};
     uniform_real_distribution<float> randAngle (0.0, 200.0 * PI);
-    uniform_real_distribution<float> randRadius (0.0, systemSize/2.0);
-    uniform_real_distribution<float> randHeight (0.0, systemSize/5.0);
+    uniform_real_distribution<float> randRadius (0.0, systemSize/4.0);
+    uniform_real_distribution<float> randHeight (0.0, systemSize/3.0);
     std::random_device rd;
     std::cout << "rd(): " << rd() << std::endl;
     //std::default_random_engine gen (rd());
@@ -54,20 +54,20 @@ void initParticles(SubDomainKeyTree *s, Particle *pArray, int ppp, ConfigParser 
     for (int i=0; i<ppp; i++) { //1
         angle = randAngle(gen);
         radiusOffset = randRadius(gen);
-        radius = sqrt(systemSize-radiusOffset); //*sqrt(randRadius(gen));
+        radius = sqrt(systemSize/2.-radiusOffset); //*sqrt(randRadius(gen));
         //velocity = pow(((G*(SOLAR_MASS+((radius)/systemSize)*SOLAR_MASS)) / (radius*TO_METERS)), 0.5);
 
-        std::uniform_real_distribution<float> dist(-systemSize, systemSize);
+        std::uniform_real_distribution<float> dist(-systemSize/2., systemSize/2.);
 
         velocity = confP.getVal<float>("initVel");
         current = &(pArray[i]);
 
         current->x[0] = radius * cos(angle);
         current->x[1] = radius * sin(angle);
-        current->x[2] = randHeight(gen) - systemSize/10.;
+        current->x[2] = randHeight(gen) - systemSize/6.;
         current->v[0] =  velocity*sin(angle);
         current->v[1] = -velocity*cos(angle);
-        current->v[2] = dist(gen)/75. * velocity;
+        current->v[2] = 0.0; //dist(gen)/75. * velocity;
 
         current->F[0] = 0.0;
         current->F[1] = 0.0;

@@ -64,7 +64,7 @@ cleaner: clean
 #creating a new video of the particle N-body simulation
 movie: $(TARGET) | $(IMAGESDIR)
 	@echo "Creating video ..."
-	@rm $(IMAGESDIR)/*.ppm
+	@rm -f $(IMAGESDIR)/*.ppm
 	@mpirun -np 2 bin/runner
 	@./createMP4
 	@echo "... done."
