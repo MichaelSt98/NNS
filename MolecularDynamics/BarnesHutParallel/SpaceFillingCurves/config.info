@@ -1,0 +1,11 @@
+
+numParticles 100
+systemSize 10.
+timeStep 1.
+timeEnd 300
+initMass 1.1e-4
+initVel .05
+outputRank 0
+dummyDomains 2
+
+#include "rendering.info"
