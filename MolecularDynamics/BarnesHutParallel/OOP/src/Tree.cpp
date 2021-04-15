@@ -60,11 +60,11 @@ void TreeNode::printTreeSummary(bool detailed, int type) {
         if (detailed) {
 
             if (type == -1) {
-                std::cout << "Node " << std::setw(5) << std::setfill('0') << counter << " " << *it << std::endl;
+                Logger(INFO) << "Node " << std::setw(5) << std::setfill('0') << counter << " " << *it;
             }
             else {
                 if (type == it->n) {
-                    std::cout << "Node " << " " << *it << std::endl;
+                    Logger(INFO) << "Node " << " " << *it;
                 }
             }
         }
@@ -80,12 +80,12 @@ void TreeNode::printTreeSummary(bool detailed, int type) {
         counter++;
     }
 
-    std::cout << "----------------------------------------------------------------";
-    std::cout << "counterParticle:       " << counterParticle << std::endl;
-    std::cout << "counterPseudoParticle: " << counterPseudoParticle << std::endl;
-    std::cout << "counterDomainList:     " << counterDomainList << std::endl;
-    std::cout << "Nodes:                 " << counter << std::endl; //nList.size();
-    std::cout << "----------------------------------------------------------------";
+    Logger(INFO) << "----------------------------------------------------------------";
+    Logger(INFO) << "counterParticle:       " << counterParticle;
+    Logger(INFO) << "counterPseudoParticle: " << counterPseudoParticle;
+    Logger(INFO) << "counterDomainList:     " << counterDomainList;
+    Logger(INFO) << "Nodes:                 " << counter; //nList.size();
+    Logger(INFO) << "----------------------------------------------------------------";
 }
 
 std::string TreeNode::getNodeType() const {
@@ -245,12 +245,25 @@ void TreeNode::getParticleList(ParticleList &particleList) {
     }
 }
 
+void TreeNode::getLowestDomainList(ParticleList &particleList){
+    if (isDomainList() && isLowestDomainList()) {
+        particleList.push_back(p);
+    }
+    else {
+        for (int i=0; i<POWDIM; i++) {
+            if (son[i] != NULL) {
+                son[i]->getLowestDomainList(particleList);
+            }
+        }
+    }
+}
+
 void TreeNode::force(TreeNode &tl, tFloat diam) {
     tFloat r = 0;
     r = sqrt((p.x - tl.p.x) * (p.x -tl.p.x));
     if ((tl.isLeaf() || (diam < theta * r)) && !tl.isDomainList()) {
         if (r == 0) {
-            Logger(WARN) << "Zero radius has been encoutered.";
+            Logger(WARN) << "Zero radius has been encountered.";
         }
         else {
             tl.p.force(p);
@@ -345,6 +358,51 @@ void TreeNode::compDomainListPseudoParticles() {
         }
     }
 }
+
+void TreeNode::resetDomainList() {
+    if (isDomainList() && isLowestDomainList()) {
+        p.x = {0, 0, 0};
+        p.m = 0;
+    }
+    for (int i=0; i<POWDIM; i++) {
+        if (son[i] != NULL) {
+            son[i]->resetDomainList();
+        }
+    }
+}
+
+void TreeNode::updateLowestDomainList(int &pCounter, pFloat *masses, pFloat *moments) {
+    resetDomainList();
+    updateLowestDomainListEntries(pCounter, masses, moments);
+    updateLowestDomainListCOM();
+}
+
+void TreeNode::updateLowestDomainListEntries(int &pCounter, pFloat *masses, pFloat *moments) {
+    if (isDomainList() && isLowestDomainList()) {
+        p.x = {moments[pCounter*3], moments[pCounter*3 + 1], moments[pCounter*3 + 2]};
+        p.m = masses[pCounter];
+        pCounter++;
+    }
+    for (int i=0; i<POWDIM; i++) {
+        if (son[i] != NULL) {
+            son[i]->updateLowestDomainListEntries(pCounter, masses, moments);
+        }
+    }
+}
+
+void TreeNode::updateLowestDomainListCOM() {
+    if (isDomainList() && isLowestDomainList()) {
+        if (p.m > 0) {
+            p.x = p.x/p.m;
+        }
+    }
+    for (int i=0; i<POWDIM; i++) {
+        if (son[i] != NULL) {
+            son[i]->updateLowestDomainListCOM();
+        }
+    }
+}
+
 
 void TreeNode::resetParticleFlags() {
     for (int i=0; i<POWDIM; i++) {

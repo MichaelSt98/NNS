@@ -76,6 +76,11 @@ public:
     void compLocalPseudoParticles();
     void compDomainListPseudoParticles();
 
+    void resetDomainList();
+    void updateLowestDomainList(int &pCounter, pFloat *masses, pFloat *moments);
+    void updateLowestDomainListEntries(int &pCounter, pFloat *masses, pFloat *moments);
+    void updateLowestDomainListCOM();
+
     void resetParticleFlags();
     void moveLeaf(TreeNode &root);
     void repairTree();
@@ -85,6 +90,7 @@ public:
     void getTreeList(ParticleList &particleList);
     void getTreeList(NodeList &nodeList);
     void getParticleList(ParticleList &particleList);
+    void getLowestDomainList(ParticleList &particleList);
 
     void getParticleKeys(KeyList &keyList, KeyType k=0UL, int level=0);
 
