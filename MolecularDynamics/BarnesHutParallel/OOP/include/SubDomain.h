@@ -10,6 +10,9 @@
 
 #include <boost/mpi.hpp>
 #include <vector>
+#include <map>
+
+typedef std::map<KeyType, Particle> ParticleMap;
 
 class SubDomain {
 public:
@@ -17,36 +20,33 @@ public:
 
     int rank;
     int numProcesses;
-    KeyList range;
+    KeyType *range;
     TreeNode root;
 
     SubDomain();
 
     void moveParticles();
 
-    //void getParticleKeys(TreeNode &t, KeyList &keyList, KeyType k=0UL, int level=0);
     void getParticleKeys(KeyList &keyList, KeyType k=0UL, int level=0);
 
-    //TODO: implement
-    void key2proc();
+    int key2proc(KeyType k);
 
     void createRanges();
 
-    //TODO: implement
+    void createDomainList(TreeNode &t, int level, KeyType k);
     void createDomainList();
 
-    //TODO: implement
     void sendParticles();
-    void buildSendList();
+    void buildSendList(TreeNode &t, ParticleList *pList, KeyType k, int level);
 
     //TODO: implement
-    void symbolicForce(TreeNode &td, TreeNode &t, float diam, ParticleList pList, KeyType k=0UL, int level=0);
-    void symbolicForce(TreeNode &t, float diam, ParticleList pList, KeyType k=0UL, int level=0);
+    void symbolicForce(TreeNode &td, TreeNode &t, float diam, ParticleMap &pMap, KeyType k=0UL, int level=0);
+    //void symbolicForce(TreeNode &t, float diam, ParticleList pList, KeyType k=0UL, int level=0);
     void compPseudoParticles();
-    void compF();
-    void compTheta();
+    void compF(float diam);
+    void compTheta(TreeNode &t, ParticleMap *pMap, float diam, KeyType k=0UL, int level=0);
 
-    //TODO: implement
+    void gatherKeys(KeyList &keyList, IntList &lengths, KeyList &localKeyList);
     void gatherParticles(ParticleList &pList);
     void gatherParticles(ParticleList &pList, IntList &processList);
 };

@@ -45,3 +45,19 @@ KeyType operator&(KeyType lhsKey, KeyType rhsKey) {
 KeyType operator+(KeyType lhsKey, KeyType rhsKey) {
     return KeyType(lhsKey.key + rhsKey.key);
 }
+
+bool operator<(KeyType lhsKey, KeyType rhsKey) {
+    return (lhsKey.key < rhsKey.key);
+}
+
+bool operator<=(KeyType lhsKey, KeyType rhsKey) {
+    return (lhsKey.key <= rhsKey.key);
+}
+
+bool operator>(KeyType lhsKey, KeyType rhsKey) {
+    return (lhsKey.key > rhsKey.key);
+}
+
+bool operator>=(KeyType lhsKey, KeyType rhsKey) {
+    return (lhsKey.key >= rhsKey.key);
+}
