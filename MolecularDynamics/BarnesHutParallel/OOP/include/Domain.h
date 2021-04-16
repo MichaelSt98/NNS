@@ -6,6 +6,7 @@
 #define OOP_DOMAIN_H
 
 #include "Vector3.h"
+#include "Logger.h"
 
 typedef float dFloat;
 

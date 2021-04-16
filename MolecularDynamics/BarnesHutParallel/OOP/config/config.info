@@ -4,7 +4,7 @@ systemSize 5.
 timeStep .25
 timeEnd 50
 initMass 1e-4
-initVel .075
+initVel .125
 outputRank 0
 
 #include "config/rendering.info"

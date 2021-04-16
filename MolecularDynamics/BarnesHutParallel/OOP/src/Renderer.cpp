@@ -13,20 +13,20 @@ Renderer::Renderer(const int _numParticles, const int _width, const int _height,
 
 }
 
-Renderer::Renderer(ConfigParser &confP) {
-    Renderer(
-            confP.getVal<int>("numParticles"),
-            confP.getVal<int>("width"),
-            confP.getVal<int>("height"),
-            confP.getVal<int>("depth"),
-            confP.getVal<double>("renderScale"),
-            confP.getVal<double>("maxVelColor"),
-            confP.getVal<double>("minVelColor"),
-            confP.getVal<double>("particleBrightness"),
-            confP.getVal<double>("particleSharpness"),
-            confP.getVal<int>("dotSize"),
-            confP.getVal<double>("systemSize"),
-            confP.getVal<int>("renderInterval"));
+Renderer::Renderer(ConfigParser &confP) : Renderer(
+        confP.getVal<int>("numParticles"),
+        confP.getVal<int>("width"),
+        confP.getVal<int>("height"),
+        confP.getVal<int>("depth"),
+        confP.getVal<double>("renderScale"),
+        confP.getVal<double>("maxVelColor"),
+        confP.getVal<double>("minVelColor"),
+        confP.getVal<double>("particleBrightness"),
+        confP.getVal<double>("particleSharpness"),
+        confP.getVal<int>("dotSize"),
+        confP.getVal<double>("systemSize"),
+        confP.getVal<int>("renderInterval")) {
+
 }
 
 int Renderer::getRenderInterval() {

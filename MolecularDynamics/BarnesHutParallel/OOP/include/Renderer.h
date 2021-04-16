@@ -24,17 +24,17 @@ class Renderer {
 
 private:
     int numParticles; // not const as we have to change it if particles leave domain
-    const int width;
-    const int height;
-    const int depth;
-    const double renderScale;
-    const double maxVelocityColor;
-    const double minVelocityColor;
-    const double particleBrightness;
-    const double particleSharpness;
-    const int dotSize;
-    const double systemSize;
-    const int renderInterval;
+    int width;
+    int height;
+    int depth;
+    double renderScale;
+    double maxVelocityColor;
+    double minVelocityColor;
+    double particleBrightness;
+    double particleSharpness;
+    int dotSize;
+    double systemSize;
+    int renderInterval;
 
     void renderClear(char* image, double* hdImage);
     void drawDomainBox(Domain* box, double* hdImage);

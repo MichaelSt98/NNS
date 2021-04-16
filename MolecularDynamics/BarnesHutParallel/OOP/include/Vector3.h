@@ -42,7 +42,6 @@ public:
     }
 
     typedef T DataType;
-    static const int DIM = 3;
 
     const Vector3& operator=(const Vector3& rhs) {
         x = rhs.x;

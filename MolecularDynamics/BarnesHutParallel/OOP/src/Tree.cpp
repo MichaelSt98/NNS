@@ -206,6 +206,7 @@ void TreeNode::insert(Particle &p2insert) {
                 Particle p2 = p;
                 node = pseudoParticle;
                 son[nSon] = new TreeNode(p2insert, sonBox);
+                p.toDelete = false;
                 insert(p2);
             }
             else {
@@ -283,7 +284,9 @@ void TreeNode::force(TreeNode &tl, tFloat diam) {
 
 void TreeNode::compX(tFloat deltaT) {
     for (int i=0; i<POWDIM; i++) {
-        son[i]->compX(deltaT);
+        if (son[i] != NULL) {
+            son[i]->compX(deltaT);
+        }
     }
     if (isLeaf() && ! isDomainList()) {
         p.updateX(deltaT);
@@ -292,7 +295,9 @@ void TreeNode::compX(tFloat deltaT) {
 
 void TreeNode::compV(tFloat deltaT) {
     for (int i=0; i<POWDIM; i++) {
-        son[i]->compV(deltaT);
+        if (son[i] != NULL) {
+            son[i]->compV(deltaT);
+        }
     }
     if (isLeaf() && ! isDomainList()) {
         p.updateV(deltaT);
@@ -466,11 +471,13 @@ void TreeNode::repairTree() {
                 p.toDelete = true;
             }
             else if (numberOfSons == 1) {
-                if (!son[d]->isDomainList() && son[d]->isLeaf()) {
+                if (!son[d]->isDomainList()) {
                     p = son[d]->p;
                     node = son[d]->node;
-                    delete son[d];
-                    son[d] = NULL;
+                    if (son[d]->isLeaf()) {
+                        delete son[d];
+                        son[d] = NULL;
+                    }
                 }
             }
         }
@@ -478,10 +485,10 @@ void TreeNode::repairTree() {
 }
 
 void TreeNode::getParticleKeys(KeyList &keyList, KeyType k, int level) {
-    for (int i=0; i<8; i++) {
+    for (int i=0; i<POWDIM; i++) {
         if (son[i] != NULL) {
             if (son[i]->isLeaf()) {
-                keyList.push_back((k | KeyType((keyInteger) i << (3 * (k.maxLevel - level - 1)))));
+                keyList.push_back((k | KeyType((keyInteger) i << (DIM * (k.maxLevel - level - 1)))));
             } else {
                 son[i]->getParticleKeys(keyList, (k | KeyType((keyInteger) i << (3 * (k.maxLevel - level - 1)))),
                                 level + 1);

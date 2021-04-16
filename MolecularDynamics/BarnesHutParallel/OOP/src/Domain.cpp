@@ -13,8 +13,8 @@ Domain::Domain(dFloat lowerX, dFloat lowerY, dFloat lowerZ, dFloat upperX, dFloa
     upper = { upperX, upperY, upperZ };
 }
 
-Domain::Domain(dFloat size) {
-    Domain(size, size, size, size, size, size);
+Domain::Domain(dFloat size) : Domain {-size, -size, -size, size, size, size } {
+
 }
 
 Domain::Domain(Vector3<dFloat> lowerVec, Vector3<dFloat> upperVec) : lower{ lowerVec }, upper{ upperVec } {

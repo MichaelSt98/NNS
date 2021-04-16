@@ -9,6 +9,7 @@
 #include "Domain.h"
 #include "Logger.h"
 #include "Keytype.h"
+#include "Constants.h"
 
 #include <vector>
 #include <string>
@@ -16,8 +17,6 @@
 #include <iomanip>
 #include <cmath>
 
-#define DIM 3
-#define POWDIM 8
 #define KEY_MAX ULONG_MAX
 
 class TreeNode;

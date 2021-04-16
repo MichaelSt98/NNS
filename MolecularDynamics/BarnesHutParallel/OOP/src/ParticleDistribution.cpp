@@ -6,13 +6,12 @@ ParticleDistribution::ParticleDistribution(int numParticles, float systemSize, f
 
 }
 
-ParticleDistribution::ParticleDistribution(ConfigParser &confP) {
-    ParticleDistribution(
-            confP.getVal<int>("numParticles"),
-            confP.getVal<float>("systemSize"),
-            confP.getVal<float>("initVel"),
-            confP.getVal<float>("initMass")
-            );
+ParticleDistribution::ParticleDistribution(ConfigParser &confP) : ParticleDistribution(
+        confP.getVal<int>("numParticles"),
+        confP.getVal<float>("systemSize"),
+        confP.getVal<float>("initVel"),
+        confP.getVal<float>("initMass")) {
+
 }
 
 void ParticleDistribution::initParticles(ParticleList &pList, type distributionType) {
@@ -25,11 +24,14 @@ void ParticleDistribution::initParticles(ParticleList &pList, type distributionT
 }
 
 void ParticleDistribution::initDisk(ParticleList &pList) {
+
+    //Logger(INFO) << "Initializing " << numParticles << " particles!";
+
     using std::uniform_real_distribution;
 
     uniform_real_distribution<float> randAngle (0.f, 200.f * PI);
     uniform_real_distribution<float> randRadius (0.f, systemSize/2.f);
-    uniform_real_distribution<float> randHeight (0.f, systemSize/50.f);
+    uniform_real_distribution<float> randHeight (0.f, systemSize/10.f);
 
     std::random_device rd;
     //std::default_random_engine gen (rd());
