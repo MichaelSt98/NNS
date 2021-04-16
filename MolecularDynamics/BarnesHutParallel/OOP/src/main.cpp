@@ -18,10 +18,10 @@
 structlog LOGCFG = {};
 
 void timeIntegration(float t, float deltaT, float tEnd, float diam, SubDomain &subDomain,
-                     Renderer &renderer, char *image, double *hdImage, bool render=true, bool processColoring=false);
+                     Renderer &renderer, char *image, double *hdImage, bool loadBalancing, bool render=true, bool processColoring=false);
 
 void timeIntegration(float t, float deltaT, float tEnd, float diam, SubDomain &subDomain,
-                     Renderer &renderer, char *image, double *hdImage, bool render, bool processColoring) {
+                     Renderer &renderer, char *image, double *hdImage, bool loadBalancing, bool render, bool processColoring) {
     int step = 0;
 
     while (t < tEnd) {
@@ -29,6 +29,16 @@ void timeIntegration(float t, float deltaT, float tEnd, float diam, SubDomain &s
         Logger(DEBUG) << " ";
         Logger(DEBUG) << "t = " << t;
         Logger(DEBUG) << "--------------------------";
+
+        /** Load balancing */
+        if (loadBalancing) {
+            subDomain.newLoadDistribution();
+            subDomain.root.clearDomainList();
+            subDomain.createDomainList();
+            subDomain.sendParticles();
+            subDomain.compPseudoParticles();
+        }
+        /** END: Load balancing */
 
         // rendering
         if (render && step % renderer.getRenderInterval() == 0)
@@ -149,14 +159,20 @@ int main(int argc, char** argv) {
 
     //subDomainHandler.root.printTreeSummary(true);
 
+    //subDomainHandler.sendParticles();
+    //subDomainHandler.compPseudoParticles();
+
     float diam = subDomainHandler.root.box.upper[0] - subDomainHandler.root.box.lower[0];
     float deltaT = confP.getVal<float>("timeStep");
     float tEnd = confP.getVal<float>("timeEnd");
 
+    bool loadBalancing = confP.getVal<bool>("loadBalancing");
+
     bool render = confP.getVal<bool>("render");
     bool processColoring = confP.getVal<bool>("processColoring");
 
-    timeIntegration(0.f, deltaT, tEnd, diam, subDomainHandler, renderer, image, hdImage, render, processColoring);
+    timeIntegration(0.f, deltaT, tEnd, diam, subDomainHandler, renderer, image, hdImage, loadBalancing,
+                    render, processColoring);
 
     return 0;
 }

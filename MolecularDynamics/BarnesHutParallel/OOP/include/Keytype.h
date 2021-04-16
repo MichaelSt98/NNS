@@ -17,6 +17,7 @@ public:
 
     KeyType();
     KeyType(keyInteger key_);
+    template<typename I>KeyType(I key);
 
     friend class boost::serialization::access;
 
@@ -40,6 +41,10 @@ public:
     friend bool operator>(KeyType lhsKey, KeyType rhsKey);
     friend bool operator>=(KeyType lhsKey, KeyType rhsKey);
 };
+
+template<typename I>KeyType::KeyType(I key) {
+    this->key = (keyInteger)key;
+}
 
 std::ostream &operator<<(std::ostream &os, const KeyType &key2print);
 

@@ -55,14 +55,68 @@ void SubDomain::createRanges() {
     boost::mpi::broadcast(comm, range, numProcesses+1, 0);
 }
 
+void SubDomain::newLoadDistribution() {
+    int numParticles = root.getParticleCount();
+
+    int *particleCounts = new int[numProcesses];
+    boost::mpi::all_gather(comm, &numParticles, 1, particleCounts);
+
+    int oldDist[numProcesses+1];
+    int newDist[numProcesses+1];
+
+    oldDist[0] = 0;
+    for (int i=0; i < numProcesses; i++) {
+        oldDist[i + 1] = oldDist[i] + particleCounts[i];
+    }
+
+    for (int i=0; i <= numProcesses; i++) {
+        newDist[i] = (i * oldDist[numProcesses]) / numProcesses;
+    }
+
+    for (int i=0; i <= numProcesses; i++) {
+        range[i] = 0UL;
+    }
+
+    int p = 0;
+    int n = oldDist[rank];
+
+    while (n > newDist[p]) {
+        p++;
+    }
+
+    root.updateRange(n, p, range, newDist);
+
+    range[0] = 0UL;
+    range[numProcesses] = KEY_MAX;
+
+    KeyType sendRange[numProcesses+1];
+    std::copy(range, range+numProcesses+1, sendRange);
+
+    boost::mpi::all_reduce(comm, sendRange, numProcesses+1, range, boost::mpi::maximum<KeyType>());
+    //boost::mpi::all_reduce(comm, *sendRange, *range, boost::mpi::maximum<KeyType>());
+
+    for (int i=0; i <= numProcesses; i++){
+        Logger(DEBUG) << "Load balancing: NEW range[" << i << "] = " << range[i];
+    }
+
+    delete [] particleCounts;
+}
+
 void SubDomain::createDomainList(TreeNode &t, int level, KeyType k) {
     t.node = TreeNode::domainList;
     int proc1 = key2proc(k);
     int proc2 = key2proc(k | ~(~0L << DIM*(k.maxLevel-level)));
     if (proc1 != proc2) {
         for (int i=0; i<POWDIM; i++) {
-            t.son[i] = new TreeNode;
-            createDomainList(*t.son[i], level + 1, KeyType(k | ((keyInteger)i << (DIM*(k.maxLevel-level-1)))));
+            if (t.son[i] == NULL) {
+                t.son[i] = new TreeNode;
+            }
+            else if (t.son[i]->isLeaf() && t.son[i]->node == TreeNode::particle) {
+                t.son[i]->node = TreeNode::domainList;
+                t.insert(t.son[i]->p);
+            }
+            createDomainList(*t.son[i], level + 1,
+                             KeyType(k | ((keyInteger) i << (DIM * (k.maxLevel - level - 1)))));
         }
     }
 }

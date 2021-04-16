@@ -113,6 +113,13 @@ bool TreeNode::isLeaf() {
     return true;
 }
 
+bool TreeNode::isPseudoParticle() {
+    if (node == pseudoParticle) {
+        return true;
+    }
+    return false;
+}
+
 bool TreeNode::isDomainList() {
     if (node == domainList) {
         return true;
@@ -251,6 +258,12 @@ void TreeNode::getParticleList(ParticleList &particleList) {
     }
 }
 
+int TreeNode::getParticleCount() {
+    ParticleList pList;
+    getParticleList(pList);
+    return (int)pList.size();
+}
+
 void TreeNode::getLowestDomainList(ParticleList &particleList){
     if (isDomainList() && isLowestDomainList()) {
         particleList.push_back(p);
@@ -365,6 +378,21 @@ void TreeNode::compDomainListPseudoParticles() {
         }
         if (p.m > 0) {
             p.x = p.x/p.m;
+        }
+    }
+}
+
+void TreeNode::clearDomainList() {
+    if (isDomainList()) {
+        node = pseudoParticle;
+        for (int i=0; i<POWDIM; i++) {
+            if (son[i] != NULL) {
+                son[i]->clearDomainList();
+                if (son[i]->isLeaf() && son[i]->isPseudoParticle()) {
+                    delete son[i];
+                    son[i] = NULL;
+                }
+            }
         }
     }
 }
@@ -490,10 +518,27 @@ void TreeNode::getParticleKeys(KeyList &keyList, KeyType k, int level) {
             if (son[i]->isLeaf()) {
                 keyList.push_back((k | KeyType((keyInteger) i << (DIM * (k.maxLevel - level - 1)))));
             } else {
-                son[i]->getParticleKeys(keyList, (k | KeyType((keyInteger) i << (3 * (k.maxLevel - level - 1)))),
+                son[i]->getParticleKeys(keyList, (k | KeyType((keyInteger) i << (DIM * (k.maxLevel - level - 1)))),
                                 level + 1);
             }
         }
+    }
+}
+
+void TreeNode::updateRange(int &n, int &p, KeyType *range, int *newDist, KeyType k, int level) {
+    for (int i=0; i<POWDIM; i++) {
+        if (son[i] != NULL) {
+            son[i]->updateRange(n, p, range, newDist, (k | KeyType((keyInteger) i << (DIM * (k.maxLevel - level - 1)))),
+                                level + 1);
+        }
+    }
+    if (isLeaf() && !isDomainList()) {
+        while (n >= newDist[p]) {
+            range[p] = k;
+            Logger(INFO) << "k = " << k;
+            p++;
+        }
+        n++;
     }
 }
 

@@ -32,6 +32,7 @@ public:
     int key2proc(KeyType k);
 
     void createRanges();
+    void newLoadDistribution();
 
     void createDomainList(TreeNode &t, int level, KeyType k);
     void createDomainList();

@@ -57,6 +57,7 @@ public:
     void printTreeSummary(bool detailed=false, int type=-1);
 
     bool isLeaf();
+    bool isPseudoParticle();
     bool isDomainList();
     bool isLowestDomainList();
 
@@ -75,6 +76,7 @@ public:
     void compLocalPseudoParticles();
     void compDomainListPseudoParticles();
 
+    void clearDomainList();
     void resetDomainList();
     void updateLowestDomainList(int &pCounter, pFloat *masses, pFloat *moments);
     void updateLowestDomainListEntries(int &pCounter, pFloat *masses, pFloat *moments);
@@ -88,10 +90,12 @@ public:
     void getTreeList(ParticleList &particleList);
     void getTreeList(NodeList &nodeList);
     void getParticleList(ParticleList &particleList);
+    int getParticleCount();
     void getLowestDomainList(ParticleList &particleList);
 
     void getParticleKeys(KeyList &keyList, KeyType k=0UL, int level=0);
 
+    void updateRange(int &n, int &p, KeyType *range, int *newDist, KeyType k=0UL, int level=0);
 };
 
 struct Node {
