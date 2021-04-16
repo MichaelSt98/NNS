@@ -1282,11 +1282,9 @@ void compPseudoParticlesPar(TreeNode *root, SubDomainKeyTree *s) {
         masses[i] = pArray[i].m;
     }
 
-    outputTree(root, "log/beforeAllreduceMasses_proc" + std::to_string(s->myrank), true, false);
-
-    Logger(DEBUG) << "MPI_Allreduce() in compPseudoParticlesPar() on moments.";
+    //Logger(DEBUG) << "MPI_Allreduce() in compPseudoParticlesPar() on moments.";
     MPI_Allreduce(&moments, &global_moments, 3*pLength, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
-    Logger(DEBUG) << "MPI_Allreduce() in compPseudoParticlesPar() on masses.";
+    //Logger(DEBUG) << "MPI_Allreduce() in compPseudoParticlesPar() on masses.";
     MPI_Allreduce(&masses, &global_masses, pLength, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
 
     //for (int i=0; i<pLength; i++) {

@@ -1,6 +1,4 @@
-# Barnes-Hut parallel
-
-> **NOT WORKING/IMPLEMENTED YET!**
+# Basic
 
 This subdirectory implements the **parallel Barnes-Hut method/algorithm** from 
 
@@ -17,8 +15,8 @@ described in the sections:
 		* 8.3.3 Applications from Astrophysics
 	* 8.4 **ParallelTreeMethods**
 		* 8.4.1 **An Implementation with Keys** 
-		* 8.4.2 **Dynamical Load Balancing** 
-		* 8.4.3 **Data Distribution with Space-Filling Curves**
+		* 8.4.2 Dynamical Load Balancing
+		* 8.4.3 Data Distribution with Space-Filling Curves
 
 as an extension/**parallel version of [BarnesHutSerial](../BarnesHutSerial/)**
 	

@@ -1,7 +1,5 @@
 # Barnes-Hut parallel
 
-> **NOT WORKING/IMPLEMENTED YET!**
-
 This subdirectory implements the **parallel Barnes-Hut method/algorithm** from 
 
 > M. Griebel, S. Knapek, and G. Zumbusch. **Numerical Simulation in Molecular Dynamics**: Numerics, Algorithms, Parallelization, Applications. 1st. Springer Pub- lishing Company, Incorporated, 2010. isbn: 3642087760
@@ -30,6 +28,23 @@ There are **3 parallel implementations** which build on each other and represent
 	* corresponding to **Parallel Tree Methods - Dynamical Load Balancing**
 * **[SpaceFillingCurves](SpaceFillingCurves/)** 
 	* corresponding to **Parallel Tree Methods - Data Distribution with Space Filling Curves**
+
+## Comparison of Lebuesgue and Hilbert space-filling curves
+
+> N=100, m=1.1e-4, v=0.05, delta_t=1.0, t_end=300
+
+Parallelized on two processes:
+* Particles on process 0: *blue* dots 
+* Particles on process 1: *red* dots
+
+### Lebesgue space-filling curve
+![](DynamicalLoadBalancing/N100m1_1e-4v0_05.mp4)
+
+### Hilbert space-filling curve
+![](SpacefillingCurves/N100m1_1e-4v0_05.mp4)
+
+
+
 
 
 
