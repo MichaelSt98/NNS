@@ -28,20 +28,22 @@ There are **3 parallel implementations** which build on each other and represent
 	* corresponding to **Parallel Tree Methods - Dynamical Load Balancing**
 * **[SpaceFillingCurves](SpaceFillingCurves/)** 
 	* corresponding to **Parallel Tree Methods - Data Distribution with Space Filling Curves**
+* **[OOP](OOP/)**
+	* object orientated version of the three above in one program 
 
 ## Comparison of Lebuesgue and Hilbert space-filling curves
 
-> N=100, m=1.1e-4, v=0.05, delta_t=1.0, t_end=300
+> N=100, m=1.1e-4, v=0.05, delta\_t=1.0, t\_end=300
 
 Parallelized on two processes:
 * Particles on process 0: *blue* dots 
 * Particles on process 1: *red* dots
 
 ### Lebesgue space-filling curve
-![](DynamicalLoadBalancing/N100m1_1e-4v0_05.mp4)
+![](DynamicalLoadBalancing/N100m1_1e-4v0_05.gif)
 
 ### Hilbert space-filling curve
-![](SpacefillingCurves/N100m1_1e-4v0_05.mp4)
+![](SpacefillingCurves/N100m1_1e-4v0_05.gif)
 
 
 
