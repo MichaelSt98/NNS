@@ -85,6 +85,8 @@ void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, ke
 
 int key2proc(keytype k, SubDomainKeyTree *s);
 
+int maxHilbertSon(TreeNode *t, int level, keytype k, SubDomainKeyTree *s);
+
 void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s);
 
 void clearDomainList(TreeNode *t);

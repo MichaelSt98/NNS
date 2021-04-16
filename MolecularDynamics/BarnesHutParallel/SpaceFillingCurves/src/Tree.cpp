@@ -140,7 +140,7 @@ void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k, int leve
         for (int i = 0; i < POWDIM; i++) {
             if (isLeaf(t->son[i])){
                 //Logger(DEBUG) << "Inserting son #" << i;
-                p[pCounter] = (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))); // inserting key
+                p[pCounter] = Lebesgue2Hilbert((k | ((keytype)i << (DIM*(maxlevel-level-1))))); // inserting key
                 //Logger(DEBUG) << "Inserted particle '" << std::bitset<64>(p[pCounter]) << "'@" << pCounter;
 	       	    pCounter++;
             } else {
@@ -167,6 +167,10 @@ void createRanges(TreeNode *root, int N, SubDomainKeyTree *s) {
     s->range[0] = 0UL; // range_0 = 0
 
     const int ppr = (N % s->numprocs != 0) ? N/s->numprocs+1 : N/s->numprocs; // particles per range
+
+    //for (int i=0; i<N; i++){
+    //    Logger(DEBUG) << pKeys[i];
+    //}
 
     for (int i=1; i<s->numprocs; i++){
         s->range[i] = pKeys[i*ppr];
@@ -235,6 +239,7 @@ void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s){
     std::copy(s->range, s->range+s->numprocs+1, sendRange);
 
     // update new ranges on all processors
+    //Logger(DEBUG) << "MPI_Allreduce() in newLoadDistribution() on ranges.";
     MPI_Allreduce(sendRange, s->range, s->numprocs+1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
 
     for (int i=0; i<=s->numprocs; i++){
@@ -242,26 +247,6 @@ void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s){
     }
 
     delete [] oldcount;
-}
-
-void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, keytype k, int level) {
-    if(t != NULL) {
-        //called recursively as in Algorithm 8.1;
-        // the key of *t can be computed step by step in the recursion
-        for (int i = 0; i < POWDIM; i++) {
-            updateRange(t->son[i], n, p, range, newdist,
-                        (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))), level+1);
-        }
-        // start of the operation on *t
-        if (isLeaf(t) && t->node != domainList) {
-            while (n >= newdist[p]) {
-                range[p] = k;
-                p++;
-            }
-            n++;
-        }
-        // end of the operation on *t
-    }
 }
 
 //TODO: To apply the space-filling Hilbert curve in our program,
@@ -275,13 +260,38 @@ void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, ke
 // For this, we compute the Hilbert keys of all (four or eight) son nodes, sort them,
 // and then descend in the tree in the correct order.
 
+void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, keytype k, int level) {
+    if(t != NULL) {
+        //called recursively as in Algorithm 8.1;
+        // the key of *t can be computed step by step in the recursion
+        std::map<keytype, int> keymap;
+        for (int i = 0; i < POWDIM; i++) {
+            // sorting implicitly in ascending order
+            keymap[Lebesgue2Hilbert((k | ((keytype)i << (DIM*(maxlevel-level-1)))))] = i;
+        }
+        // actual recursion in correct order
+        for (std::map<keytype, int>::iterator kit = keymap.begin(); kit != keymap.end(); kit++) {
+            updateRange(t->son[kit->second], n, p, range, newdist,
+                        (keytype)(k | ((keytype)kit->second << (DIM*(maxlevel-level-1)))), level+1);
+        }
+        // start of the operation on *t
+        if (isLeaf(t) && t->node != domainList) {
+            while (n >= newdist[p]) {
+                range[p] = Lebesgue2Hilbert(k);
+                p++;
+            }
+            n++;
+        }
+        // end of the operation on *t
+    }
+}
+
 int key2proc(keytype k, SubDomainKeyTree *s) {
-    Logger(DEBUG) << "Lebesgue = " << k;
+    //Logger(DEBUG) << "Lebesgue = " << k;
     k = Lebesgue2Hilbert(k);
-    Logger(DEBUG) << "Hilbert = " << k;
+    //Logger(DEBUG) << "Hilbert = " << k;
     for (int i=0; i<s->numprocs; i++) { //1
-        if (k >= Lebesgue2Hilbert(s->range[i])
-            && k < Lebesgue2Hilbert(s->range[i+1])) {
+        if (k >= s->range[i] && k < s->range[i+1]) {
             //std::cout << "key2proc: " << i << std::endl;
             return i;
         }
@@ -301,11 +311,23 @@ int key2proc(keytype k, SubDomainKeyTree *s) {
     return -1; // error
 }*/
 
+int maxHilbertSon(TreeNode *t, int level, keytype k, SubDomainKeyTree *s){
+    std::map<keytype, int> keymap;
+    for (int i = 0; i < POWDIM; i++) {
+        // sorting implicitly in ascending order
+        keymap[Lebesgue2Hilbert((k | ((keytype)i << (DIM*(maxlevel-level-1)))))] = i;
+    }
+    return keymap.rbegin()->second; // reverse iterator points to last element, i.e. largest key
+}
+
 // initial call: createDomainList(root, 0, 0, s)
 void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s) {
     t->node = domainList;
     int p1 = key2proc(k, s);
-    int p2 = key2proc(k | ~(~0L << DIM*(maxlevel-level)),s);
+    //int p2 = key2proc(k | ~(~0L << DIM*(maxlevel-level)), s);
+    int iMaxSon = maxHilbertSon(t, level, k, s);
+    int p2 = key2proc((k | ((keytype)iMaxSon << (DIM*(maxlevel-level-1)))), s);
+
     if (p1 != p2) {
         for (int i = 0; i < POWDIM; i++) {
             if (t->son[i] == NULL) {
@@ -1260,7 +1282,11 @@ void compPseudoParticlesPar(TreeNode *root, SubDomainKeyTree *s) {
         masses[i] = pArray[i].m;
     }
 
+    outputTree(root, "log/beforeAllreduceMasses_proc" + std::to_string(s->myrank), true, false);
+
+    Logger(DEBUG) << "MPI_Allreduce() in compPseudoParticlesPar() on moments.";
     MPI_Allreduce(&moments, &global_moments, 3*pLength, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+    Logger(DEBUG) << "MPI_Allreduce() in compPseudoParticlesPar() on masses.";
     MPI_Allreduce(&masses, &global_masses, pLength, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
 
     //for (int i=0; i<pLength; i++) {
