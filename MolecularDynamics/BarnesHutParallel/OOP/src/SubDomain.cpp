@@ -117,6 +117,8 @@ void SubDomain::sendParticles() {
         }
     }
 
+    Logger(INFO) << "totalReceiveLength = " << totalReceiveLength;
+
     pArray[rank] = new Particle[totalReceiveLength];
 
     std::vector<boost::mpi::request> reqParticles;
@@ -142,7 +144,7 @@ void SubDomain::sendParticles() {
     delete [] pLengthReceive;
     delete [] pLengthSend;
     for (int proc=0; proc<numProcesses; proc++) {
-        delete [] pArray[proc];
+        //delete [] pArray[proc];
     }
     delete [] pArray;
 
