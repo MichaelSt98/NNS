@@ -420,7 +420,7 @@ void SubDomain::gatherParticles(ParticleList &pList) {
     ParticleList myProcessParticles;
     root.getParticleList(myProcessParticles);
 
-    Particle *pArrayLocal = &myProcessParticles[0];
+    //Particle *pArrayLocal = &myProcessParticles[0];
 
     int localLength = (int)myProcessParticles.size();
     IntList receiveLengths;
@@ -453,7 +453,7 @@ void SubDomain::gatherParticles(ParticleList &pList, IntList &processList) {
     ParticleList myProcessParticles;
     root.getParticleList(myProcessParticles);
 
-    Particle *pArrayLocal = &myProcessParticles[0];
+    //Particle *pArrayLocal = &myProcessParticles[0];
 
     int localLength = (int)myProcessParticles.size();
     IntList receiveLengths;
@@ -484,4 +484,70 @@ void SubDomain::gatherParticles(ParticleList &pList, IntList &processList) {
         }
         delete [] pArray;
     }
+}
+
+void SubDomain::gatherParticles(ParticleList &pList, IntList &processList, KeyList &keyList) {
+
+    ParticleList myProcessParticles;
+    KeyList myProcessKeys;
+    root.getParticleList(myProcessParticles, myProcessKeys);
+
+    //Particle *pArrayLocal = &myProcessParticles[0];
+
+    int localLength = (int)myProcessParticles.size();
+    IntList receiveLengths;
+
+    //boost::mpi::gather(comm, &localLength, 1, receiveLengths, 0);
+    boost::mpi::all_gather(comm, &localLength, 1, receiveLengths);
+
+    int totalReceiveLength = 0;
+    for (auto it = std::begin(receiveLengths); it != std::end(receiveLengths); ++it) {
+        //std::cout << "receiveLengths: " << *it << std::endl;
+        totalReceiveLength += *it;
+    }
+
+    Particle *pArray;
+    KeyType *kArray;
+
+    if (rank == 0) {
+        pArray = new Particle[totalReceiveLength];
+        kArray = new KeyType[totalReceiveLength];
+    }
+
+    boost::mpi::gatherv(comm, myProcessParticles, pArray, receiveLengths, 0);
+    boost::mpi::gatherv(comm, myProcessKeys, kArray, receiveLengths, 0);
+
+    if (rank == 0) {
+        pList.assign(pArray, pArray + totalReceiveLength);
+        keyList.assign(kArray, kArray + totalReceiveLength);
+        IntList helper;
+        for (int proc=0; proc<numProcesses; proc++) {
+            helper.assign(receiveLengths[proc], proc);
+            processList.insert(processList.end(), helper.begin(), helper.end());
+        }
+        delete [] pArray;
+        delete [] kArray;
+    }
+}
+
+void SubDomain::writeToTextFile(ParticleList &pList, IntList &processList, KeyList &keyList) {
+
+    std::ofstream textFile;
+    textFile.open ("output/test.txt");
+
+    textFile << "x" << ";"
+             << "y" << ";"
+             << "z" << ";"
+             << "process" << ";"
+             << "key" << "\n";
+
+    for (int i=0; i<pList.size(); i++) {
+        textFile << pList[i].x[0] << ";"
+                 << pList[i].x[1] << ";"
+                 << pList[i].x[2] << ";"
+                 << processList[i] << ";"
+                 << keyList[i].key << "\n";
+    }
+
+    textFile.close();
 }

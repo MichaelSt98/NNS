@@ -48,8 +48,9 @@ void timeIntegration(float t, float deltaT, float tEnd, float diam, SubDomain &s
 
             ParticleList pList;
             IntList procList;
+            KeyList keyList;
             if (processColoring) {
-                subDomain.gatherParticles(pList, procList);
+                subDomain.gatherParticles(pList, procList, keyList);
                 prtN = new int[(int)procList.size()];
                 //prtN = &procList[0];
                 std::copy(procList.begin(), procList.end(), prtN);
@@ -65,6 +66,9 @@ void timeIntegration(float t, float deltaT, float tEnd, float diam, SubDomain &s
                 Logger(INFO) << "Rendering timestep #" << step << ": N = " << pList.size();
                 renderer.setNumParticles((int)pList.size());
                 if (processColoring) {
+                    if (step == 5) {
+                        subDomain.writeToTextFile(pList, procList, keyList);
+                    }
                     renderer.createFrame(image, hdImage, prtcls, prtN, subDomain.numProcesses, step, &subDomain.root.box);
                     delete [] prtN;
                 }

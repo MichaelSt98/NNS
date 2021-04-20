@@ -11,6 +11,7 @@
 #include <boost/mpi.hpp>
 #include <vector>
 #include <map>
+#include <fstream>
 
 typedef std::map<KeyType, Particle> ParticleMap;
 
@@ -50,6 +51,9 @@ public:
     void gatherKeys(KeyList &keyList, IntList &lengths, KeyList &localKeyList);
     void gatherParticles(ParticleList &pList);
     void gatherParticles(ParticleList &pList, IntList &processList);
+    void gatherParticles(ParticleList &pList, IntList &processList, KeyList &keyList);
+
+    void writeToTextFile(ParticleList &pList, IntList &processList, KeyList &keyList);
 };
 
 
