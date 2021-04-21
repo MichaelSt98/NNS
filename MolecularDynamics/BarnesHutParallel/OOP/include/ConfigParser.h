@@ -8,11 +8,17 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/info_parser.hpp>
+#include <boost/exception/exception.hpp>
+#include <boost/current_function.hpp>
+#include <boost/throw_exception.hpp>
 #include <boost/foreach.hpp>
+
+//#define BOOST_THROW_EXCEPTION(x) ::boost::throw_exception(x)
 
 class ConfigParser {
 public:
-    ConfigParser(const std::string &file="config.json");
+    ConfigParser();
+    ConfigParser(const std::string &file);
 
     std::list<ConfigParser> getObjList(const std::string &key);
     ConfigParser getObj(const std::string &key);

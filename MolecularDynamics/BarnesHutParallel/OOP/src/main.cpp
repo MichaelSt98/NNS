@@ -12,6 +12,8 @@
 #include <iostream>
 #include <climits>
 #include <boost/mpi.hpp>
+#include <boost/exception/all.hpp>
+#include <cxxopts/cxxopts.hpp>
 
 #define KEY_MAX ULONG_MAX
 
@@ -109,13 +111,42 @@ int main(int argc, char** argv) {
     boost::mpi::environment env{argc, argv};
     boost::mpi::communicator comm;
 
-    ConfigParser confP{ConfigParser("config/config.info")};
-
-    SubDomain subDomainHandler;
-
     //settings for Logger
     LOGCFG.headers = true;
     LOGCFG.level = DEBUG;
+
+    cxxopts::Options cmdLineParser("BarnesHut", "A parallel OOP implementation");
+    cmdLineParser
+            .set_width(100)
+            .add_options()
+                ("c,config", "Input config file", cxxopts::value<std::vector<std::string>>()
+                        ->default_value("config/config.info")
+                        /*->implicit_value("config/config.info")*/)
+                ("h,help", "Show this help");
+
+    auto opts = cmdLineParser.parse(argc, argv);
+
+    if (opts.count("help")) {
+        std::cout << cmdLineParser.help();
+        exit(0);
+    }
+
+    std::string configFile = opts["config"].as<std::vector<std::string>>()[0];
+
+    Logger(INFO) << "configFile: " << configFile;
+
+    ConfigParser confP;
+    try {
+        confP = ConfigParser {ConfigParser(configFile.c_str())};
+    }
+    catch (std::exception const& e) {
+        //std::string diag = diagnostic_information(e);
+        Logger(ERROR) << e.what();
+        exit(0);
+    }
+
+    SubDomain subDomainHandler;
+
     LOGCFG.myrank = subDomainHandler.rank;
     LOGCFG.outputRank = confP.getVal<int>("outputRank");
 

@@ -1,9 +1,11 @@
 #include "ConfigParser.h"
 
+ConfigParser::ConfigParser() {
+    //do nothing
+}
 ConfigParser::ConfigParser(const std::string &file){
     // Extract the file extension from the filename
     std::string ext = boost::filesystem::extension(file);
-
     if (ext == ".json") {
         // parse json and write into 'tree'
         boost::property_tree::read_json(file, tree);
@@ -11,8 +13,9 @@ ConfigParser::ConfigParser(const std::string &file){
         // parse info and write into 'tree'
         boost::property_tree::read_info(file, tree);
     } else {
-        std::cerr << "Unsupported file extension: " << ext << std::endl;
-        //TODO: Throw exception here
+        //BOOST_THROW_EXCEPTION(std::logic_error("Unsupported file extension"));
+        std::string errMsg = ext + ": unsupported file extension (supported: .json, .info)";
+        BOOST_THROW_EXCEPTION(std::invalid_argument(errMsg));
     }
 }
 
