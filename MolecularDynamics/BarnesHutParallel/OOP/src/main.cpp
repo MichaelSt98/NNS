@@ -48,8 +48,9 @@ void timeIntegration(float t, float deltaT, float tEnd, float diam, SubDomain &s
 
             ParticleList pList;
             IntList procList;
+            KeyList keyList;
             if (processColoring) {
-                subDomain.gatherParticles(pList, procList);
+                subDomain.gatherParticles(pList, procList, keyList);
                 prtN = new int[(int)procList.size()];
                 //prtN = &procList[0];
                 std::copy(procList.begin(), procList.end(), prtN);
@@ -65,6 +66,9 @@ void timeIntegration(float t, float deltaT, float tEnd, float diam, SubDomain &s
                 Logger(INFO) << "Rendering timestep #" << step << ": N = " << pList.size();
                 renderer.setNumParticles((int)pList.size());
                 if (processColoring) {
+                    if (step % 50 == 0) {
+                        subDomain.writeToTextFile(pList, procList, keyList, step);
+                    }
                     renderer.createFrame(image, hdImage, prtcls, prtN, subDomain.numProcesses, step, &subDomain.root.box);
                     delete [] prtN;
                 }
@@ -137,7 +141,8 @@ int main(int argc, char** argv) {
 
     ParticleDistribution particleDistribution(confP);
     ParticleList particleList;
-    particleDistribution.initParticles(particleList, ParticleDistribution::disk);
+    ParticleDistribution::type distributionType = (ParticleDistribution::type)confP.getVal<int>("distributionType");
+    particleDistribution.initParticles(particleList, distributionType);//ParticleDistribution::disk);
 
 
     for (auto it = std::begin(particleList); it != std::end(particleList); ++it) {
@@ -156,11 +161,6 @@ int main(int argc, char** argv) {
     for (auto it = std::begin(particleList); it != std::end(particleList); ++it) {
         subDomainHandler.root.insert(*it);
     }
-
-    //subDomainHandler.root.printTreeSummary(true);
-
-    //subDomainHandler.sendParticles();
-    //subDomainHandler.compPseudoParticles();
 
     float diam = subDomainHandler.root.box.upper[0] - subDomainHandler.root.box.lower[0];
     float deltaT = confP.getVal<float>("timeStep");

@@ -258,6 +258,34 @@ void TreeNode::getParticleList(ParticleList &particleList) {
     }
 }
 
+void TreeNode::getParticleList(ParticleList &particleList, KeyList &keyList, KeyType k, int level) {
+    for (int i=0; i<POWDIM; i++) {
+        if (son[i] != NULL) {
+            if (son[i]->isLeaf() && !son[i]->isDomainList()) {
+                particleList.push_back(son[i]->p);
+                keyList.push_back((k | KeyType((keyInteger) i << (DIM * (k.maxLevel - level - 1)))));
+            } else {
+                son[i]->getParticleList(particleList, keyList,
+                                        (k | KeyType((keyInteger) i << (DIM * (k.maxLevel - level - 1)))),
+                                        level + 1);
+            }
+        }
+    }
+}
+
+/*void TreeNode::getParticleKeys(KeyList &keyList, KeyType k, int level) {
+    for (int i=0; i<POWDIM; i++) {
+        if (son[i] != NULL) {
+            if (son[i]->isLeaf()) {
+                keyList.push_back((k | KeyType((keyInteger) i << (DIM * (k.maxLevel - level - 1)))));
+            } else {
+                son[i]->getParticleKeys(keyList, (k | KeyType((keyInteger) i << (DIM * (k.maxLevel - level - 1)))),
+                                        level + 1);
+            }
+        }
+    }
+}*/
+
 int TreeNode::getParticleCount() {
     ParticleList pList;
     getParticleList(pList);
@@ -515,7 +543,7 @@ void TreeNode::repairTree() {
 void TreeNode::getParticleKeys(KeyList &keyList, KeyType k, int level) {
     for (int i=0; i<POWDIM; i++) {
         if (son[i] != NULL) {
-            if (son[i]->isLeaf()) {
+            if (son[i]->isLeaf() && !son[i]->isDomainList()) {
                 keyList.push_back((k | KeyType((keyInteger) i << (DIM * (k.maxLevel - level - 1)))));
             } else {
                 son[i]->getParticleKeys(keyList, (k | KeyType((keyInteger) i << (DIM * (k.maxLevel - level - 1)))),

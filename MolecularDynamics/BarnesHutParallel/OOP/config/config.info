@@ -1,5 +1,5 @@
 
-numParticles 200
+numParticles 500
 systemSize 5.
 timeStep .25
 timeEnd 80
@@ -7,5 +7,6 @@ initMass 1e-4
 initVel .125
 outputRank 0
 loadBalancing true
+distributionType 1
 
 #include "config/rendering.info"

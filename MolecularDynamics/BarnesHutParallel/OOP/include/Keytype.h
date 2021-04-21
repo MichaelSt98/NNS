@@ -7,7 +7,10 @@
 #include <limits>
 #include <boost/mpi.hpp>
 
+class KeyType;
+
 typedef unsigned long keyInteger;
+//typedef std::vector<KeyType> KeyList;
 
 class KeyType {
 

@@ -90,6 +90,7 @@ public:
     void getTreeList(ParticleList &particleList);
     void getTreeList(NodeList &nodeList);
     void getParticleList(ParticleList &particleList);
+    void getParticleList(ParticleList &particleList, KeyList &keyList, KeyType k=0UL, int level=0);
     int getParticleCount();
     void getLowestDomainList(ParticleList &particleList);
 
