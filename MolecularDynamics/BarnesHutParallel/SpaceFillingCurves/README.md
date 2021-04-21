@@ -30,7 +30,7 @@ as an extension/**parallel version of [BarnesHutSerial](../BarnesHutSerial/)**
 	
 ## Result
 
-![](./N100m1_1e-4v0_05.mp4)
+![](./N100m1_1e-4v0_05.gif)
 
 ## TODO
-> Find and fix bug(feature?) which leads to unequal particle distribution among processes in some timesteps
+> Investigate sketchy domain boundaries in some timesteps, subdomains should be connected when utilizing a Hilbert space filling curve 

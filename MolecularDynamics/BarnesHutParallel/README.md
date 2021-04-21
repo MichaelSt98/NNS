@@ -43,7 +43,7 @@ Parallelized on two processes:
 ![](DynamicalLoadBalancing/N100m1_1e-4v0_05.gif)
 
 ### Hilbert space-filling curve
-![](SpacefillingCurves/N100m1_1e-4v0_05.gif)
+![](SpaceFillingCurves/N100m1_1e-4v0_05.gif)
 
 
 

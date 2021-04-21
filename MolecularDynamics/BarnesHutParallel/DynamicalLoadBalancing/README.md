@@ -30,4 +30,4 @@ as an extension/**parallel version of [BarnesHutSerial](../BarnesHutSerial/)**
 	
 ## Result
 
-![](./N100m1_1e-4v0_05.mp4)
+![](./N100m1_1e-4v0_05.gif)

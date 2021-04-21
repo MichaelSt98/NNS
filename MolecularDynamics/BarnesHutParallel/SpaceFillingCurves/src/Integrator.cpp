@@ -22,23 +22,39 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
         Logger(DEBUG) << "--------------------------";
         Logger(DEBUG) << "Load balancing ... ";
 
+        //Logger(DEBUG) << "OLD Ranges:";
+        //for (int i=0; i<=s->numprocs; i++){
+        //    Logger(DEBUG) << "range[" << i << "] = " << s->range[i];
+        //}
+
+        //outputTree(root, "log/beforeLBproc" + std::to_string(s->myrank), true, false);
+
         newLoadDistribution(root, s); // calculate new load distribution
+
+        outputTree(root, "log/afterNLDproc" + std::to_string(s->myrank), true, false);
 
         // update tree with new ranges
         clearDomainList(root);
 
-        createDomainList(root, 0, 0, s);
+        createDomainList(root, 0, 0UL, s);
 
         sendParticles(root, s);
 
         compPseudoParticlesPar(root, s);
 
-        //outputTree(root, "log/balanced_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
+        Logger(DEBUG) << "NEW Ranges:";
+        for (int i=0; i<=s->numprocs; i++){
+            Logger(DEBUG) << "range[" << i << "] = " << s->range[i];
+        }
 
+        //outputTree(root, "log/balanced_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
+        outputTree(root, "log/endTSproc" + std::to_string(s->myrank), true, false);
+
+        outputTree(root, false, false);
 
         Logger(DEBUG) << "... done.";
-        Logger(DEBUG) << "--------------------------";
 
+        Logger(DEBUG) << "--------------------------";
         // rendering
         if (render && step % renderer->getRenderInterval()==0)
         {
@@ -68,8 +84,10 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
             //outputTree(root, false);
         }
 
+        Logger(DEBUG) << "--------------------------";
+
         if (t == t_end){
-            break; // done
+            break; // done after rendering of last step
         }
 
         ++step;

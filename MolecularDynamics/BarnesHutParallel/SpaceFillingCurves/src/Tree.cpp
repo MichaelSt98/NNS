@@ -74,22 +74,32 @@ const unsigned char DirTable[12][8] =
           {10, 4, 9, 4,10, 2, 9, 3}, { 5, 8, 5,11, 2, 8, 3,11},
           { 4, 9, 0, 0, 7, 9, 2, 2}, { 1, 1, 8, 5, 3, 3, 8, 6},
           {11, 5, 0, 0,11, 6, 2, 2}, { 1, 1, 4,10, 3, 3, 7,10} };
-const unsigned char HilbertTable[12][8] = { {0,7,3,4,1,6,2,5}, {4,3,7,0,5,2,6,1},
-                                            {2,5,1,6,3,4,0,7}, {0,1,7,6,3,2,4,5},
-                                            {2,3,5,4,1,0,6,7}, {4,5,3,2,7,6,0,1},
-                                            {2,1,3,0,5,6,4,7}, {4,7,5,6,3,0,2,1},
-                                            {6,1,5,2,7,0,4,3}, {6,7,1,0,5,4,2,3},
-                                            {0,3,1,2,7,4,6,5}, {6,5,7,4,1,2,0,3} };
+const unsigned char HilbertTable[12][8] = { {0,7,3,4,1,6,2,5}, {4,3,7,0,5,2,6,1}, {6,1,5,2,7,0,4,3},
+                                            {2,5,1,6,3,4,0,7}, {0,1,7,6,3,2,4,5}, {6,7,1,0,5,4,2,3},
+                                            {2,3,5,4,1,0,6,7}, {4,5,3,2,7,6,0,1}, {0,3,1,2,7,4,6,5},
+                                            {2,1,3,0,5,6,4,7}, {4,7,5,6,3,0,2,1}, {6,5,7,4,1,2,0,3}};
 
-keytype Lebesgue2Hilbert(keytype lebesgue) {
-    keytype hilbert = 1;
-    int level = 0, dir = 0;
-    for (keytype tmp=lebesgue; tmp>1; tmp>>=DIM, level++);
-    for (; level>0; level--) {
-        int cell = (lebesgue >> ((level-1)*DIM)) & ((1<<DIM)-1);
-        hilbert = (hilbert<<DIM) + HilbertTable[dir][cell];
+keytype Lebesgue2Hilbert(keytype lebesgue, int level) {
+    keytype hilbert = 0UL; // 0UL is our root, placeholder bit omitted
+    //int level = 0, dir = 0;
+    int dir = 0;
+    //for (keytype tmp=lebesgue; tmp>0UL; tmp>>=DIM, level++); // obtain of key
+    //if (level != 21) {
+    //    Logger(DEBUG) << "Lebesgue2Hilbert: level = " << level << ", key" << lebesgue;
+    //}
+    //Logger(DEBUG) << "Lebesgue2Hilbert(): lebesgue = " << lebesgue << ", level = " << level;
+    for (int lvl=maxlevel; lvl>0; lvl--) {
+        //int cell = lebesgue >> ((level-1)*DIM) & (keytype)((1<<DIM)-1);
+        int cell = (lebesgue >> ((lvl-1)*DIM)) & (keytype)((1<<DIM)-1);
+        hilbert = hilbert<<DIM;
+        if (lvl>maxlevel-level) {
+            //Logger(DEBUG) << "Lebesgue2Hilbert(): cell = " << cell << ", dir = " << dir;
+            hilbert += HilbertTable[dir][cell];
+        }
         dir = DirTable[dir][cell];
     }
+    //Logger(DEBUG) << "Lebesgue2Hilbert(): hilbert  = " << hilbert;
+    //Logger(DEBUG) << "==============================";
     return hilbert;
 }
 
@@ -140,7 +150,8 @@ void getParticleKeys(TreeNode *t, keytype *p, int &pCounter, keytype k, int leve
         for (int i = 0; i < POWDIM; i++) {
             if (isLeaf(t->son[i])){
                 //Logger(DEBUG) << "Inserting son #" << i;
-                p[pCounter] = Lebesgue2Hilbert((k | ((keytype)i << (DIM*(maxlevel-level-1))))); // inserting key
+                p[pCounter] = Lebesgue2Hilbert(k | ((keytype)i << (DIM*(maxlevel-level-1))), level+1);
+                        //& (KEY_MAX << DIM*(maxlevel-level-1)); // inserting key
                 //Logger(DEBUG) << "Inserted particle '" << std::bitset<64>(p[pCounter]) << "'@" << pCounter;
 	       	    pCounter++;
             } else {
@@ -242,9 +253,9 @@ void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s){
     //Logger(DEBUG) << "MPI_Allreduce() in newLoadDistribution() on ranges.";
     MPI_Allreduce(sendRange, s->range, s->numprocs+1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
 
-    for (int i=0; i<=s->numprocs; i++){
-        Logger(DEBUG) << "Load balancing: NEW range[" << i << "] = " << s->range[i];
-    }
+    //for (int i=0; i<=s->numprocs; i++){
+    //    Logger(DEBUG) << "Load balancing: NEW range[" << i << "] = " << s->range[i];
+    //}
 
     delete [] oldcount;
 }
@@ -267,17 +278,22 @@ void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, ke
         std::map<keytype, int> keymap;
         for (int i = 0; i < POWDIM; i++) {
             // sorting implicitly in ascending order
-            keymap[Lebesgue2Hilbert((k | ((keytype)i << (DIM*(maxlevel-level-1)))))] = i;
+            keytype hilbert = Lebesgue2Hilbert(k | ((keytype)i << (DIM*(maxlevel-level-1))), level+1);
+            keymap[hilbert] = i;
         }
         // actual recursion in correct order
         for (std::map<keytype, int>::iterator kit = keymap.begin(); kit != keymap.end(); kit++) {
+            //Logger(DEBUG) << "updateRange(): hilbert  = "  << kit->first << ", i = " << kit->second << ", level = " << level;
+            //Logger(DEBUG) << "updateRange(): next lebesgue = " << (k | ((keytype)kit->second << (DIM*(maxlevel-level-1))));
             updateRange(t->son[kit->second], n, p, range, newdist,
-                        (keytype)(k | ((keytype)kit->second << (DIM*(maxlevel-level-1)))), level+1);
+                        k | ((keytype)kit->second << (DIM*(maxlevel-level-1))), level+1);
         }
         // start of the operation on *t
         if (isLeaf(t) && t->node != domainList) {
             while (n >= newdist[p]) {
-                range[p] = Lebesgue2Hilbert(k);
+                Logger(DEBUG) << "updateRange(): Found lebesgue = " << k << ", level = " << level;
+                range[p] = Lebesgue2Hilbert(k , level); //TODO: check how to ensure subtree in process?
+                Logger(DEBUG) << "updateRange():       hilbert  = " << Lebesgue2Hilbert(k, level);
                 p++;
             }
             n++;
@@ -288,7 +304,7 @@ void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, ke
 
 int key2proc(keytype k, SubDomainKeyTree *s) {
     //Logger(DEBUG) << "Lebesgue = " << k;
-    k = Lebesgue2Hilbert(k);
+    //k = Lebesgue2Hilbert(k);
     //Logger(DEBUG) << "Hilbert = " << k;
     for (int i=0; i<s->numprocs; i++) { //1
         if (k >= s->range[i] && k < s->range[i+1]) {
@@ -311,22 +327,31 @@ int key2proc(keytype k, SubDomainKeyTree *s) {
     return -1; // error
 }*/
 
+/* UNUSED
 int maxHilbertSon(TreeNode *t, int level, keytype k, SubDomainKeyTree *s){
     std::map<keytype, int> keymap;
     for (int i = 0; i < POWDIM; i++) {
         // sorting implicitly in ascending order
-        keymap[Lebesgue2Hilbert((k | ((keytype)i << (DIM*(maxlevel-level-1)))))] = i;
+        keytype hilbert = Lebesgue2Hilbert(k | ((keytype)i << (DIM*(maxlevel-level)), level+1);
+                //& (KEY_MAX << DIM*(maxlevel-level-1));
+        keymap[hilbert] = i;
     }
     return keymap.rbegin()->second; // reverse iterator points to last element, i.e. largest key
-}
+}*/
 
 // initial call: createDomainList(root, 0, 0, s)
 void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s) {
     t->node = domainList;
-    int p1 = key2proc(k, s);
+    keytype hilbert = Lebesgue2Hilbert(k, level); // & (KEY_MAX << DIM*(maxlevel-level));
+    int p1 = key2proc(hilbert, s);
     //int p2 = key2proc(k | ~(~0L << DIM*(maxlevel-level)), s);
-    int iMaxSon = maxHilbertSon(t, level, k, s);
-    int p2 = key2proc((k | ((keytype)iMaxSon << (DIM*(maxlevel-level-1)))), s);
+    //int p2 = key2proc((k | ((keytype)iMaxSon << (DIM*(maxlevel-level-1)))), s);
+    //Logger(DEBUG) << "p1       k = " << k << ", level = " << level;
+    //Logger(DEBUG) << "p1 hilbert = " << hilbert << ", proc = " << p1;
+
+    //int iMaxSon = maxHilbertSon(t, level, k, s);
+    int p2 = key2proc(hilbert | (KEY_MAX >> (DIM*level+1)), s); // always shift the root placeholder bit to 0
+    //Logger(DEBUG) << "p2 hilbert = " << (hilbert | (KEY_MAX >> (DIM*level+1))) << ", proc = " << p2; // fill with ones
 
     if (p1 != p2) {
         for (int i = 0; i < POWDIM; i++) {
@@ -466,7 +491,9 @@ void compF_BH(TreeNode *t, TreeNode *root, float diam, SubDomainKeyTree *s, keyt
         }
         // start of the operation on *t
         // TODO: check if domainList check is needed
-        if (isLeaf(t) && key2proc(k, s) == s->myrank && t->node != domainList) {
+        if (isLeaf(t)
+            && key2proc(Lebesgue2Hilbert(k, level), s) == s->myrank
+            && t->node != domainList) {
             for (int d = 0; d < DIM; d++) {
                 t->p.F[d] = 0;
             }
@@ -741,7 +768,9 @@ void buildSendList(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist, int *p
     if (t != NULL) {
         // start of the operation on *t
         int proc;
-        if ((isLeaf(t)) && ((proc = key2proc(k, s)) != s->myrank) && t->node != domainList) {
+        if ((isLeaf(t))
+            && ((proc = key2proc(Lebesgue2Hilbert(k, level), s)) != s->myrank)
+            && t->node != domainList) {
             current = &plist[proc];
             for (int i=0; i<pIndex[proc]; i++) {
                 current = current->next;
@@ -876,18 +905,38 @@ void outputTree(TreeNode *t, std::string file, bool detailed, bool onlyParticles
                              << "    F = (" << pArray[i].F[0] << ", "
                              << pArray[i].F[1] << ", "
                              << pArray[i].F[2] << ")"
-                             << "    m = " << pArray[i].m
-                             << kArray[i] << '\n';
+                             << "    m = " << pArray[i].m << ", ";
+                        // converting key format
+                        int levels [maxlevel];
+                        for (int i = 0; i<maxlevel; i++) {
+                            levels[i] = (kArray[i] >> 3*i) & (unsigned long)7;
+                        }
+                        std::string keyStr = "#|";
+                        for (int i = maxlevel-1; i>=0; i--) {
+                            keyStr += std::to_string(levels[i]);
+                            keyStr += "|";
+                        }
+                        outf << keyStr << '\n';
                     }
                 }
                 else {
                     outf << "\tnodetype: " << getNodeType(nArray[i]) << " ["
                          << (pArray[i].todelete ? "true " : "false")
-                         << ", " << (pArray[i].moved ? "true " : "false")
-                         << "], " << std::bitset<64>(kArray[i])
+                         << ", " << (pArray[i].moved ? "true " : "false") << "], ";
+                    // converting key format
+                    int levels [maxlevel];
+                    for (int lvl = 0; lvl<maxlevel; lvl++) {
+                        levels[lvl] = (kArray[i] >> 3*lvl) & (unsigned long)7;
+                    }
+                    std::string keyStr = "#|";
+                    for (int lvl = maxlevel-1; lvl>=0; lvl--) {
+                        keyStr += std::to_string(levels[lvl]);
+                        keyStr += "|";
+                    }
+                    outf << keyStr
                          << "  x = (" << pArray[i].x[0] << ", "
                          << pArray[i].x[1] << ", "
-                         << pArray[i].x[2] << ")" << '\n';
+                         << pArray[i].x[2] << ")\n";
                 }
             }
         }
@@ -950,7 +999,9 @@ KeyList* buildTreeList(TreeNode *t, KeyList *kLst, keytype k, int level) {
             kLst = buildTreeList(t->son[i], kLst,
                                    (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))), level+1);
         }
-        kLst->k = k;
+        //Logger(DEBUG) << "buildTreeList(): lebesgue = " << k << ", level = " << level;
+        //Logger(DEBUG) << "buildTreeList(): hilbert  = " << Lebesgue2Hilbert(k, level);
+        kLst->k = Lebesgue2Hilbert(k, level); // & (KEY_MAX << DIM*(maxlevel-level));
         kLst->next = new KeyList;
         return kLst->next;
     }
@@ -982,6 +1033,7 @@ int getTreeArray(TreeNode *root, Particle *&p, nodetype *&n, keytype *&k) {
     if (kLst->next) {
         while (kLst->next) {
             k[kIndex] = kLst->k;
+            //Logger(DEBUG) << "k[kIndex] = " << k[kIndex];
             KeyList *old = kLst;
             kLst = kLst->next;
             delete old;
@@ -1426,7 +1478,9 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleMap &pmap, Sub
                    keytype k, int level) {
 
     //Logger(INFO) << "symbolicForce: " << std::bitset<64>(k) << " mapped to proc " << key2proc(k, s);
-    if (t != NULL && (key2proc(k, s) == s->myrank || t->node == domainList)) {
+    if (t != NULL
+        && (key2proc(Lebesgue2Hilbert(k, level), s) == s->myrank
+        || t->node == domainList)) {
 
         // the key of *t can be computed step by step in the recursion insert t->p into list plist;
         if (t->node != domainList) {
@@ -1590,7 +1644,8 @@ void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleMap *pm
         }
         // start of the operation on *t
         int proc;
-        if ((t->node == domainList) && ((proc = key2proc(k, s)) != s->myrank)) {
+        if ((t->node == domainList)
+            && ((proc = key2proc(Lebesgue2Hilbert(k, level), s)) != s->myrank)) {
             symbolicForce(t, root, diam, pmap[proc], s, 0UL, 0);
         }
     } // end of the operation on *t
