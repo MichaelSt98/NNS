@@ -9,6 +9,7 @@
 #include "Logger.h"
 
 typedef float dFloat;
+typedef std::vector<Vector3<dFloat>> VectorList;
 
 class Domain {
 public:
@@ -35,7 +36,13 @@ public:
     dFloat getCenterZ();
     void getCenter(Vector3<dFloat> &center);
 
+    dFloat smallestDistance(Vector3<dFloat> &vec);
+
+    void getCorners(VectorList& vectorList);
+
     bool withinDomain(Vector3<dFloat> &vec);
+    bool completelyWithinRadius(Vector3<dFloat> &vec, dFloat radius);
+    bool withinRadius(Vector3<dFloat> &vec, dFloat radius);
 };
 
 inline std::ostream &operator << (std::ostream &os, const Domain &domain) {

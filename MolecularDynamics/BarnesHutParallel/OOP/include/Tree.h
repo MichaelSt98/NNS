@@ -97,6 +97,10 @@ public:
     void getParticleKeys(KeyList &keyList, KeyType k=0UL, int level=0);
 
     void updateRange(int &n, int &p, KeyType *range, int *newDist, KeyType k=0UL, int level=0);
+
+    void nearNeighbourList(tFloat radius);
+
+    void findInteractionPartners(Particle &particle, ParticleList &particleList, tFloat radius);
 };
 
 struct Node {

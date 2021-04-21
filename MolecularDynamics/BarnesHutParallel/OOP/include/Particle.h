@@ -52,6 +52,8 @@ public:
     void updateX(float deltaT);
     void updateV(float deltaT);
 
+    bool withinRadius(Particle &particle, pFloat radius);
+
     friend std::ostream &operator << (std::ostream &os, const Particle &p);
 };
 

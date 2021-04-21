@@ -65,6 +65,61 @@ void Domain::getCenter(Vector3<dFloat> &center) {
     center = 0.5 * (upper + lower);
 }
 
+dFloat Domain::smallestDistance(Vector3<dFloat> &vec) {
+    //smallest distance from p.x to cell box
+    dFloat dx;
+    if (vec[0] < lower[0]) dx = lower[0] - vec[0];
+    else if (vec[0] > upper[0]) dx = vec[0] - upper[0];
+    else dx = (dFloat)0;
+
+    dFloat dy;
+    if (vec[1] < lower[1]) dy = lower[1] - vec[1];
+    else if (vec[1] > upper[1]) dy = vec[1] - upper[1];
+    else dy = (dFloat)0;
+
+    dFloat dz;
+    if (vec[2] < lower[2]) dz = lower[2] - vec[2];
+    else if (vec[2] > upper[2]) dz = vec[2] - upper[2];
+    else dz = (dFloat)0;
+
+    return sqrt(dx*dx + dy*dy + dz*dz);
+}
+
+void Domain::getCorners(VectorList& vectorList) {
+    Vector3<dFloat> center;
+    getCenter(center);
+    Vector3<dFloat> extent = 0.5 * (upper - lower).absolute();
+
+    vectorList.push_back(Vector3<dFloat>{ center.x + extent.x, center.y + extent.y, center.z + extent.z });
+    vectorList.push_back(Vector3<dFloat>{ center.x + extent.x, center.y + extent.y, center.z - extent.z });
+    vectorList.push_back(Vector3<dFloat>{ center.x + extent.x, center.y - extent.y, center.z - extent.z });
+    vectorList.push_back(Vector3<dFloat>{ center.x - extent.x, center.y - extent.y, center.z - extent.z });
+    vectorList.push_back(Vector3<dFloat>{ center.x - extent.x, center.y + extent.y, center.z + extent.z });
+    vectorList.push_back(Vector3<dFloat>{ center.x - extent.x, center.y - extent.y, center.z + extent.z });
+}
+
 bool Domain::withinDomain(Vector3<dFloat> &vec) {
     return (vec < upper && vec > lower);
+}
+
+bool Domain::completelyWithinRadius(Vector3<dFloat> &vec, dFloat radius) {
+    VectorList corners;
+    getCorners(corners);
+
+    for (int i=0; i<corners.size(); i++) {
+        if (!vec.withinRadius(corners[i], radius)) {
+            return false;
+        }
+    }
+    return true; //if (vec.withinRadius(, radius))
+}
+
+bool Domain::withinRadius(Vector3<dFloat> &vec, dFloat radius) {
+    dFloat distance = smallestDistance(vec);
+    if (distance < radius) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }

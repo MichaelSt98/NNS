@@ -129,6 +129,19 @@ public:
         return (x >= rhs.x && y >= rhs.y && z >= rhs.z);
     }
 
+    bool withinRadius(const Vector3& rhs, const T r) const {
+        if (rhs.x < x+r && rhs.x > x-r &&
+            rhs.y < y+r && rhs.y > y-r &&
+            rhs.z < z+r && rhs.z > z-r) {
+            return true;
+        }
+        return false;
+    }
+
+
+    Vector3 absolute() {
+        return Vector3<T> {abs(x), abs(y), abs(z)};
+    }
 
     template <typename U>
     operator Vector3<U> () const {

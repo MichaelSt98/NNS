@@ -570,3 +570,96 @@ void TreeNode::updateRange(int &n, int &p, KeyType *range, int *newDist, KeyType
     }
 }
 
+/*void TreeNode::nearNeighbourList(tFloat radius) {
+    ParticleList particleList;
+    getParticleList(particleList);
+
+    IntList interactionPartners;
+
+    int counter;
+
+    for (int i=0; i<particleList.size(); i++) {
+        counter = 0;
+        for (int j=0; j<particleList.size(); j++) {
+            if (i != j) {
+                if (particleList[i].withinRadius(particleList[j], radius)) {
+                    counter++;
+                }
+            }
+        }
+        interactionPartners.push_back(counter);
+    }
+
+    for (int i=0; i<interactionPartners.size(); i++) {
+        Logger(INFO) << "#interaction partners: " << interactionPartners[i];
+    }
+}*/
+
+void TreeNode::nearNeighbourList(tFloat radius) {
+    ParticleList particleList;
+    getParticleList(particleList);
+
+    IntList interactionPartners;
+
+    for (int i=0; i<particleList.size(); i++) {
+         ParticleList interactionPartner;
+         findInteractionPartners(particleList[i], interactionPartner, radius);
+         interactionPartners.push_back((int)interactionPartner.size());
+    }
+
+    for (int i=0; i<interactionPartners.size(); i++) {
+        Logger(INFO) << "#interaction partners: " << interactionPartners[i];
+    }
+}
+
+/*void TreeNode::findInteractionPartners(Particle &particle, ParticleList &particleList, tFloat radius) {
+    if (isLeaf() && !isDomainList()) {
+        if (particle.withinRadius(p, radius)) {
+            particleList.push_back(p);
+        }
+    }
+    else {
+        for (int i=0; i<POWDIM; i++) {
+            if (son[i] != NULL) {
+                son[i]->findInteractionPartners(particle, particleList, radius);
+            }
+        }
+    }
+}*/
+
+/*void TreeNode::findInteractionPartners(Particle &particle, ParticleList &particleList, tFloat radius) {
+    if (isLeaf() && !isDomainList()) {
+        if (box.withinDomain(p.x) && particle.withinRadius(p, radius)) {
+            particleList.push_back(p);
+        }
+    }
+    else {
+        for (int i=0; i<POWDIM; i++) {
+            if (son[i] != NULL) {
+                son[i]->findInteractionPartners(particle, particleList, radius);
+            }
+        }
+    }
+}*/
+
+void TreeNode::findInteractionPartners(Particle &particle, ParticleList &particleList, tFloat radius) {
+    if (isLeaf() && !isDomainList()) {
+        if (particle.withinRadius(p, radius)) {
+            particleList.push_back(p);
+        }
+    }
+    else {
+        for (int i=0; i<POWDIM; i++) {
+            if (son[i] != NULL) {
+                if (son[i]->box.completelyWithinRadius(particle.x, radius)) {
+                    son[i]->getParticleList(particleList);
+                }
+                else {
+                    if (son[i]->box.withinRadius(particle.x, radius)) {
+                        son[i]->findInteractionPartners(particle, particleList, radius);
+                    }
+                }
+            }
+        }
+    }
+}

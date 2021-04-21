@@ -99,6 +99,8 @@ void timeIntegration(float t, float deltaT, float tEnd, float diam, SubDomain &s
 
         subDomain.root.printTreeSummary(false);
 
+        subDomain.root.nearNeighbourList(1);
+
     }
     Logger(DEBUG) << "t = " << t << ", FINISHED";
 }

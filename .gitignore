@@ -8,6 +8,7 @@
 
 **/log/
 
+*.icloud
 *.mp4
 *.csv
 # ignore MPI-debug lldb pipe

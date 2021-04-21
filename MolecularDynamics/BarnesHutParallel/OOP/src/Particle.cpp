@@ -71,3 +71,7 @@ void force(Particle &i, Particle &j) {
     float f = i.m * j.m /(sqrt(r) * r); // + smoothing);
     i.F += f * (j.x - i.x);
 }
+
+bool Particle::withinRadius(Particle &particle, pFloat radius) {
+    return particle.x.withinRadius(x, radius);
+}
