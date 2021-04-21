@@ -5,8 +5,11 @@ from mpl_toolkits.mplot3d import Axes3D
 
 if __name__ == '__main__':
 
-    df = pd.read_csv("test.txt", delimiter=";")
+    fileToPlot = "test_50.txt"
+    df = pd.read_csv(fileToPlot, delimiter=";")
+    connect = True
 
+    ####################################################################
     print(df.head())
 
     processes = [0, 1]
@@ -39,6 +42,11 @@ if __name__ == '__main__':
                    dataFrame["y"],
                    dataFrame["z"],
                    c=colors[i])
+        ax.plot(dataFrame["x"],
+                dataFrame["y"],
+                dataFrame["z"],
+                c=colors[i], alpha = 0.5)
+    ax.set_axis_off()
     plt.show()
 
 

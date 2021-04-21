@@ -530,10 +530,11 @@ void SubDomain::gatherParticles(ParticleList &pList, IntList &processList, KeyLi
     }
 }
 
-void SubDomain::writeToTextFile(ParticleList &pList, IntList &processList, KeyList &keyList) {
+void SubDomain::writeToTextFile(ParticleList &pList, IntList &processList, KeyList &keyList, int step) {
 
     std::ofstream textFile;
-    textFile.open ("output/test.txt");
+    std::string fileName = "output/test_" + std::to_string(step) + ".txt";
+    textFile.open (fileName.c_str());
 
     textFile << "x" << ";"
              << "y" << ";"

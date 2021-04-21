@@ -12,10 +12,11 @@
 class ParticleDistribution {
 private:
     void initDisk(ParticleList &pList);
+    void initCluster(ParticleList &pList);
 public:
     enum type
     {
-        disk
+        disk, cluster
     };
 
     boost::mpi::communicator comm;

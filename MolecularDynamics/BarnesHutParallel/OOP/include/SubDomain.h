@@ -12,6 +12,7 @@
 #include <vector>
 #include <map>
 #include <fstream>
+#include <string>
 
 typedef std::map<KeyType, Particle> ParticleMap;
 
@@ -53,7 +54,7 @@ public:
     void gatherParticles(ParticleList &pList, IntList &processList);
     void gatherParticles(ParticleList &pList, IntList &processList, KeyList &keyList);
 
-    void writeToTextFile(ParticleList &pList, IntList &processList, KeyList &keyList);
+    void writeToTextFile(ParticleList &pList, IntList &processList, KeyList &keyList, int step=0);
 };
 
 
