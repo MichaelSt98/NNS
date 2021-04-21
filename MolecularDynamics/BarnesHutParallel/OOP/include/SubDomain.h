@@ -55,6 +55,9 @@ public:
     void gatherParticles(ParticleList &pList, IntList &processList, KeyList &keyList);
 
     void writeToTextFile(ParticleList &pList, IntList &processList, KeyList &keyList, int step=0);
+
+    void nearNeighbourList(tFloat radius);
+    void findInteractionPartnersOutsideDomain(TreeNode &t, Particle &particle, bool &interactionPartner, tFloat radius, KeyType k=0UL, int level=0);
 };
 
 

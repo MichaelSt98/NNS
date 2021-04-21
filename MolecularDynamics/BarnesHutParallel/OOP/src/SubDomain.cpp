@@ -218,7 +218,8 @@ void SubDomain::buildSendList(TreeNode &t, ParticleList *pList, KeyType k, int l
     }
 }
 
-void SubDomain::symbolicForce(TreeNode &td, TreeNode &t, float diam, ParticleMap &pMap, KeyType k, int level) {
+//TODO: which version?
+/*void SubDomain::symbolicForce(TreeNode &td, TreeNode &t, float diam, ParticleMap &pMap, KeyType k, int level) {
     if (key2proc(k) == rank || t.isDomainList()) {
         if (!t.isDomainList()) {
             bool insert = true;
@@ -240,6 +241,35 @@ void SubDomain::symbolicForce(TreeNode &td, TreeNode &t, float diam, ParticleMap
                 symbolicForce(td, *t.son[i], 0.5 * diam, pMap,
                               KeyType(k | ((keyInteger) i << (DIM * (k.maxLevel - level - 1)))),
                               level + 1);
+            }
+        }
+    }
+}*/
+
+//TODO: which version?
+void SubDomain::symbolicForce(TreeNode &td, TreeNode &t, float diam, ParticleMap &pMap, KeyType k, int level) {
+    if (key2proc(k) == rank || t.isDomainList()) {
+        if (!t.isDomainList()) {
+            bool insert = true;
+            for (ParticleMap::iterator pit = pMap.begin(); pit != pMap.end(); pit++) {
+                if (pit->second.x == t.p.x) {
+                    insert = false;
+                }
+            }
+            if (insert) {
+                pMap[k] = t.p;
+            }
+        }
+
+        float r = td.smallestDistance(t.p);
+
+        if (diam > theta*r) {
+            for (int i = 0; i < POWDIM; i++) {
+                if (t.son[i] != NULL) {
+                    symbolicForce(td, *t.son[i], 0.5 * diam, pMap,
+                                  KeyType(k | ((keyInteger) i << (DIM * (k.maxLevel - level - 1)))),
+                                  level + 1);
+                }
             }
         }
     }
@@ -388,11 +418,8 @@ void SubDomain::compTheta(TreeNode &t, ParticleMap *pMap, float diam, KeyType k,
 
 void SubDomain::gatherKeys(KeyList &keyList, IntList &lengths, KeyList &localKeyList) {
 
-    KeyType *kArrayLocal = &localKeyList[0];
-
     int localLength = (int)localKeyList.size();
 
-    //boost::mpi::gather(comm, &localLength, 1, receiveLengths, 0);
     boost::mpi::all_gather(comm, &localLength, 1, lengths);
 
     int totalReceiveLength = 0;
@@ -419,8 +446,6 @@ void SubDomain::gatherParticles(ParticleList &pList) {
 
     ParticleList myProcessParticles;
     root.getParticleList(myProcessParticles);
-
-    //Particle *pArrayLocal = &myProcessParticles[0];
 
     int localLength = (int)myProcessParticles.size();
     IntList receiveLengths;
@@ -452,8 +477,6 @@ void SubDomain::gatherParticles(ParticleList &pList, IntList &processList) {
 
     ParticleList myProcessParticles;
     root.getParticleList(myProcessParticles);
-
-    //Particle *pArrayLocal = &myProcessParticles[0];
 
     int localLength = (int)myProcessParticles.size();
     IntList receiveLengths;
@@ -491,8 +514,6 @@ void SubDomain::gatherParticles(ParticleList &pList, IntList &processList, KeyLi
     ParticleList myProcessParticles;
     KeyList myProcessKeys;
     root.getParticleList(myProcessParticles, myProcessKeys);
-
-    //Particle *pArrayLocal = &myProcessParticles[0];
 
     int localLength = (int)myProcessParticles.size();
     IntList receiveLengths;
@@ -551,4 +572,45 @@ void SubDomain::writeToTextFile(ParticleList &pList, IntList &processList, KeyLi
     }
 
     textFile.close();
+}
+
+void SubDomain::nearNeighbourList(tFloat radius) {
+    ParticleList particleList;
+    root.getParticleList(particleList);
+
+    bool interactionPartner;
+
+    int counter = 0;
+    for (int i=0; i<particleList.size(); i++) {
+        interactionPartner = false;
+        findInteractionPartnersOutsideDomain(root, particleList[i], interactionPartner, radius);
+        if (interactionPartner) {
+            counter++;
+        }
+    }
+    Logger(ERROR) << "Particles with missing information: #" << counter << "(from " << particleList.size() << ")";
+}
+
+void SubDomain::findInteractionPartnersOutsideDomain(TreeNode &t, Particle &particle, bool &interactionPartner,
+                                                     tFloat radius, KeyType k, int level) {
+    if (t.isLeaf() && !t.isDomainList()) {
+        if (particle.withinRadius(t.p, radius)) {
+            //all information on this process available
+        }
+    }
+    else {
+        for (int i=0; i<POWDIM; i++) {
+            if (t.son[i] != NULL) {
+                findInteractionPartnersOutsideDomain(*t.son[i], particle, interactionPartner, radius,
+                                                     KeyType(k | ((keyInteger) i << (DIM * (k.maxLevel - level - 1)))),
+                                                     level + 1);
+            }
+            else {
+                //son[i]->box.withinRadius(particle.x, radius
+                if (t.isLeaf() && t.isDomainList() && key2proc(k) != rank && t.box.withinRadius(particle.x, radius)) {
+                    interactionPartner = true;
+                }
+            }
+        }
+    }
 }

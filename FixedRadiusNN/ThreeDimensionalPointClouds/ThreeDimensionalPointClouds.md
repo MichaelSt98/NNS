@@ -120,6 +120,7 @@ octant with the points inside it.
  return O
 ``` 
 
+$\rightarrow \frac{1}{2}$
 
 
 
