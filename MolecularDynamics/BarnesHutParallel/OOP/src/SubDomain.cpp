@@ -553,25 +553,32 @@ void SubDomain::gatherParticles(ParticleList &pList, IntList &processList, KeyLi
 
 void SubDomain::writeToTextFile(ParticleList &pList, IntList &processList, KeyList &keyList, int step) {
 
-    std::ofstream textFile;
-    std::string fileName = "output/test_" + std::to_string(step) + ".txt";
-    textFile.open (fileName.c_str());
+    std::ofstream particleFile;
+    std::string stepStr = std::to_string(step);
+    int nZero = 5;
+    std::string stepStrFilled = std::string(nZero - stepStr.length(), '0') + stepStr;
+    std::string particleFileName = "output/particle_" + stepStrFilled + ".txt";
+    particleFile.open (particleFileName.c_str());
 
-    textFile << "x" << ";"
+    for (int i=0; i<numProcesses+1; i++) {
+        particleFile << range[i].key << "\n";
+    }
+
+    particleFile << "x" << ";"
              << "y" << ";"
              << "z" << ";"
              << "process" << ";"
              << "key" << "\n";
 
     for (int i=0; i<pList.size(); i++) {
-        textFile << pList[i].x[0] << ";"
+        particleFile << pList[i].x[0] << ";"
                  << pList[i].x[1] << ";"
                  << pList[i].x[2] << ";"
                  << processList[i] << ";"
                  << keyList[i].key << "\n";
     }
 
-    textFile.close();
+    particleFile.close();
 }
 
 void SubDomain::nearNeighbourList(tFloat radius) {
@@ -588,7 +595,7 @@ void SubDomain::nearNeighbourList(tFloat radius) {
             counter++;
         }
     }
-    Logger(ERROR) << "Particles with missing information: #" << counter << "(from " << particleList.size() << ")";
+    Logger(ERROR) << "Particles with missing information: #" << counter << " (out of " << particleList.size() << ")";
 }
 
 void SubDomain::findInteractionPartnersOutsideDomain(TreeNode &t, Particle &particle, bool &interactionPartner,

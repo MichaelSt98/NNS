@@ -48,6 +48,3 @@ if __name__ == '__main__':
                 c=colors[i], alpha = 0.5)
     ax.set_axis_off()
     plt.show()
-
-
-

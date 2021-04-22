@@ -62,6 +62,7 @@ within the local subdomain/tree
 * [ThreeDimensionalPointClouds](ThreeDimensionalPointClouds/ThreeDimensionalPointClouds.md)
 * [LargeScaleSPH](LargeScaleSPH/LargeScaleSPH.md)
 * [Miluphcuda](Miluphcuda/Miluphcuda.md)
+* [Parallel Implementation](ParallelImplementation/ParallelImplementation.md)
 
 ## Links
 

@@ -66,7 +66,7 @@ void timeIntegration(float t, float deltaT, float tEnd, float diam, SubDomain &s
                 Logger(INFO) << "Rendering timestep #" << step << ": N = " << pList.size();
                 renderer.setNumParticles((int)pList.size());
                 if (processColoring) {
-                    if (step % 50 == 0) {
+                    if (step % 10 == 0) {
                         subDomain.writeToTextFile(pList, procList, keyList, step);
                     }
                     renderer.createFrame(image, hdImage, prtcls, prtN, subDomain.numProcesses, step, &subDomain.root.box);
