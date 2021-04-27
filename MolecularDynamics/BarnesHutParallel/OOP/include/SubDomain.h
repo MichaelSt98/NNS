@@ -9,6 +9,7 @@
 #include "Tree.h"
 
 #include <boost/mpi.hpp>
+#include <boost/version.hpp>
 #include <vector>
 #include <map>
 #include <fstream>
@@ -18,23 +19,33 @@ typedef std::map<KeyType, Particle> ParticleMap;
 
 class SubDomain {
 public:
+
+    enum curveType {
+        lebesgue, hilbert
+    };
+
     boost::mpi::communicator comm;
 
     int rank;
     int numProcesses;
     KeyType *range;
     TreeNode root;
+    curveType curve;
 
     SubDomain();
+    SubDomain(curveType curve);
+
+    std::string getCurveType() const;
 
     void moveParticles();
 
     void getParticleKeys(KeyList &keyList, KeyType k=0UL, int level=0);
 
-    int key2proc(KeyType k);
+    int key2proc(KeyType k, int level=-1, bool alreadyConverted=false);
 
     void createRanges();
     void newLoadDistribution();
+    void updateRange(int &n, int &p, int *newDist);
 
     void createDomainList(TreeNode &t, int level, KeyType k);
     void createDomainList();
@@ -55,6 +66,9 @@ public:
     void gatherParticles(ParticleList &pList, IntList &processList, KeyList &keyList);
 
     void writeToTextFile(ParticleList &pList, IntList &processList, KeyList &keyList, int step=0);
+
+private:
+    void updateRangeHilbert(TreeNode &t, int &n, int &p, int *newDist, KeyType k=0UL, int level=0);
 };
 
 

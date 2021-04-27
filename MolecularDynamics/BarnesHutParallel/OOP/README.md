@@ -23,8 +23,6 @@ described in the sections:
 		* 8.4.3 **Data Distribution with Space-Filling Curves**
 
 as an extension/**parallel version of [BarnesHutSerial](../BarnesHutSerial/)**
-
-> **Data Distribution with Space-Filling Curves not implemented yet!**
 	
 ## Usage
 
@@ -36,10 +34,19 @@ as an extension/**parallel version of [BarnesHutSerial](../BarnesHutSerial/)**
 
 ### Load balancing
 
-To activate load balancing:
+To activate **load balancing**:
 
 * go to config file `config/config.info`
 * set `loadBalancing true`
+
+### Space-Filling curves
+
+To select the **Space-Filling curve**:
+
+* go to config file `config/config.info`
+* set `curveType`
+	* `0` for Lebesgue curve
+	* `1` for Hilbert curve
 
 ### Settings
 

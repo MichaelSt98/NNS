@@ -66,6 +66,10 @@ void timeIntegration(float t, float deltaT, float tEnd, float diam, SubDomain &s
 
             if (subDomain.rank == 0) {
                 Logger(INFO) << "Rendering timestep #" << step << ": N = " << pList.size();
+                for (int i=0; i<subDomain.numProcesses+1; i++) {
+                    Logger(INFO) << "\tRANGES: " << subDomain.range[i];
+                }
+                subDomain.root.printTreeSummary();
                 renderer.setNumParticles((int)pList.size());
                 if (processColoring) {
                     if (step % 50 == 0) {
@@ -111,6 +115,10 @@ int main(int argc, char** argv) {
     boost::mpi::environment env{argc, argv};
     boost::mpi::communicator comm;
 
+    /*Logger(ERROR) << "Boost version: " << BOOST_VERSION / 100000     << "."  // major version
+                  << BOOST_VERSION / 100 % 1000 << "."  // minor version
+                  << BOOST_VERSION % 100;*/
+
     //settings for Logger
     LOGCFG.headers = true;
     LOGCFG.level = DEBUG;
@@ -145,7 +153,7 @@ int main(int argc, char** argv) {
         exit(0);
     }
 
-    SubDomain subDomainHandler;
+    SubDomain subDomainHandler(SubDomain::curveType(confP.getVal<int>("curveType")));//SubDomain::lebesgue);
 
     LOGCFG.myrank = subDomainHandler.rank;
     LOGCFG.outputRank = confP.getVal<int>("outputRank");

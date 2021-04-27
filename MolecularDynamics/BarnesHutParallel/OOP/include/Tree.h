@@ -95,6 +95,7 @@ public:
     void getLowestDomainList(ParticleList &particleList);
 
     void getParticleKeys(KeyList &keyList, KeyType k=0UL, int level=0);
+    void getParticleKeys(KeyList &keyList, IntList &levelList, KeyType k=0UL, int level=0);
 
     void updateRange(int &n, int &p, KeyType *range, int *newDist, KeyType k=0UL, int level=0);
 };

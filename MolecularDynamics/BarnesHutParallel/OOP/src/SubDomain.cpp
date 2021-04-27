@@ -8,6 +8,24 @@ SubDomain::SubDomain() {
     rank = comm.rank();
     numProcesses = comm.size();
     range = new KeyType[numProcesses + 1];
+    curve = lebesgue;
+}
+
+SubDomain::SubDomain(curveType curve) {
+    rank = comm.rank();
+    numProcesses = comm.size();
+    range = new KeyType[numProcesses + 1];
+    this->curve = curve;
+}
+
+std::string SubDomain::getCurveType() const {
+    std::string curveTypeStr = "";
+    switch (curve) {
+        case 0:  curveTypeStr +=  "Lebesgue "; break;
+        case 1:  curveTypeStr +=  "Hilbert  "; break;
+        default: curveTypeStr +=  "not valid"; break;
+    }
+    return curveTypeStr;
 }
 
 void SubDomain::moveParticles() {
@@ -17,10 +35,29 @@ void SubDomain::moveParticles() {
 }
 
 void SubDomain::getParticleKeys(KeyList &keyList, KeyType k, int level) {
-    root.getParticleKeys(keyList, k, level);
+    switch (curve) {
+        case 0: {
+            root.getParticleKeys(keyList, k, level);
+            break;
+        }
+        case 1: {
+            IntList levelList;
+            root.getParticleKeys(keyList, levelList, k, level);
+            for (int i = 0; i < keyList.size(); i++) {
+                keyList[i] = KeyType::Lebesgue2Hilbert(keyList[i], levelList[i]);
+            }
+            break;
+        }
+        default: {
+            Logger(ERROR) << "getParticleKeys() not implemented for curve type: " << getCurveType();
+        }
+    }
 }
 
-int SubDomain::key2proc(KeyType k) {
+int SubDomain::key2proc(KeyType k, int level, bool alreadyConverted) {
+    if (curve == hilbert && !alreadyConverted) {
+        k = KeyType::Lebesgue2Hilbert(k, level);
+    }
     for (int proc=0; proc<numProcesses; proc++) {
         if (k >= range[proc] && k < range[proc+1]) {
             return proc;
@@ -41,6 +78,10 @@ void SubDomain::createRanges() {
 
     std::sort(globalKeyList.begin(), globalKeyList.end());
 
+    /*for (int i=0; i<globalKeyList.size(); i++) {
+        Logger(ERROR) << "globalKeyList[" << i << "] = " << globalKeyList[i];
+    }*/
+
     int N = globalKeyList.size();
     const int ppr = (N % numProcesses != 0) ? N/numProcesses+1 : N/numProcesses;
 
@@ -48,6 +89,7 @@ void SubDomain::createRanges() {
         range[0] = 0UL;
         for (int i = 1; i < numProcesses; i++) {
             range[i] = globalKeyList[i * ppr];
+            Logger(ERROR) << "range[" << i << "] = " << range[i];
         }
         range[numProcesses] = KEY_MAX;
     }
@@ -83,8 +125,7 @@ void SubDomain::newLoadDistribution() {
     while (n > newDist[p]) {
         p++;
     }
-
-    root.updateRange(n, p, range, newDist);
+    updateRange(n, p, newDist);
 
     range[0] = 0UL;
     range[numProcesses] = KEY_MAX;
@@ -92,20 +133,70 @@ void SubDomain::newLoadDistribution() {
     KeyType sendRange[numProcesses+1];
     std::copy(range, range+numProcesses+1, sendRange);
 
-    boost::mpi::all_reduce(comm, sendRange, numProcesses+1, range, boost::mpi::maximum<KeyType>());
-    //boost::mpi::all_reduce(comm, *sendRange, *range, boost::mpi::maximum<KeyType>());
+    //boost::mpi::all_reduce(comm, sendRange, numProcesses+1, range, boost::mpi::maximum<KeyType>());
+    boost::mpi::all_reduce(comm, sendRange, numProcesses+1, range, boost::mpi::KeyMaximum<KeyType>());
 
-    for (int i=0; i <= numProcesses; i++){
+    /*for (int i=0; i <= numProcesses; i++){
         Logger(DEBUG) << "Load balancing: NEW range[" << i << "] = " << range[i];
-    }
+    }*/
 
     delete [] particleCounts;
 }
 
+void SubDomain::updateRange(int &n, int &p, int *newDist) {
+    switch (curve) {
+        case 0: {
+            root.updateRange(n, p, range, newDist);
+            break;
+        }
+        case 1: {
+            updateRangeHilbert(root, n, p, newDist);
+            break;
+        }
+        default: {
+            Logger(ERROR) << "updateRange() not implemented for curve type: " << getCurveType();
+        }
+    }
+}
+
+void SubDomain::updateRangeHilbert(TreeNode &t, int &n, int &p, int *newDist, KeyType k, int level) {
+    std::map<KeyType, int> keyMap;
+    for (int i=0; i<POWDIM; i++) {
+        KeyType hilbert = KeyType::Lebesgue2Hilbert(k | ((KeyType)i << (DIM*(k.maxLevel-level-1))), level+1);
+        keyMap[hilbert] = i;
+    }
+    for (std::map<KeyType, int>::iterator kit=keyMap.begin(); kit!=keyMap.end(); kit++) {
+        if (t.son[kit->second] != NULL) {
+            updateRangeHilbert(*t.son[kit->second], n, p, newDist,
+                               k | ((KeyType) kit->second << (DIM * (k.maxLevel - level - 1))), level + 1);
+        }
+    }
+
+    if (t.isLeaf() && !t.isDomainList()) {
+        while (n >= newDist[p]) {
+            Logger(DEBUG) << "updateRangeHilbert(): Found lebesgue = " << k << ", level = " << level;
+            range[p] = KeyType::Lebesgue2Hilbert(k , level); //TODO: check how to ensure subtree in process?
+            Logger(DEBUG) << "updateRangeHilbert():       hilbert  = " << KeyType::Lebesgue2Hilbert(k, level);
+            p++;
+        }
+        n++;
+    }
+}
+
 void SubDomain::createDomainList(TreeNode &t, int level, KeyType k) {
     t.node = TreeNode::domainList;
-    int proc1 = key2proc(k);
-    int proc2 = key2proc(k | ~(~0L << DIM*(k.maxLevel-level)));
+
+    int proc1;
+    int proc2;
+    if (curve == hilbert) {
+        KeyType hilbert = KeyType::Lebesgue2Hilbert(k, level);
+        proc1 = key2proc(hilbert, level, true);
+        proc2 = key2proc(hilbert | (KEY_MAX >> (DIM * level + 1)), level, true);
+    }
+    else {
+        proc1 = key2proc(k, level);
+        proc2 = key2proc(k | ~(~0L << DIM * (k.maxLevel - level)), level);
+    }
     if (proc1 != proc2) {
         for (int i=0; i<POWDIM; i++) {
             if (t.son[i] == NULL) {
@@ -114,9 +205,10 @@ void SubDomain::createDomainList(TreeNode &t, int level, KeyType k) {
             else if (t.son[i]->isLeaf() && t.son[i]->node == TreeNode::particle) {
                 t.son[i]->node = TreeNode::domainList;
                 t.insert(t.son[i]->p);
+                continue;
             }
             createDomainList(*t.son[i], level + 1,
-                             KeyType(k | ((keyInteger) i << (DIM * (k.maxLevel - level - 1)))));
+                             KeyType(k | ((KeyType) i << (DIM * (k.maxLevel - level - 1)))));
         }
     }
 }
@@ -165,7 +257,6 @@ void SubDomain::sendParticles() {
 
     int totalReceiveLength = 0;
     for (int proc=0; proc<numProcesses; proc++) {
-        //Logger(INFO) << "Receive length[" << proc << "]: " << pLengthReceive[proc];
         if (proc != rank) {
             totalReceiveLength += pLengthReceive[proc];
         }
@@ -190,23 +281,22 @@ void SubDomain::sendParticles() {
     boost::mpi::wait_all(reqParticles.begin(), reqParticles.end());
 
     for (int i=0; i<totalReceiveLength; i++) {
-        //Logger(INFO) << "Inserting particle pArray[" << i << "].x : " << pArray[rank][i].x;
         root.insert(pArray[rank][i]);
     }
 
     delete [] particleLists;
     delete [] pLengthReceive;
     delete [] pLengthSend;
-    for (int proc=0; proc<numProcesses; proc++) {
+    //for (int proc=0; proc<numProcesses; proc++) {
         //delete [] pArray[proc];
-    }
+    //}
     delete [] pArray;
 
 }
 
 void SubDomain::buildSendList(TreeNode &t, ParticleList *pList, KeyType k, int level) {
     int proc;
-    if (t.isLeaf() && ((proc = key2proc(k)) != rank) && !t.isDomainList()) {
+    if (t.isLeaf() && ((proc = key2proc(k, level)) != rank) && !t.isDomainList()) {
         pList[proc].push_back(t.p);
         t.p.toDelete = true;
     }
@@ -219,7 +309,7 @@ void SubDomain::buildSendList(TreeNode &t, ParticleList *pList, KeyType k, int l
 }
 
 void SubDomain::symbolicForce(TreeNode &td, TreeNode &t, float diam, ParticleMap &pMap, KeyType k, int level) {
-    if (key2proc(k) == rank || t.isDomainList()) {
+    if (key2proc(k, level) == rank || t.isDomainList()) {
         if (!t.isDomainList()) {
             bool insert = true;
             for (ParticleMap::iterator pit = pMap.begin(); pit != pMap.end(); pit++) {
@@ -284,7 +374,7 @@ void SubDomain::compF(TreeNode &t, float diam, KeyType k, int level) {
             compF(*t.son[i], diam, KeyType(k | ((keyInteger) i << (DIM * (k.maxLevel - level - 1)))),
                   level + 1);
         }
-        if (t.isLeaf() && key2proc(k) == rank && !t.isDomainList()) {
+        if (t.isLeaf() && key2proc(k, level) == rank && !t.isDomainList()) {
             t.p.F = { 0, 0, 0 };
             root.force(t, diam);
         }
@@ -381,7 +471,7 @@ void SubDomain::compTheta(TreeNode &t, ParticleMap *pMap, float diam, KeyType k,
         }
     }
     int proc;
-    if (t.isDomainList() && (proc = key2proc(k) != rank)) {
+    if (t.isDomainList() && (proc = key2proc(k, level) != rank)) {
         symbolicForce(t, root, diam, pMap[proc], 0UL, 0);
     }
 }
