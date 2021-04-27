@@ -75,7 +75,7 @@ bool Domain::completelyWithinRadius(Vector3<float> &vec, float radius) {
             return false;
         }
     }
-    return true; //if (vec.withinRadius(, radius))
+    return true;
 }
 ```
 * check if domain box intersects with the radius/search ball (of a particle)
@@ -202,5 +202,10 @@ In order to have all needed information locally available, redundant information
 
 * consequently particles may be double (or multiple) on different processes
 	* needs to be considered for long range forces (gravitational forces $\rightarrow$ Barnes-Hut algorithm)
+
+**How to generate Halo?**
+
+* expand/enlarge range of Space-filling curve
+	* **not** working at least for Lebesque curve 
 
  
