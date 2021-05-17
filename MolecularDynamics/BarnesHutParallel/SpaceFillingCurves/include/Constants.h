@@ -13,9 +13,10 @@
 
 const float PI = 3.14159265358979323846;
 const float TO_METERS = 1.496e11;
-const float G = 6.67408e-11;
+//const float G = 6.67408e-11;
+const float G = 1.;
 
 const float SOLAR_MASS = 2.0e30;
-const float theta = 0.75;
+const float theta = 0.6;
 
 #endif //BARNESHUTSERIAL_CONSTANTS_H

@@ -16,7 +16,11 @@
 #include <climits> // for ulong_max
 #include <mpi.h>
 #include <map>
+#include <set>
 #include <fstream>
+#include <highfive/H5File.hpp>
+#include <highfive/H5DataSpace.hpp>
+#include <highfive/H5DataSet.hpp>
 
 #define KEY_MAX ULONG_MAX
 
@@ -85,7 +89,7 @@ void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, ke
 
 int key2proc(keytype k, SubDomainKeyTree *s);
 
-int maxHilbertSon(TreeNode *t, int level, keytype k, SubDomainKeyTree *s);
+//keytype maxHilbertSon(TreeNode *t, int level, keytype k);
 
 void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s);
 
@@ -127,6 +131,11 @@ void buildSendList(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist,
 void outputTree(TreeNode *root, bool detailed=false, bool onlyParticles=false);
 
 void outputTree(TreeNode *root, std::string file, bool detailed=false, bool onlyParticles=false);
+
+//void particles2file(TreeNode *root, std::string file, SubDomainKeyTree *s);
+
+void particles2file(TreeNode *root,
+                    HighFive::DataSet *pos, HighFive::DataSet *vel, HighFive::DataSet *key, SubDomainKeyTree *s);
 
 //void outputParticles(TreeNode *root);
 

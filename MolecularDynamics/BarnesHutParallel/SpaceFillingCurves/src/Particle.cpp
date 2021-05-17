@@ -4,7 +4,7 @@
 
 #include "../include/Particle.h"
 
-float smoothing = 0.1;
+float smoothing = 1e-5;
 
 Particle::Particle() {
     m = 0.f;

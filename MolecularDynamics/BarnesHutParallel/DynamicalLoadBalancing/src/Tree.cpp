@@ -264,16 +264,19 @@ int key2proc(keytype k, SubDomainKeyTree *s) {
 void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s) {
     t->node = domainList;
     int p1 = key2proc(k, s);
-    int p2 = key2proc(k | ~(~0L << DIM*(maxlevel-level)),s);
+    //int p2 = key2proc(k | ~(~0L << DIM*(maxlevel-level)), s);
+    int p2 = key2proc(k | (KEY_MAX >> (DIM*level+1)), s); // always shift the root placeholder bit to 0
+    //Logger(DEBUG) << "p1 k = " << k << ", level = " << level;
+    //Logger(DEBUG) << "p2 k = " << (k | (KEY_MAX >> (DIM*level+1)));
+    //Logger(DEBUG) << "=========================";
     if (p1 != p2) {
         for (int i = 0; i < POWDIM; i++) {
             if (t->son[i] == NULL) {
                 t->son[i] = (TreeNode *) calloc(1, sizeof(TreeNode));
             } else if (isLeaf(t->son[i]) && t->son[i]->node == particle){
-                //Logger(ERROR) << "Deleting particle in createDomainList(): " << k;
                 t->son[i]->node = domainList; // need to be set before inserting into the tree
                 insertTree(&t->son[i]->p, t);
-                continue; // skip recursive call of createDomainList()
+                //continue; // skip recursive call of createDomainList()
             }
             createDomainList(t->son[i], level + 1,  (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))), s);
         }

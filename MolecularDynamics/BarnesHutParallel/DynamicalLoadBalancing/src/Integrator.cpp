@@ -27,14 +27,20 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
         // update tree with new ranges
         clearDomainList(root);
 
-        createDomainList(root, 0, 0, s);
+        createDomainList(root, 0, 0UL, s);
 
         sendParticles(root, s);
 
         compPseudoParticlesPar(root, s);
 
+        Logger(DEBUG) << "NEW Ranges:";
+        for (int i=0; i<=s->numprocs; i++){
+            Logger(DEBUG) << "range[" << i << "] = " << s->range[i];
+        }
+
         //outputTree(root, "log/balanced_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
 
+        outputTree(root, false, false);
 
         Logger(DEBUG) << "... done.";
         Logger(DEBUG) << "--------------------------";
@@ -68,8 +74,10 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
             //outputTree(root, false);
         }
 
+        Logger(DEBUG) << "--------------------------";
+
         if (t == t_end){
-            break; // done
+            break; // done after rendering of last step
         }
 
         ++step;

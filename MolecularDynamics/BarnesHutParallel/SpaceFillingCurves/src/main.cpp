@@ -10,6 +10,8 @@
 #include <random>
 #include <mpi.h>
 
+#include <highfive/H5File.hpp>
+
 // extern variable from Logger has to be initialized here
 structlog LOGCFG = {};
 
@@ -19,8 +21,10 @@ MPI_Datatype mpiParticle;
 int outputRank = 0;
 
 // function declarations
-Renderer* initRenderer(ConfigParser &confP);
 void createParticleDatatype(MPI_Datatype *datatype);
+void initParticles(SubDomainKeyTree *s, Particle *pArray, int ppp, ConfigParser &confP);
+void initParticlesFromFile(SubDomainKeyTree *s, Particle *pArray, int ppp, ConfigParser &confP);
+Renderer* initRenderer(ConfigParser &confP);
 
 //create MPI datatype for Particle struct
 void createParticleDatatype(MPI_Datatype *datatype) {
@@ -76,6 +80,38 @@ void initParticles(SubDomainKeyTree *s, Particle *pArray, int ppp, ConfigParser 
     }
 }
 
+void initParticlesFromFile(SubDomainKeyTree *s, Particle *pArray, int ppp, ConfigParser &confP) {
+
+    HighFive::File file(confP.getVal<std::string>("initFile"), HighFive::File::ReadOnly);
+
+    // containers to be filled
+    double m;
+    std::vector<std::vector<double>> x, v;
+
+    // read datasets from file
+    HighFive::DataSet mass = file.getDataSet("/m");
+    HighFive::DataSet pos = file.getDataSet("/x");
+    HighFive::DataSet vel = file.getDataSet("/v");
+
+    // read data
+    mass.read(m);
+    pos.read(x);
+    vel.read(v);
+
+    // each process reads only a portion of the init file
+    // j denotes global particle list index, i denotes local index
+    for(int j=s->myrank*ppp; j < (s->myrank+1)*ppp; j++){
+        int i = j-s->myrank*ppp;
+        pArray[i].m = m;
+        pArray[i].x[0] = x[j][0];
+        pArray[i].x[1] = x[j][1];
+        pArray[i].x[2] = x[j][2];
+        pArray[i].v[0] = v[j][0];
+        pArray[i].v[1] = v[j][1];
+        pArray[i].v[2] = v[j][2];
+    }
+}
+
 Renderer* initRenderer(ConfigParser &confP){
 
     // initialize renderer
@@ -113,17 +149,25 @@ int main(int argc, char *argv[]) {
     LOGCFG.myrank = s.myrank;
     LOGCFG.outputRank = confP.getVal<int>("outputRank");
 
-    int width = confP.getVal<int>("width");
-    int height = confP.getVal<int>("height");
+    // check if result should be written to h5 file instead of rendering
+    bool h5Dump = confP.getVal<bool>("h5Dump");
 
+    // declarations for renderer related variables, unused if h5Dump
+    int width, height;
     char *image;
     double *hdImage;
     Renderer *renderer;
 
-    // TODO: only initialize in rank 0 process if possible
-    image = new char[2 * width * height * 3];
-    hdImage = new double[2 * width * height * 3];
-    renderer = initRenderer(confP);
+    if (!h5Dump) {
+        // initialize renderer
+        width = confP.getVal<int>("width");
+        height = confP.getVal<int>("height");
+
+        // TODO: only initialize in rank 0 process if possible
+        image = new char[2 * width * height * 3];
+        hdImage = new double[2 * width * height * 3];
+        renderer = initRenderer(confP);
+    }
 
     const float systemSize{confP.getVal<float>("systemSize")};
     Box domain;
@@ -134,9 +178,9 @@ int main(int argc, char *argv[]) {
 
     int N = confP.getVal<int>("numParticles"); //100;
 
-    Logger(ERROR) << "----------------------------------";
-    Logger(ERROR) << "AMOUNT OF PARTICLES: " << N;
-    Logger(ERROR) << "----------------------------------";
+    Logger(INFO) << "----------------------------------";
+    Logger(INFO) << "NUMBER OF PARTICLES: " << N;
+    Logger(INFO) << "----------------------------------";
 
     Particle *pArrayAll;
     if (s.myrank == 0) {
@@ -147,8 +191,16 @@ int main(int argc, char *argv[]) {
     Particle *pArray;
     pArray = new Particle[ppp];
 
-    initParticles(&s, pArray, ppp, confP);
+    if (confP.getVal<bool>("readInitDistFromFile")){
+        initParticlesFromFile(&s, pArray, ppp, confP);
+    } else {
+        initParticles(&s, pArray, ppp, confP);
+    }
 
+    /**********/
+    //TODO: skip this block and generate ranges distributed or read from file
+
+    // collect all particles on one process
     MPI_Gather(pArray, ppp, mpiParticle, &pArrayAll[0], ppp, mpiParticle, 0, MPI_COMM_WORLD);
 
     if (s.myrank == 0) {
@@ -171,7 +223,9 @@ int main(int argc, char *argv[]) {
     }
 
     MPI_Bcast(s.range, s.numprocs+1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+    /**********/
 
+    /** Actual simulation **/
     TreeNode *root;
     root = (TreeNode *) calloc(1, sizeof(TreeNode));
 
@@ -198,7 +252,8 @@ int main(int argc, char *argv[]) {
     bool processColoring = confP.getVal<bool>("processColoring");
 
     timeIntegration_BH_par(t, delta_t, t_end, root->box.upper[0] - root->box.lower[0], root, &s,
-                           renderer, image, hdImage, render, processColoring);
+                           renderer, image, hdImage, render, processColoring,
+                           h5Dump, confP.getVal<int>("h5DumpEachTimeSteps"));
 
     MPI_Finalize();
     return 0;

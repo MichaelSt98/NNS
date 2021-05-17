@@ -292,8 +292,9 @@ void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, ke
         if (isLeaf(t) && t->node != domainList) {
             while (n >= newdist[p]) {
                 Logger(DEBUG) << "updateRange(): Found lebesgue = " << k << ", level = " << level;
-                range[p] = Lebesgue2Hilbert(k , level); //TODO: check how to ensure subtree in process?
+                range[p] = Lebesgue2Hilbert(k , level); // | (KEY_MAX >> (level*DIM+1));
                 Logger(DEBUG) << "updateRange():       hilbert  = " << Lebesgue2Hilbert(k, level);
+                Logger(DEBUG) << "updateRange():       range[" << p << "] = " << range[p];
                 p++;
             }
             n++;
@@ -303,9 +304,6 @@ void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, ke
 }
 
 int key2proc(keytype k, SubDomainKeyTree *s) {
-    //Logger(DEBUG) << "Lebesgue = " << k;
-    //k = Lebesgue2Hilbert(k);
-    //Logger(DEBUG) << "Hilbert = " << k;
     for (int i=0; i<s->numprocs; i++) { //1
         if (k >= s->range[i] && k < s->range[i+1]) {
             //std::cout << "key2proc: " << i << std::endl;
@@ -328,16 +326,19 @@ int key2proc(keytype k, SubDomainKeyTree *s) {
 }*/
 
 /* UNUSED
-int maxHilbertSon(TreeNode *t, int level, keytype k, SubDomainKeyTree *s){
-    std::map<keytype, int> keymap;
+keytype maxHilbertSon(TreeNode *t, int level, keytype k){
+    std::set<keytype> sonHilbert;
+    keytype hilbert;
     for (int i = 0; i < POWDIM; i++) {
-        // sorting implicitly in ascending order
-        keytype hilbert = Lebesgue2Hilbert(k | ((keytype)i << (DIM*(maxlevel-level)), level+1);
-                //& (KEY_MAX << DIM*(maxlevel-level-1));
-        keymap[hilbert] = i;
+        hilbert = Lebesgue2Hilbert(k | ((keytype) i << (DIM * (maxlevel - level - 1))), level + 1);
+        if (isLeaf(t->son[i]) && t->son[i]->node == particle) {
+            // sorting implicitly in ascending order
+            sonHilbert.insert(hilbert);
+        }
     }
-    return keymap.rbegin()->second; // reverse iterator points to last element, i.e. largest key
-}*/
+    return sonHilbert.empty() ? hilbert : *sonHilbert.rbegin(); // reverse iterator points to last element, i.e. largest key
+}
+*/
 
 // initial call: createDomainList(root, 0, 0, s)
 void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s) {
@@ -348,20 +349,18 @@ void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s) {
     //int p2 = key2proc((k | ((keytype)iMaxSon << (DIM*(maxlevel-level-1)))), s);
     //Logger(DEBUG) << "p1       k = " << k << ", level = " << level;
     //Logger(DEBUG) << "p1 hilbert = " << hilbert << ", proc = " << p1;
-
-    //int iMaxSon = maxHilbertSon(t, level, k, s);
+    //int p2 = key2proc(maxHilbertSon(t, level, k) | (KEY_MAX >> (DIM*(level+1)+1)), s);
     int p2 = key2proc(hilbert | (KEY_MAX >> (DIM*level+1)), s); // always shift the root placeholder bit to 0
-    //Logger(DEBUG) << "p2 hilbert = " << (hilbert | (KEY_MAX >> (DIM*level+1))) << ", proc = " << p2; // fill with ones
-
+    //Logger(DEBUG) << "p2 hilbert = " << (hilbert | (KEY_MAX >> (DIM*level+1))) << ", proc = " << p2;
+    //Logger(DEBUG) << "=========================";
     if (p1 != p2) {
         for (int i = 0; i < POWDIM; i++) {
             if (t->son[i] == NULL) {
                 t->son[i] = (TreeNode *) calloc(1, sizeof(TreeNode));
             } else if (isLeaf(t->son[i]) && t->son[i]->node == particle){
-                //Logger(ERROR) << "Deleting particle in createDomainList(): " << k;
                 t->son[i]->node = domainList; // need to be set before inserting into the tree
                 insertTree(&t->son[i]->p, t);
-                continue; // skip recursive call of createDomainList()
+                //continue; // skip recursive call of createDomainList()
             }
             createDomainList(t->son[i], level + 1,  (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))), s);
         }
@@ -788,18 +787,18 @@ void buildSendList(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist, int *p
     }
 }
 
-void outputTree(TreeNode *t, bool detailed, bool onlyParticles) {
+void outputTree(TreeNode *root, bool detailed, bool onlyParticles) {
 
     int counterParticle = 0;
     int counterPseudoParticle = 0;
     int counterDomainList = 0;
 
-    int nNodes = countNodes(t);
+    int nNodes = countNodes(root);
     Particle * pArray;
     nodetype * nArray;
     pArray = new Particle[nNodes];
     nArray = new nodetype[nNodes];
-    getTreeArray(t, pArray, nArray);
+    getTreeArray(root, pArray, nArray);
 
     Logger(INFO) << "-------------------------------------------------------------------------";
 
@@ -860,7 +859,7 @@ void outputTree(TreeNode *t, bool detailed, bool onlyParticles) {
     delete [] pArray;
 }
 
-void outputTree(TreeNode *t, std::string file, bool detailed, bool onlyParticles) {
+void outputTree(TreeNode *root, std::string file, bool detailed, bool onlyParticles) {
 
     std::ofstream outf { file };
 
@@ -871,14 +870,14 @@ void outputTree(TreeNode *t, std::string file, bool detailed, bool onlyParticles
         int counterPseudoParticle = 0;
         int counterDomainList = 0;
 
-        int nNodes = countNodes(t);
+        int nNodes = countNodes(root);
         Particle * pArray;
         nodetype * nArray;
         keytype * kArray;
         pArray = new Particle[nNodes];
         nArray = new nodetype[nNodes];
         kArray = new keytype[nNodes];
-        getTreeArray(t, pArray, nArray, kArray);
+        getTreeArray(root, pArray, nArray, kArray);
 
         for (int i=nNodes-1; i>=0; i--) {
             if (nArray[i] == 0) {
@@ -945,6 +944,84 @@ void outputTree(TreeNode *t, std::string file, bool detailed, bool onlyParticles
         delete [] pArray;
         delete [] kArray;
     }
+}
+
+/* UNUSED
+void particles2file(TreeNode *root, std::string file, SubDomainKeyTree *s){
+    std::ofstream outf { file };
+
+    if (!outf) {
+        Logger(ERROR) << "An error occurred while opening '" << file << "'";
+    } else {
+        // writing csv header
+        outf << "x" << ";"
+             << "y" << ";"
+             << "z" << ";"
+             << "process" << ";"
+             << "key" << "\n";
+
+        int nNodes = countNodes(root);
+        Particle * pArray;
+        nodetype * nArray;
+        keytype * kArray;
+        pArray = new Particle[nNodes];
+        nArray = new nodetype[nNodes];
+        kArray = new keytype[nNodes];
+        getTreeArray(root, pArray, nArray, kArray);
+
+        for (int i=0; i<nNodes; i++) {
+            if (nArray[i] == particle){
+                outf << pArray[i].x[0] << ";"
+                    << pArray[i].x[1] << ";"
+                    << pArray[i].x[2] << ";"
+                    << key2proc(kArray[i], s) << ";"
+                    << std::bitset<64>(kArray[i]) << "\n";
+            }
+        }
+
+        delete [] nArray;
+        delete [] pArray;
+        delete [] kArray;
+    }
+}
+*/
+
+void particles2file(TreeNode *root,
+                    HighFive::DataSet *pos, HighFive::DataSet *vel, HighFive::DataSet *key, SubDomainKeyTree *s){
+    int nNodes = countNodes(root);
+    Particle * pArray;
+    nodetype * nArray;
+    keytype * kArray;
+    pArray = new Particle[nNodes];
+    nArray = new nodetype[nNodes];
+    kArray = new keytype[nNodes];
+    getTreeArray(root, pArray, nArray, kArray);
+
+    std::vector<std::vector<double>> x, v; // two dimensional vector for 3D vector data
+    std::vector<unsigned long> k; // one dimensional vector holding particle keys
+
+    int nParticles = 0;
+
+    for (int i=0; i<nNodes; i++) {
+        if (nArray[i] == particle){
+            x.push_back({ pArray[i].x[0], pArray[i].x[1], pArray[i].x[2] });
+            v.push_back({ pArray[i].v[0], pArray[i].v[1], pArray[i].v[2] });
+            k.push_back(kArray[i]);
+            ++nParticles;
+        }
+    }
+
+    // write to asscoiated datasets in h5 file
+    // only working when load balancing has been completed
+    pos->select({std::size_t(s->myrank*nParticles), 0},
+                {std::size_t(nParticles), std::size_t(DIM)}).write(x);
+    vel->select({std::size_t(s->myrank*nParticles), 0},
+                {std::size_t(nParticles), std::size_t(DIM)}).write(v);
+    key->select({std::size_t(s->myrank*nParticles)}, {std::size_t(nParticles)}).write(k);
+
+    delete [] nArray;
+    delete [] pArray;
+    delete [] kArray;
 }
 
 /* UNUSED

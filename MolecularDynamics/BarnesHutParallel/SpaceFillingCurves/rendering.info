@@ -1,4 +1,4 @@
-render true
+render false
 width 512
 height 512
 depth 512
@@ -8,5 +8,5 @@ minVelColor 0.0001
 particleBrightness .35
 particleSharpness 1
 dotSize 8
-renderInterval 1
+renderInterval 50
 processColoring true
