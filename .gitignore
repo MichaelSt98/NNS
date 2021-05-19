@@ -3,12 +3,20 @@
 **/build/
 **/bin/
 **/output/
+**/obj/
+**/dep/
+
+# ignore objects and dependency files
+*.o
+*.d
 
 **/.idea/
 
 **/log/
 
+*.h5
 *.mp4
 *.csv
+
 # ignore MPI-debug lldb pipe
 *.lldb

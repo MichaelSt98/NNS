@@ -58,9 +58,9 @@ int main(int argc, char *argv[]) {
     std::mt19937 gen(seed); //Standard mersenne_twister_engine seeded with rd()
 
     /** Generate distribution in spherical coordinates **/
-    std::uniform_real_distribution<double> rndR(0., R);
+    std::uniform_real_distribution<double> rndRCube(0., 1.);
     std::uniform_real_distribution<double> rndPhi(0., 2.*M_PI);
-    std::uniform_real_distribution<double> rndTheta(-M_PI, M_PI);
+    std::uniform_real_distribution<double> rndCosTheta(-1., 1.);
 
     // containers for particle properties, each will be written to h5 file as dataset
     std::vector<std::vector<double>> x, v; // positions and velocities
@@ -69,9 +69,11 @@ int main(int argc, char *argv[]) {
         // Loop for particle creation
         for(int i=0; i<N; i++){
             double r, phi, theta, vmag;
-            r = rndR(gen);
+
+            // generate uniformly distributed particles in a sphere
+            r = R * pow(rndRCube(gen), 1./3.);
             phi = rndPhi(gen);
-            theta = rndTheta(gen);
+            theta = acos(rndCosTheta(gen));
 
             vmag = sqrt(G*M*r*r/(R*R*R));
 
@@ -86,9 +88,9 @@ int main(int argc, char *argv[]) {
         for(int i=0; i<N/2; i++){
             double r1, phi1, theta1, v1, r2, phi2, theta2, v2;
             // generate random particle in galaxy 1
-            r1 = rndR(gen);
+            r1 = R * pow(rndRCube(gen), 1./3.);
             phi1 = rndPhi(gen);
-            theta1 = rndTheta(gen);
+            theta1 = acos(rndCosTheta(gen));
 
             // calculate velocity from radius with z as rotation axis and kepler velocities
             v1 = sqrt(G*M*r1*r1/(R*R*R));
@@ -102,9 +104,10 @@ int main(int argc, char *argv[]) {
                                              -v1 * cos(phi1), 0.});
 
             // generate random particle in galaxy 2
-            r2 = rndR(gen);
+            //r2 = rndR(gen);
+            r2 = R * pow(rndRCube(gen), 1./3.);
             phi2 = rndPhi(gen);
-            theta2 = rndTheta(gen);
+            theta2 = acos(rndCosTheta(gen));
 
             // calculate velocity from radius with z as rotation axis and kepler velocities
             v2 = sqrt(G*M*r2*r2/(R*R*R));

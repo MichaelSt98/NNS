@@ -1011,13 +1011,22 @@ void particles2file(TreeNode *root,
         }
     }
 
+    int procN[s->numprocs];
+    MPI_Allgather(&nParticles, 1, MPI_INT, procN, s->numprocs, MPI_INT, MPI_COMM_WORLD);
+
+    std::size_t nOffset = 0;
+    // count total particles on other processes
+    for (int proc = 0; proc < s->myrank; proc++){
+        nOffset += procN[proc];
+    }
+
     // write to asscoiated datasets in h5 file
-    // only working when load balancing has been completed
-    pos->select({std::size_t(s->myrank*nParticles), 0},
+    // only working when load balancing has been completed and even number of particles
+    pos->select({nOffset, 0},
                 {std::size_t(nParticles), std::size_t(DIM)}).write(x);
-    vel->select({std::size_t(s->myrank*nParticles), 0},
+    vel->select({nOffset, 0},
                 {std::size_t(nParticles), std::size_t(DIM)}).write(v);
-    key->select({std::size_t(s->myrank*nParticles)}, {std::size_t(nParticles)}).write(k);
+    key->select({nOffset}, {std::size_t(nParticles)}).write(k);
 
     delete [] nArray;
     delete [] pArray;

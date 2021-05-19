@@ -74,13 +74,14 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
             MPI_Allreduce(&Nproc, &N, 1, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
 
             // as this is directly after load balancing, the particle count per process is known
-            const int ppp = (N % s->numprocs != 0) ? N/s->numprocs+1 : N/s->numprocs; // particles per process
             std::vector<size_t> dataSpaceDims(2);
             dataSpaceDims[0] = std::size_t(N); // number of particles
             dataSpaceDims[1] = DIM;
 
-            //TODO: write ranges to file to recover process of particle
-            //HighFive::DataSet ranges = ;
+            //write ranges to file to recover process of particle
+            HighFive::DataSet ranges = h5File.createDataSet<unsigned long>("/hilbertRanges",
+                                                                           HighFive::DataSpace(s->numprocs+1));
+            ranges.write(s->range);
 
             // create data sets to be filled with particle data
             HighFive::DataSet pos = h5File.createDataSet<double>("/x", HighFive::DataSpace(dataSpaceDims));

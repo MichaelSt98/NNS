@@ -36,6 +36,7 @@ There are **3 parallel implementations** which build on each other and represent
 > N=100, m=1.1e-4, v=0.05, delta\_t=1.0, t\_end=300
 
 Parallelized on two processes:
+
 * Particles on process 0: *blue* dots 
 * Particles on process 1: *red* dots
 
@@ -45,7 +46,25 @@ Parallelized on two processes:
 ### Hilbert space-filling curve
 ![](SpaceFillingCurves/N100m1_1e-4v0_05.gif)
 
+## Parallel HDF5 support
 
+The C++ header only library [HighFive](https://github.com/BlueBrain/HighFive) is used for all HDF5 file-I/O operations.
+
+To write particle data to HDF5 file without collecting all particles on *one* process, we utilize [parralell HDF5](https://support.hdfgroup.org/HDF5/PHDF5/) which is not supported by many standard distributions of HDF5. Therefore we build it from [source](https://www.hdfgroup.org/downloads/hdf5/source-code/).
+
+### Installation on MacOS
+
+Building HDF5 from source code supporting parallel file-I/O via MPI should work as described [here](https://gist.github.com/kentwait/280aa20e9d8f2c8737b2bec4a49b7c92).
+
+If problems are encountered building:
+
+* Update your toolchain with ```brew upgrade```
+* Resolve possible conflicts between **macports** and **homebrew** as described [in this issue](https://github.com/pyenv/pyenv/issues/1267#issue-comment-box)
+* Failing test concerning [oversubscribing](https://www.open-mpi.org/faq/?category=running#oversubscribing) issued by ```make check``` can be ignored 
+
+### Installation on Ubuntu
+
+> TODO
 
 
 
