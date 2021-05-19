@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     // distande of galxies
     const double deltaX = 5.*R;
     const double deltaY = 5.*R;
-    const double deltaV = .2;
+    const double deltaV = 0.; // .2
 
     // store flag for mode
 
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
             theta1 = acos(rndCosTheta(gen));
 
             // calculate velocity from radius with z as rotation axis and kepler velocities
-            v1 = sqrt(G*M*r1*r1/(R*R*R));
+            v1 = sqrt(G*M*r1*r1/(2.*R*R*R));
 
             // store particle position of galaxy 1 in cartesian coordinates and move it to the upper left
             x.push_back(std::vector<double>{ r1 * cos(phi1) * sin(theta1) - deltaX/2.,
@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
             theta2 = acos(rndCosTheta(gen));
 
             // calculate velocity from radius with z as rotation axis and kepler velocities
-            v2 = sqrt(G*M*r2*r2/(R*R*R));
+            v2 = sqrt(G*M*r2*r2/(2.*R*R*R));
 
             // store particle of galaxy 2 in cartesian coordinates and move it to the lower right
             x.push_back(std::vector<double>{ r2 * cos(phi2) * sin(theta2) + deltaX/2.,

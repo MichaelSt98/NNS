@@ -1,12 +1,12 @@
 
-numParticles 1000
+numParticles 5000
 systemSize 15.
 timeStep .01 #.001
-timeEnd 10.
+timeEnd 1.
 initMass 1.1e-4     # ignored if readInitDistFromFile
 initVel .05         # ignored if readInitDistFromFile
 readInitDistFromFile true
-initFile ../../TestCases/CollisionSpiralGalaxies/output/N1000seed1152501947.h5
+initFile ../../TestCases/CollisionSpiralGalaxies/output/N5000seed413648362.h5
 outputRank 0
 h5Dump true
 h5DumpEachTimeSteps 10 #50
