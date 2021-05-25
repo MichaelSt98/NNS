@@ -22,8 +22,8 @@ DEPEXT      := d
 OBJEXT      := o
 
 #Flags, Libraries and Includes
-CXXFLAGS    := -std=c++11 #-Wno-conversion -g3 #-std=c++17 -O3 -Wall -pedantic -Wno-vla-extension -I/usr/local/include/ -I/usr/local/include/eigen3/ -I./include -I./src
-LFLAGS      := -std=c++11 -lboost_filesystem -lboost_system -lhdf5 #-O3 -Wall -Wno-deprecated -Werror -pedantic -L/usr/local/lib/
+CXXFLAGS    := -std=c++11 -I/usr/include/hdf5/openmpi #-Wno-conversion -g3 #-std=c++17 -O3 -Wall -pedantic -Wno-vla-extension -I/usr/local/include/ -I/usr/local/include/eigen3/ -I./include -I./src
+LFLAGS      := -std=c++11 -lboost_filesystem -lboost_system -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -lhdf5 #-O3 -Wall -Wno-deprecated -Werror -pedantic -L/usr/local/lib/
 LIB         := -Xpreprocessor -fopenmp #-lomp
 INC         := -I$(INCDIR) #-I/usr/local/include
 INCDEP      := -I$(INCDIR)
