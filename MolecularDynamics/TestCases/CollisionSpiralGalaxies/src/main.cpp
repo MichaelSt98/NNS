@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     // distande of galxies
     const double deltaX = 5.*R;
     const double deltaY = 5.*R;
-    const double deltaV = 0.; // .2
+    const double deltaV = .2;
 
     // store flag for mode
 

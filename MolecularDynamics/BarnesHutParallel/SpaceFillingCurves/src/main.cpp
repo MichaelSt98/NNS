@@ -187,6 +187,10 @@ int main(int argc, char *argv[]) {
         pArrayAll = new Particle[N];
     }
 
+    if(N % s.numprocs != 0){
+        Logger(ERROR) << "Number of particles must have number of processes as divisor. - Aborting.";
+        MPI_Abort(MPI_COMM_WORLD, -1);
+    }
     int ppp = N/s.numprocs;
     Particle *pArray;
     pArray = new Particle[ppp];
@@ -228,10 +232,9 @@ int main(int argc, char *argv[]) {
     /** Actual simulation **/
     TreeNode *root;
     root = (TreeNode *) calloc(1, sizeof(TreeNode));
+    root->box = domain;
 
     createDomainList(root, 0, 0, &s);
-
-    root->box = domain;
 
     for (int i = 0; i < ppp; i++) {
         insertTree(&pArray[i], root);

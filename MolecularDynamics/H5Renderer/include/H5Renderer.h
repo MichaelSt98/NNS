@@ -25,7 +25,14 @@ struct ColorRGB {
 const ColorRGB COLORS[10] = {
         ColorRGB(~0, 0, 0), // red
         ColorRGB(~0, ~0, 0), // yellow
-        ColorRGB(0, 0, ~0) // blue
+        ColorRGB(0, 0, ~0), // blue
+        ColorRGB(~0, 0, ~0), // magenta
+        ColorRGB(0, ~0, 0), // green
+        ColorRGB(~0, 0, 127), // pink
+        ColorRGB(~0, 127, 0), //orange
+        ColorRGB(0, ~0, ~0), // turquoise
+        ColorRGB(127, 127, 127), // grey
+        ColorRGB(~0, ~0, ~0) //white
 };
 
 class H5Renderer {

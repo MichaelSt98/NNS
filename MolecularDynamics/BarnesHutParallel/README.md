@@ -64,7 +64,7 @@ If problems are encountered building:
 
 ### Installation on Ubuntu
 
-> TODO
+For using the correct linking and compiling flags [this issue](https://github.com/BlueBrain/HighFive/issues/350#issue-comment-box) has been helpful.
 
 
 

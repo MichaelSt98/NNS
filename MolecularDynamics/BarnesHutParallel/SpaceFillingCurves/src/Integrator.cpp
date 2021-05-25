@@ -14,13 +14,15 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
                             bool h5Dump, int h5DumpEachTimeSteps) {
 
     int step = 0;
+    double t1, t2; // timing variables
 
     while (t <= t_end) {
-        Logger(DEBUG) << " ";
-        Logger(DEBUG) << "t = " << t;
+        Logger(INFO) << " ";
+        Logger(INFO) << "t = " << t;
         Logger(DEBUG) << "============================";
 
         Logger(DEBUG) << "--------------------------";
+        t1 = MPI_Wtime();
         Logger(DEBUG) << "Load balancing ... ";
 
         //Logger(DEBUG) << "OLD Ranges:";
@@ -54,7 +56,8 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
         outputTree(root, false, false);
 
         Logger(DEBUG) << "... done.";
-
+        t2 = MPI_Wtime();
+        Logger(INFO) << "++++++++++++++++++++++++++++ Load balancing: " << t2-t1 << "s";
         Logger(DEBUG) << "--------------------------";
 
         if (h5Dump && step % h5DumpEachTimeSteps==0){
@@ -93,7 +96,6 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
             Logger(DEBUG) << "NUMBER OF PARTICLES = " << N;
 
             Logger(DEBUG) << "...done";
-            Logger(DEBUG) << "--------------------------";
         }
 
         // rendering
@@ -123,7 +125,6 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
                 delete [] prtcls;
             }
             //outputTree(root, false);
-            Logger(DEBUG) << "--------------------------";
         }
 
         if (t == t_end){
@@ -132,6 +133,8 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
             }*/
             break; // done after rendering of last step
         }
+        Logger(DEBUG) << "--------------------------";
+        Logger(DEBUG) << "Computing time step ...";
 
         ++step;
 
@@ -139,9 +142,15 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
 
         //outputTree(root, "log/before_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
 
+        Logger(DEBUG) << "... force calculation ...";
+        t1 = MPI_Wtime();
         compF_BHpar(root, diam, s);
         repairTree(root); // cleanup local tree by removing symbolicForce-particles
+        t2 = MPI_Wtime();
+        Logger(INFO) << "+++++++++++++++++++++++++ Force calculation: " << t2-t1 << "s";
 
+        Logger(DEBUG) << "... updating positions and velocities ...";
+        t1 = MPI_Wtime();
         compX_BH(root, delta_t);
 
         compV_BH(root, delta_t);
@@ -165,8 +174,11 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
         sendParticles(root, s);
 
         compPseudoParticlesPar(root, s);
+        t2 = MPI_Wtime();
+        Logger(INFO) << "++++++++++++++ Position and velocity update: " << t2-t1 << "s";
+        Logger(DEBUG) << "... done.";
 
-        outputTree(root, false, false);
+        //outputTree(root, false, false);
 
         Logger(DEBUG) << "============================";
     }

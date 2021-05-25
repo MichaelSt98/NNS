@@ -51,7 +51,7 @@ struct TreeNode {
 };
 
 typedef unsigned long keytype;
-typedef std::map<keytype, Particle> ParticleMap;
+typedef std::map<keytype, Particle> ParticleMap; // TODO: redo functions utilizing this
 
 struct KeyList {
     keytype k;
@@ -93,11 +93,15 @@ int key2proc(keytype k, SubDomainKeyTree *s);
 
 void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s);
 
+//void setSonBoxByIndex(Box *box, Box *sonbox, int i);
+
 void clearDomainList(TreeNode *t);
 
 bool isLeaf(TreeNode *t);
 
 void insertTree(Particle *p, TreeNode *t);
+
+void insertTreeFromOtherProc(Particle *p, TreeNode *t);
 
 int sonNumber(Box *box, Box *sonbox, Particle *p);
 
