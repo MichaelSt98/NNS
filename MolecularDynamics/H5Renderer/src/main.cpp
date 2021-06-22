@@ -20,6 +20,7 @@ int main(int argc, char *argv[]) {
             ("c,config", "Path to config file", cxxopts::value<std::string>()->default_value("h5renderer.info"))
             ("v,verbose", "More printouts for debugging")
             ("o,output", "Write result files to given path", cxxopts::value<std::string>()->default_value("./output"))
+            ("z,zoom", "Zoom in factor to show more details", cxxopts::value<double>()->default_value("1"))
             ("h,help", "Show this help");
 
     // read and store options provided
@@ -43,6 +44,7 @@ int main(int argc, char *argv[]) {
             confP.getVal<std::string>("h5folder"),
                     confP.getVal<double>("systemSize"),
             confP.getVal<int>("imgHeight"),
+                    opts["zoom"].as<double>(),
             confP.getVal<bool>("processColoring")) };
 
     /** create the images from data in h5 files **/

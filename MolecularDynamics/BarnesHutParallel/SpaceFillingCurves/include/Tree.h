@@ -9,6 +9,8 @@
 #include "Constants.h"
 #include "Particle.h"
 #include "Logger.h"
+#include "H5Profiler.h"
+
 #include <cmath>
 #include <iostream>
 #include <bitset>

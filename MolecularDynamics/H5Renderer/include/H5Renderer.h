@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <algorithm>
 #include <cmath>
 #include <highfive/H5File.hpp>
 #include <boost/filesystem.hpp>
@@ -10,6 +11,7 @@
 #include <fstream>
 
 #include "Logger.h"
+#include "Particle.h"
 
 namespace fs = boost::filesystem;
 
@@ -23,14 +25,14 @@ struct ColorRGB {
 };
 
 const ColorRGB COLORS[10] = {
-        ColorRGB(~0, 0, 0), // red
-        ColorRGB(~0, ~0, 0), // yellow
         ColorRGB(0, 0, ~0), // blue
-        ColorRGB(~0, 0, ~0), // magenta
         ColorRGB(0, ~0, 0), // green
         ColorRGB(~0, 0, 127), // pink
-        ColorRGB(~0, 127, 0), //orange
+        ColorRGB(~0, ~0, 0), // yellow
+        ColorRGB(~0, 0, 0), // red
         ColorRGB(0, ~0, ~0), // turquoise
+        ColorRGB(~0, 127, 0), //orange
+        ColorRGB(~0, 0, ~0), // magenta
         ColorRGB(127, 127, 127), // grey
         ColorRGB(~0, ~0, ~0) //white
 };
@@ -43,6 +45,7 @@ private:
     const std::string h5folder;
     const double systemSize;
     const int imgHeight;
+    const double zoom;
     const bool processColoring; // default: true
 
     // constants
@@ -57,11 +60,12 @@ private:
     ColorRGB procColor(unsigned long k, const std::vector<unsigned long> &ranges);
     void clearPixelSpace();
     int pos2pixel(double pos);
-    void particle2Pixel(double x, double y, double z, const ColorRGB &color);
+    void particle2PixelXY(double x, double y, const ColorRGB &color);
+    void particle2PixelXZ(double x, double z, const ColorRGB &color);
     void pixelSpace2File(const std::string &outFile);
 
 public:
-    H5Renderer(std::string _h5folder, double _systemSize, int _imgHeight, bool _processColoring=true);
+    H5Renderer(std::string _h5folder, double _systemSize, int _imgHeight, double _zoom, bool _processColoring=true);
     ~H5Renderer();
 
     void createImages(std::string outDir);

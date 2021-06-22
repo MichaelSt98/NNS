@@ -3,6 +3,7 @@
 #include "../include/ConfigParser.h"
 #include "../include/Renderer.h"
 #include "../include/Logger.h"
+#include "../include/H5Profiler.h"
 
 #include <iostream>
 #include <fstream>
@@ -149,8 +150,40 @@ int main(int argc, char *argv[]) {
     LOGCFG.myrank = s.myrank;
     LOGCFG.outputRank = confP.getVal<int>("outputRank");
 
+    float t = 0;
+    float delta_t = confP.getVal<float>("timeStep");
+    float t_end = confP.getVal<float>("timeEnd");
+
     // check if result should be written to h5 file instead of rendering
     bool h5Dump = confP.getVal<bool>("h5Dump");
+
+    Logger(DEBUG) << "Initialize h5 profiling file";
+
+    int steps = (int)round(t_end/delta_t);
+    Logger(DEBUG) << "TOTAL STEP COUNT = " << steps;
+
+    int loadBalancingInterval = confP.getVal<int>("loadBalancingInterval");
+
+    H5Profiler &profiler = H5Profiler::getInstance("log/performance.h5", s.numprocs);
+
+    // Total particle count per process
+    profiler.createValueDataSet<int>("/general/numberOfParticles", steps);
+
+    // Load balancing profiling
+    profiler.createTimeDataSet("/loadBalancing/totalTime", steps/loadBalancingInterval);
+    //profiler.createTimeDataSet("/loadBalancing/updateRange/sort", steps/loadBalancingInterval);
+    profiler.createValueDataSet<int>("/loadBalancing/sendParticles/receiveLength",
+                                     steps/loadBalancingInterval);
+    profiler.createVectorDataSet<int>("/loadBalancing/sendParticles/sendLengths",
+                                      steps/loadBalancingInterval, s.numprocs);
+
+    // Force computation profiling
+    profiler.createTimeDataSet("/forceComputation/totalTime", steps);
+    profiler.createValueDataSet<int>("/compF_BHpar/receiveLength", steps);
+    profiler.createVectorDataSet<int>("/compF_BHpar/sendLengths", steps, s.numprocs);
+
+    // Updating positions and velocities profiling
+    profiler.createTimeDataSet("/updatePosVel/totalTime", steps);
 
     // declarations for renderer related variables, unused if h5Dump
     int width, height;
@@ -240,23 +273,20 @@ int main(int argc, char *argv[]) {
         insertTree(&pArray[i], root);
     }
 
+    profiler.disableWrite();
     sendParticles(root, &s);
+    profiler.enableWrite();
 
     compPseudoParticlesPar(root, &s);
 
     outputTree(root, false);
-
-    float delta_t = confP.getVal<float>("timeStep");
-    float diam = root->box.upper[0] - root->box.lower[0];
-    float t = 0;
-    float t_end = confP.getVal<float>("timeEnd");
 
     bool render = confP.getVal<bool>("render");
     bool processColoring = confP.getVal<bool>("processColoring");
 
     timeIntegration_BH_par(t, delta_t, t_end, root->box.upper[0] - root->box.lower[0], root, &s,
                            renderer, image, hdImage, render, processColoring,
-                           h5Dump, confP.getVal<int>("h5DumpEachTimeSteps"));
+                           h5Dump, confP.getVal<int>("h5DumpEachTimeSteps"), loadBalancingInterval);
 
     MPI_Finalize();
     return 0;

@@ -11,9 +11,11 @@ void finalize(TreeNode *root) {
 
 void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, TreeNode *root, SubDomainKeyTree *s,
                             Renderer *renderer, char *image, double *hdImage, bool render, bool processColoring,
-                            bool h5Dump, int h5DumpEachTimeSteps) {
+                            bool h5Dump, int h5DumpEachTimeSteps, int loadBalancingInterval) {
 
     int step = 0;
+    H5Profiler &profiler = H5Profiler::getInstance();
+
     double t1, t2; // timing variables
 
     while (t <= t_end) {
@@ -21,53 +23,67 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
         Logger(INFO) << "t = " << t;
         Logger(DEBUG) << "============================";
 
-        Logger(DEBUG) << "--------------------------";
-        t1 = MPI_Wtime();
-        Logger(DEBUG) << "Load balancing ... ";
+        std::stringstream stepss;
+        stepss << std::setw(6) << std::setfill('0') << step;
 
-        //Logger(DEBUG) << "OLD Ranges:";
-        //for (int i=0; i<=s->numprocs; i++){
-        //    Logger(DEBUG) << "range[" << i << "] = " << s->range[i];
-        //}
+        profiler.setStep(step);
 
-        //outputTree(root, "log/beforeLBproc" + std::to_string(s->myrank), true, false);
+        if (step % loadBalancingInterval==0) {
 
-        newLoadDistribution(root, s); // calculate new load distribution
+            Logger(DEBUG) << "--------------------------";
+            t1 = MPI_Wtime();
+            Logger(DEBUG) << "Load balancing ... ";
 
-        //outputTree(root, "log/afterNLDproc" + std::to_string(s->myrank), true, false);
+            profiler.setStep(step/loadBalancingInterval);
+            profiler.time();
 
-        // update tree with new ranges
-        clearDomainList(root);
+            //Logger(DEBUG) << "OLD Ranges:";
+            //for (int i=0; i<=s->numprocs; i++){
+            //    Logger(DEBUG) << "range[" << i << "] = " << s->range[i];
+            //}
 
-        createDomainList(root, 0, 0UL, s);
+            //outputTree(root, "log/beforeLBproc" + std::to_string(s->myrank), true, false);
 
-        sendParticles(root, s);
+            newLoadDistribution(root, s); // calculate new load distribution
 
-        compPseudoParticlesPar(root, s);
+            //outputTree(root, "log/afterNLDproc" + std::to_string(s->myrank), true, false);
 
-        Logger(DEBUG) << "NEW Ranges:";
-        for (int i=0; i<=s->numprocs; i++){
-            Logger(DEBUG) << "range[" << i << "] = " << s->range[i];
+            // update tree with new ranges
+            clearDomainList(root);
+
+            createDomainList(root, 0, 0UL, s);
+
+            //profiler.disableWrite();
+            sendParticles(root, s);
+            //profiler.enableWrite();
+
+            compPseudoParticlesPar(root, s);
+
+            profiler.time2file("/loadBalancing/totalTime", s->myrank);
+            profiler.setStep(step);
+
+            Logger(DEBUG) << "NEW Ranges:";
+            for (int i = 0; i <= s->numprocs; i++) {
+                Logger(DEBUG) << "range[" << i << "] = " << s->range[i];
+            }
+
+            //outputTree(root, "log/balanced_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
+            //outputTree(root, "log/endTSproc" + std::to_string(s->myrank), true, false);
+
+            Logger(DEBUG) << "... done.";
+            t2 = MPI_Wtime();
+            Logger(INFO) << "++++++++++++++++++++++++++++ Load balancing: " << t2-t1 << "s";
+            Logger(DEBUG) << "--------------------------";
         }
 
-        //outputTree(root, "log/balanced_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
-        //outputTree(root, "log/endTSproc" + std::to_string(s->myrank), true, false);
-
         outputTree(root, false, false);
-
-        Logger(DEBUG) << "... done.";
-        t2 = MPI_Wtime();
-        Logger(INFO) << "++++++++++++++++++++++++++++ Load balancing: " << t2-t1 << "s";
-        Logger(DEBUG) << "--------------------------";
+        profiler.value2file("/general/numberOfParticles", s->myrank, countParticles(root));
 
         if (h5Dump && step % h5DumpEachTimeSteps==0){
             Logger(DEBUG) << "Dump particles to h5 file ...";
 
-            std::stringstream filename;
-            filename << std::setw(6) << std::setfill('0') << step;
-
             // open a new file with the MPI IO driver for parallel Read/Write
-            HighFive::File h5File("output/ts" + filename.str() + ".h5",
+            HighFive::File h5File("output/ts" + stepss.str() + ".h5",
                                   HighFive::File::ReadWrite | HighFive::File::Create | HighFive::File::Truncate,
                                   HighFive::MPIOFileDriver(MPI_COMM_WORLD, MPI_INFO_NULL));
 
@@ -127,7 +143,7 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
             //outputTree(root, false);
         }
 
-        if (t == t_end){
+        if (t >= t_end){
             /*if (outFile != ""){
                 particles2file(root, outFile, s);
             }*/
@@ -144,13 +160,19 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
 
         Logger(DEBUG) << "... force calculation ...";
         t1 = MPI_Wtime();
+
+        profiler.time();
         compF_BHpar(root, diam, s);
         repairTree(root); // cleanup local tree by removing symbolicForce-particles
+        profiler.time2file("/forceComputation/totalTime", s->myrank);
+
         t2 = MPI_Wtime();
         Logger(INFO) << "+++++++++++++++++++++++++ Force calculation: " << t2-t1 << "s";
 
         Logger(DEBUG) << "... updating positions and velocities ...";
         t1 = MPI_Wtime();
+
+        profiler.time();
         compX_BH(root, delta_t);
 
         compV_BH(root, delta_t);
@@ -171,9 +193,13 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
 
         //moveParticles_BH(root);
 
+        profiler.disableWrite();
         sendParticles(root, s);
+        profiler.enableWrite();
 
         compPseudoParticlesPar(root, s);
+        profiler.time2file("/updatePosVel/totalTime", s->myrank);
+
         t2 = MPI_Wtime();
         Logger(INFO) << "++++++++++++++ Position and velocity update: " << t2-t1 << "s";
         Logger(DEBUG) << "... done.";

@@ -201,6 +201,8 @@ void createRanges(TreeNode *root, int N, SubDomainKeyTree *s) {
 //TODO: Code fragment 8.4: Determining current and new load distribution
 void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s){
 
+    H5Profiler &profiler = H5Profiler::getInstance();
+
     long c = countParticles(root); // count of particles in current process
     long *oldcount = new long[s->numprocs];
     // send current particles in each process to all other processes
@@ -242,6 +244,7 @@ void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s){
     }
 
     updateRange(root, n, p, s->range, newdist);
+    //profiler.time2file("/loadBalancing/updateRange/sort", s->myrank, true);
 
     s->range[0] = 0;
     s->range[s->numprocs] = KEY_MAX;
@@ -271,16 +274,22 @@ void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s){
 // For this, we compute the Hilbert keys of all (four or eight) son nodes, sort them,
 // and then descend in the tree in the correct order.
 
-void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, keytype k, int level) {
+void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, keytype k, int level){
     if(t != NULL) {
         //called recursively as in Algorithm 8.1;
         // the key of *t can be computed step by step in the recursion
+
+        H5Profiler &profiler = H5Profiler::getInstance();
+
+        //profiler.time();
         std::map<keytype, int> keymap;
         for (int i = 0; i < POWDIM; i++) {
             // sorting implicitly in ascending order
             keytype hilbert = Lebesgue2Hilbert(k | ((keytype)i << (DIM*(maxlevel-level-1))), level+1);
             keymap[hilbert] = i;
         }
+        //profiler.timePause("/loadBalancing/updateRange/sort");
+
         // actual recursion in correct order
         for (std::map<keytype, int>::iterator kit = keymap.begin(); kit != keymap.end(); kit++) {
             //Logger(DEBUG) << "updateRange(): hilbert  = "  << kit->first << ", i = " << kit->second << ", level = " << level;
@@ -288,6 +297,28 @@ void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, ke
             updateRange(t->son[kit->second], n, p, range, newdist,
                         k | ((keytype)kit->second << (DIM*(maxlevel-level-1))), level+1);
         }
+
+        /*std::pair<keytype, int> *keys = new std::pair<keytype, int>[POWDIM];
+
+        for (int i = 0; i < POWDIM; i++) {
+            keytype hilbert = Lebesgue2Hilbert(k | ((keytype)i << (DIM*(maxlevel-level-1))), level+1);
+            keys[i] = {hilbert, i};
+        }
+
+        // sorting array of pairs by hilbert key
+        std::sort(keys, keys+POWDIM-1, [](std::pair<keytype, int>& a, std::pair<keytype, int>& b){
+            return a.first > b.first;
+        });
+
+        // actual recursion in correct order
+        for (int i = 0; i<POWDIM; i++){
+            Logger(DEBUG) << "UpdateRange: key = " << keys[i].first << ", i = " << keys[i].second;
+            updateRange(t->son[keys[i].second], n, p, range, newdist,
+                        k | ((keytype)(keys[i].second) << (DIM*(maxlevel-level-1))), level+1);
+        }
+
+        delete [] keys;*/
+
         // start of the operation on *t
         if (isLeaf(t) && t->node != domainList) {
             while (n >= newdist[p]) {
@@ -692,6 +723,9 @@ void freeTree_BH(TreeNode *root) {
 // determine right amount of memory which has to be allocated for the `buffer`,
 // by e.g. communicating the length of the message as prior message or by using other MPI commands
 void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
+
+    H5Profiler &profiler = H5Profiler::getInstance();
+
     //allocate memory for s->numprocs particle lists in plist;
     //initialize ParticleList plist[to] for all processes to;
     ParticleList * plist;
@@ -761,11 +795,26 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     // allocate missing (sub)array for process rank
     pArray[s->myrank] = new Particle[receiveLength];
 
-    //for (int proc=0; proc<s->numprocs; proc++) {
-    //    for (int i = 0; i < plistLengthSend[proc]; i++) {
-    //        Logger(INFO) << "Sending particle pArray[" << proc << "][" << i << "] : " << pArray[proc][i].x[0];
-    //    }
-    //}
+    // building string to output sendLengths to one line
+    std::vector<int> sendLengthContainer;
+    sendLengthContainer.reserve(s->numprocs);
+    std::string sendLengthStr = "[";
+    for (int proc = 0; proc < s->numprocs; proc++){
+        sendLengthContainer.push_back(plistLengthSend[proc]);
+        sendLengthStr += std::to_string(plistLengthSend[proc]);
+        if (proc < s->numprocs - 1) {
+            sendLengthStr += ", ";
+        } else {
+            sendLengthStr += "]";
+        }
+    }
+
+    // profiler is disabled in time integration when this routine is called for particle exchange after move
+    profiler.vector2file("/loadBalancing/sendParticles/sendLengths", s->myrank, sendLengthContainer);
+    profiler.value2file("/loadBalancing/sendParticles/receiveLength", s->myrank, receiveLength);
+
+    Logger(DEBUG) << "sendParticles(): [PER PROC] sendLength = " << sendLengthStr;
+    Logger(DEBUG) << "sendParticles(): [TOTAL] receiveLength = " << receiveLength;
 
     MPI_Request reqParticles[s->numprocs-1];
     MPI_Status statParticles[s->numprocs-1];
@@ -1661,6 +1710,7 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleMap &pmap, Sub
 //compF_BHpar analog to sendParticles()
 void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
 
+    H5Profiler &profiler = H5Profiler::getInstance();
     double t1, t2; // timing variables
 
     ParticleList * plist;
@@ -1732,8 +1782,11 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
     pArray[s->myrank] = new Particle[receiveLength];
 
     // building string to output sendLengths to one line
+    std::vector<int> sendLengthContainer;
+    sendLengthContainer.reserve(s->numprocs);
     std::string sendLengthStr = "[";
     for (int proc = 0; proc < s->numprocs; proc++){
+        sendLengthContainer.push_back(plistLengthSend[proc]);
         sendLengthStr += std::to_string(plistLengthSend[proc]);
         if (proc < s->numprocs - 1) {
             sendLengthStr += ", ";
@@ -1741,6 +1794,9 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
             sendLengthStr += "]";
         }
     }
+
+    profiler.vector2file("/compF_BHpar/sendLengths", s->myrank, sendLengthContainer);
+    profiler.value2file("/compF_BHpar/receiveLength", s->myrank, receiveLength);
 
     Logger(DEBUG) << "compF_BHpar(): [PER PROC] sendLength = " << sendLengthStr;
     Logger(DEBUG) << "compF_BHpar(): [TOTAL] receiveLength = " << receiveLength;

@@ -1,7 +1,8 @@
 #include "../include/H5Renderer.h"
 
-H5Renderer::H5Renderer(std::string _h5folder, double _systemSize, int _imgHeight, bool _processColoring) :
-h5folder { _h5folder }, systemSize { _systemSize }, imgHeight { _imgHeight }, processColoring { _processColoring },
+H5Renderer::H5Renderer(std::string _h5folder, double _systemSize, int _imgHeight, double _zoom, bool _processColoring) :
+h5folder { _h5folder }, systemSize { _systemSize }, imgHeight { _imgHeight }, zoom { _zoom },
+processColoring { _processColoring },
 h5files { std::vector<fs::path>() }
 {
     // gather files found at h5folder
@@ -62,14 +63,33 @@ void H5Renderer::createImages(std::string outDir){
         std::vector<std::vector<double>> x; // container for particle positions
         pos.read(x);
 
-        Logger(INFO) << "... looping through particles ...";
+        Logger(DEBUG) << "    Storing read data to vector<Particle> container ...";
+        std::vector<Particle> particles { std::vector<Particle>() };
 
-        // looping through particles
-        for (int i=0; i<x.size(); ++i){
-            // process coloring
-            ColorRGB color = procColor(k[i], ranges);
-            particle2Pixel(x[i][0], x[i][1], x[i][2], color);
+        for(int i=0; i<x.size(); ++i){
+            particles.push_back(Particle(x[i][0], x[i][1], x[i][2], k[i]));
         }
+        Logger(DEBUG) << "    ... done.";
+
+        Logger(DEBUG) << "    Sorting by z-coordinate ...";
+        std::sort(particles.rbegin(), particles.rend(), Particle::zComp); // using reverse iterator
+        Logger(DEBUG) << "    ... drawing pixels in x-y-plane ...";
+        // looping through particles in decreasing z-order
+        for (int i=0; i<particles.size(); ++i){
+            ColorRGB color = procColor(particles[i].key, ranges);
+            particle2PixelXY(particles[i].x, particles[i].y, color);
+        }
+        Logger(DEBUG) << "    ... done.";
+
+        Logger(DEBUG) << "    Sorting by y-coordinate  ...";
+        std::sort(particles.begin(), particles.end(), Particle::yComp);
+        Logger(DEBUG) << "    ... drawing pixels in x-z-plane ...";
+        // looping through particles in increasing y-order
+        for (int i=0; i<particles.size(); ++i){
+            ColorRGB color = procColor(particles[i].key, ranges);
+            particle2PixelXZ(particles[i].x, particles[i].z, color);
+        }
+        Logger(DEBUG) << "    ... done.";
 
         std::string outFile = outDir + "/" + path.stem().string() + ".ppm";
         Logger(INFO) << "... writing to file '" << outFile << "' ...";
@@ -85,7 +105,7 @@ void H5Renderer::createImages(std::string outDir){
 // private functions
 ColorRGB H5Renderer::procColor(unsigned long k, const std::vector<unsigned long> &ranges){
     for(int proc=0; proc < ranges.size()-1; ++proc){
-        if (k > ranges[proc] && k < ranges[proc+1]){
+        if (ranges[proc] < k && k < ranges[proc+1]){
             // particle belongs to process proc
             return COLORS[proc];
         }
@@ -95,24 +115,37 @@ ColorRGB H5Renderer::procColor(unsigned long k, const std::vector<unsigned long>
 
 void H5Renderer::clearPixelSpace(){
     for(int px=0; px < psSize; ++px){
-        pixelSpace[px] = ColorRGB();
+        pixelSpace[px] = ColorRGB(); // drawing black background
     }
 }
 
 int H5Renderer::pos2pixel(double pos){
-    return round(imgHeight/2. * (1. + pos/systemSize*SCALE2FIT));
+    return pos > systemSize/zoom ? -1 : round(imgHeight/2. * (1. + pos/(systemSize/zoom)*SCALE2FIT));
 }
 
-void H5Renderer::particle2Pixel(double x, double y, double z, const ColorRGB &color){
+void H5Renderer::particle2PixelXY(double x, double y, const ColorRGB &color){
     // convert to pixel space
     int xPx = pos2pixel(x);
     int yPx = pos2pixel(y);
+
+    // only draw when not out of zoomed box
+    if (xPx >= 0 && yPx >= 0){
+        // draw in x-y plane
+        pixelSpace[xPx+2*imgHeight*yPx] = color;
+
+    }
+}
+
+void H5Renderer::particle2PixelXZ(double x, double z, const ColorRGB &color){
+    // convert to pixel space
+    int xPx = pos2pixel(x);
     int zPx = pos2pixel(z);
 
-    // draw in x-y plane
-    pixelSpace[xPx+2*imgHeight*yPx] = color;
-    // draw in x-z plane
-    pixelSpace[xPx+2*imgHeight*zPx+imgHeight] = color;
+    // only draw when not out of zoomed box
+    if (xPx >= 0 && zPx >= 0){
+        // draw in x-z plane
+        pixelSpace[xPx+2*imgHeight*zPx+imgHeight] = color;
+    }
 }
 
 void H5Renderer::pixelSpace2File(const std::string &outFile){

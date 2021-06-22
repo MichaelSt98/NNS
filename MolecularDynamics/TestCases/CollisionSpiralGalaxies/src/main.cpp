@@ -33,11 +33,10 @@ int main(int argc, char *argv[]) {
     const double R { opts["R-sphere"].as<double>() };
 
     // distande of galxies
-    const double deltaX = 5.*R;
-    const double deltaY = 5.*R;
-    const double deltaV = .2;
-
-    // store flag for mode
+    const double deltaX = 3.*R;
+    const double deltaY = 3.*R;
+    //const double deltaV = .2;
+    const double deltaV = sqrt(G*M/sqrt(deltaX*deltaX+deltaY*deltaY));
 
     // print help on usage and exit
     if (opts.count("help")) {

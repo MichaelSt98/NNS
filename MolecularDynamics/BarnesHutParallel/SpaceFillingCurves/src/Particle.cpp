@@ -4,7 +4,7 @@
 
 #include "../include/Particle.h"
 
-float smoothing = 1e-5;
+//float smoothing = 1e-5;
 
 Particle::Particle() {
     m = 0.f;
@@ -46,11 +46,11 @@ void deleteParticleList(ParticleList * pLst) {
 }
 
 void force(Particle *i, Particle *j) {
-    float r = 0;
+    double r = 0;
     for (int d=0; d<DIM; d++)
         //r += sqrt(abs(j->x[d] - i->x[d]));
         r += (j->x[d] - i->x[d]) * (j->x[d] - i->x[d]);
-    float f = i->m * j->m /(sqrt(r) * r + smoothing);
+    double f = G * i->m * j->m /(sqrt(r) * r); // + smoothing);
     if (r < 1e-20){
         Logger(WARN) << "In force: encountered very low value of r";
     }
