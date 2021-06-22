@@ -7,6 +7,7 @@
 #include <cmath>
 #include <highfive/H5File.hpp>
 #include <boost/filesystem.hpp>
+#include <omp.h>
 
 #include <fstream>
 

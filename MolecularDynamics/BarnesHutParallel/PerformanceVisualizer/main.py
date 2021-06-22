@@ -7,8 +7,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 
-COLORS = ["#0000ff", "#00ff00", "#ff007f", "#ffff00",
-          "#ff0000", "#00ffff", "#ff7f00", "#ff00ff"]
+SHARE_COLORS = ["#0000ff", "#00ff00", "#ff007f", "#ffff00",
+                "#ff0000", "#00ffff", "#ff7f00", "#ff00ff"]
+LINE_COLOR = "#5f5f5f"
 
 def plotDataPerProcAsPercentage(h5file, path, axis, ylabel="Share per process"):
     data = np.array(h5file[path])
@@ -23,18 +24,18 @@ def plotDataPerProcAsPercentage(h5file, path, axis, ylabel="Share per process"):
         percData[iProc] = np.divide(percDataBuff[iProc, :].astype(np.float64), np.sum(data, 1).astype(np.float64))
 
     axis.set_ylabel(ylabel)
-    axis.stackplot(np.arange(data.shape[0]), *percData, colors=COLORS)
+    axis.stackplot(np.arange(data.shape[0]), *percData, colors=SHARE_COLORS)
 
 
 def plotSumOverProcs(h5file, path, axis, ylabel="Sum over all processes"):
     data = h5file[path]
-    axis.plot(np.arange(data.shape[0]), np.sum(data, 1), color="#7f7f7f")
+    axis.plot(np.arange(data.shape[0]), np.sum(data, 1), color=LINE_COLOR)
     axis.set_ylabel(ylabel)
 
 
 def plotMaxOfProcs(h5file, path, axis, ylabel="Maximum of all processes"):
     data = h5file[path]
-    axis.plot(np.arange(data.shape[0]), np.max(data, 1), color='#7f7f7f')
+    axis.plot(np.arange(data.shape[0]), np.max(data, 1), color=LINE_COLOR)
     axis.set_ylabel(ylabel)
 
 

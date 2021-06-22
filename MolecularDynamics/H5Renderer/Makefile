@@ -25,7 +25,7 @@ OBJECTS := $(SOURCES:$(SRCDIR)/%.$(SRCEXT)=$(OBJDIR)/%.$(OBJEXT))
 MAIN := main
 
 # setting general flags
-CXXFLAGS := -std=c++11 -I$(INCLDIR) -I/usr/include/hdf5/serial
+CXXFLAGS := -std=c++11 -I$(INCLDIR) -I/usr/include/hdf5/serial -fopenmp
 # setting linker flags
 LDFLAGS := -lboost_system -lboost_filesystem -L/usr/lib/x86_64-linux-gnu/hdf5/serial/ -lhdf5
 

@@ -41,12 +41,12 @@ H5Renderer::~H5Renderer(){
 void H5Renderer::createImages(std::string outDir){
 
     // loop through all found h5 files
-    for(auto const &path: h5files){
-
-        Logger(INFO) << "Reading " << path.filename() << " ...";
+    #pragma omp parallel for
+    for (std::vector<fs::path>::const_iterator h5PathIt = h5files.begin(); h5PathIt < h5files.end(); h5PathIt++) {
+        Logger(INFO) << "Reading " << h5PathIt->filename() << " ...";
 
         // opening file
-        HighFive::File file(path.string(), HighFive::File::ReadOnly);
+        HighFive::File file(h5PathIt->string(), HighFive::File::ReadOnly);
 
         // reading process ranges
         HighFive::DataSet rng = file.getDataSet("/hilbertRanges");
@@ -64,18 +64,20 @@ void H5Renderer::createImages(std::string outDir){
         pos.read(x);
 
         Logger(DEBUG) << "    Storing read data to vector<Particle> container ...";
-        std::vector<Particle> particles { std::vector<Particle>() };
+        std::vector<Particle> particles{std::vector<Particle>()};
 
-        for(int i=0; i<x.size(); ++i){
+        for (int i = 0; i < x.size(); ++i) {
             particles.push_back(Particle(x[i][0], x[i][1], x[i][2], k[i]));
         }
         Logger(DEBUG) << "    ... done.";
+
+        Logger(INFO) << "... processing data from " << h5PathIt->filename() << " ...";
 
         Logger(DEBUG) << "    Sorting by z-coordinate ...";
         std::sort(particles.rbegin(), particles.rend(), Particle::zComp); // using reverse iterator
         Logger(DEBUG) << "    ... drawing pixels in x-y-plane ...";
         // looping through particles in decreasing z-order
-        for (int i=0; i<particles.size(); ++i){
+        for (int i = 0; i < particles.size(); ++i) {
             ColorRGB color = procColor(particles[i].key, ranges);
             particle2PixelXY(particles[i].x, particles[i].y, color);
         }
@@ -85,20 +87,20 @@ void H5Renderer::createImages(std::string outDir){
         std::sort(particles.begin(), particles.end(), Particle::yComp);
         Logger(DEBUG) << "    ... drawing pixels in x-z-plane ...";
         // looping through particles in increasing y-order
-        for (int i=0; i<particles.size(); ++i){
+        for (int i = 0; i < particles.size(); ++i) {
             ColorRGB color = procColor(particles[i].key, ranges);
             particle2PixelXZ(particles[i].x, particles[i].z, color);
         }
         Logger(DEBUG) << "    ... done.";
 
-        std::string outFile = outDir + "/" + path.stem().string() + ".ppm";
+        std::string outFile = outDir + "/" + h5PathIt->stem().string() + ".ppm";
         Logger(INFO) << "... writing to file '" << outFile << "' ...";
         // writing pixelSpace to png file
         pixelSpace2File(outFile);
 
         // clear pixel space
         clearPixelSpace();
-        Logger(INFO) << "... done.";
+        Logger(INFO) << "... done. Results written to '" << outFile << "'.";
     }
 }
 
