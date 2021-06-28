@@ -27,22 +27,18 @@ h5files { std::vector<fs::path>() }
         Logger(INFO) << "... done.";
     }
 
-    // initialize pixelspace
+    // initialize pixelspace size
     psSize = 2*imgHeight*imgHeight;
-    pixelSpace = new ColorRGB[psSize];
 }
 
 // public functions
-
-H5Renderer::~H5Renderer(){
-    delete [] pixelSpace;
-}
-
 void H5Renderer::createImages(std::string outDir){
 
     // loop through all found h5 files
+
     #pragma omp parallel for
     for (std::vector<fs::path>::const_iterator h5PathIt = h5files.begin(); h5PathIt < h5files.end(); h5PathIt++) {
+
         Logger(INFO) << "Reading " << h5PathIt->filename() << " ...";
 
         // opening file
@@ -73,13 +69,18 @@ void H5Renderer::createImages(std::string outDir){
 
         Logger(INFO) << "... processing data from " << h5PathIt->filename() << " ...";
 
+        Logger(DEBUG) << "  Creating pixel space.";
+
+        ColorRGB *pixelSpace = new ColorRGB[psSize];
+        clearPixelSpace(pixelSpace); // drawing black background explicitly
+
         Logger(DEBUG) << "    Sorting by z-coordinate ...";
         std::sort(particles.rbegin(), particles.rend(), Particle::zComp); // using reverse iterator
         Logger(DEBUG) << "    ... drawing pixels in x-y-plane ...";
         // looping through particles in decreasing z-order
         for (int i = 0; i < particles.size(); ++i) {
             ColorRGB color = procColor(particles[i].key, ranges);
-            particle2PixelXY(particles[i].x, particles[i].y, color);
+            particle2PixelXY(particles[i].x, particles[i].y, color, pixelSpace);
         }
         Logger(DEBUG) << "    ... done.";
 
@@ -89,17 +90,17 @@ void H5Renderer::createImages(std::string outDir){
         // looping through particles in increasing y-order
         for (int i = 0; i < particles.size(); ++i) {
             ColorRGB color = procColor(particles[i].key, ranges);
-            particle2PixelXZ(particles[i].x, particles[i].z, color);
+            particle2PixelXZ(particles[i].x, particles[i].z, color, pixelSpace);
         }
         Logger(DEBUG) << "    ... done.";
 
         std::string outFile = outDir + "/" + h5PathIt->stem().string() + ".ppm";
         Logger(INFO) << "... writing to file '" << outFile << "' ...";
         // writing pixelSpace to png file
-        pixelSpace2File(outFile);
+        pixelSpace2File(outFile, pixelSpace);
 
-        // clear pixel space
-        clearPixelSpace();
+        Logger(DEBUG) << "  Deleting pixel space.";
+
         Logger(INFO) << "... done. Results written to '" << outFile << "'.";
     }
 }
@@ -107,7 +108,7 @@ void H5Renderer::createImages(std::string outDir){
 // private functions
 ColorRGB H5Renderer::procColor(unsigned long k, const std::vector<unsigned long> &ranges){
     for(int proc=0; proc < ranges.size()-1; ++proc){
-        if (ranges[proc] < k && k < ranges[proc+1]){
+        if (ranges[proc] <= k && k < ranges[proc+1]){
             // particle belongs to process proc
             return COLORS[proc];
         }
@@ -115,7 +116,7 @@ ColorRGB H5Renderer::procColor(unsigned long k, const std::vector<unsigned long>
     return ColorRGB(); // black
 }
 
-void H5Renderer::clearPixelSpace(){
+void H5Renderer::clearPixelSpace(ColorRGB *pixelSpace){
     for(int px=0; px < psSize; ++px){
         pixelSpace[px] = ColorRGB(); // drawing black background
     }
@@ -125,7 +126,7 @@ int H5Renderer::pos2pixel(double pos){
     return pos > systemSize/zoom ? -1 : round(imgHeight/2. * (1. + pos/(systemSize/zoom)*SCALE2FIT));
 }
 
-void H5Renderer::particle2PixelXY(double x, double y, const ColorRGB &color){
+void H5Renderer::particle2PixelXY(double x, double y, const ColorRGB &color, ColorRGB *pixelSpace){
     // convert to pixel space
     int xPx = pos2pixel(x);
     int yPx = pos2pixel(y);
@@ -138,7 +139,7 @@ void H5Renderer::particle2PixelXY(double x, double y, const ColorRGB &color){
     }
 }
 
-void H5Renderer::particle2PixelXZ(double x, double z, const ColorRGB &color){
+void H5Renderer::particle2PixelXZ(double x, double z, const ColorRGB &color, ColorRGB *pixelSpace){
     // convert to pixel space
     int xPx = pos2pixel(x);
     int zPx = pos2pixel(z);
@@ -150,7 +151,7 @@ void H5Renderer::particle2PixelXZ(double x, double z, const ColorRGB &color){
     }
 }
 
-void H5Renderer::pixelSpace2File(const std::string &outFile){
+void H5Renderer::pixelSpace2File(const std::string &outFile, ColorRGB *pixelSpace){
     // using *.ppm
     // https://en.wikipedia.org/wiki/Netpbm#File_formats
 

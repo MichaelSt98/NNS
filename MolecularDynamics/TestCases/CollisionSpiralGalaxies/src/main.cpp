@@ -33,8 +33,8 @@ int main(int argc, char *argv[]) {
     const double R { opts["R-sphere"].as<double>() };
 
     // distande of galxies
-    const double deltaX = 3.*R;
-    const double deltaY = 3.*R;
+    const double deltaX = 10.*R;
+    const double deltaY = 10.*R;
     //const double deltaV = .2;
     const double deltaV = sqrt(G*M/sqrt(deltaX*deltaX+deltaY*deltaY));
 

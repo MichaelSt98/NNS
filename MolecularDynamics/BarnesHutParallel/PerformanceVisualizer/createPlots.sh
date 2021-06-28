@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-H5FILES="data/N1e6np8lb100CSGdxy5.h5 data/N1e6np8lb100CSGdxy3.h5"
+H5FILES="data/N1e6np8lb100CSGdxy5.h5 data/N1e6np8lb100CSGdxy3.h5 data/N1e6np8lb10CSGdxy3.h5"
 H5PATHS_AMOUNT="general/numberOfParticles loadBalancing/sendParticles/receiveLength compF_BHpar/receiveLength"
 H5PATHS_TIME="loadBalancing/totalTime forceComputation/totalTime updatePosVel/totalTime"
 

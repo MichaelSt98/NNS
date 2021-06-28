@@ -26,14 +26,14 @@ struct ColorRGB {
 };
 
 const ColorRGB COLORS[10] = {
-        ColorRGB(0, 0, ~0), // blue
         ColorRGB(0, ~0, 0), // green
+        ColorRGB(0, 0, ~0), // blue
         ColorRGB(~0, 0, 127), // pink
         ColorRGB(~0, ~0, 0), // yellow
+        ColorRGB(~0, 0, ~0), // magenta
         ColorRGB(~0, 0, 0), // red
         ColorRGB(0, ~0, ~0), // turquoise
         ColorRGB(~0, 127, 0), //orange
-        ColorRGB(~0, 0, ~0), // magenta
         ColorRGB(127, 127, 127), // grey
         ColorRGB(~0, ~0, ~0) //white
 };
@@ -55,19 +55,17 @@ private:
     // internal variables
     std::vector<fs::path> h5files;
     long psSize; // pixelSpace size
-    ColorRGB* pixelSpace; // this is the container for the image, which is manipulated by private functions
 
     //functions
     ColorRGB procColor(unsigned long k, const std::vector<unsigned long> &ranges);
-    void clearPixelSpace();
+    void clearPixelSpace(ColorRGB *pixelSpace);
     int pos2pixel(double pos);
-    void particle2PixelXY(double x, double y, const ColorRGB &color);
-    void particle2PixelXZ(double x, double z, const ColorRGB &color);
-    void pixelSpace2File(const std::string &outFile);
+    void particle2PixelXY(double x, double y, const ColorRGB &color, ColorRGB *pixelSpace);
+    void particle2PixelXZ(double x, double z, const ColorRGB &color, ColorRGB *pixelSpace);
+    void pixelSpace2File(const std::string &outFile, ColorRGB *pixelSpace);
 
 public:
     H5Renderer(std::string _h5folder, double _systemSize, int _imgHeight, double _zoom, bool _processColoring=true);
-    ~H5Renderer();
 
     void createImages(std::string outDir);
 };
