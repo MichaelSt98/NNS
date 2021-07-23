@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
 
     Logger(DEBUG) << "Initialize h5 profiling file";
 
-    int steps = (int)round(t_end/delta_t);
+    int steps = (int)round(t_end/delta_t)+1;
     Logger(DEBUG) << "TOTAL STEP COUNT = " << steps;
 
     int loadBalancingInterval = confP.getVal<int>("loadBalancingInterval");
@@ -170,12 +170,13 @@ int main(int argc, char *argv[]) {
     profiler.createValueDataSet<int>("/general/numberOfParticles", steps);
 
     // Load balancing profiling
-    profiler.createTimeDataSet("/loadBalancing/totalTime", steps/loadBalancingInterval);
-    //profiler.createTimeDataSet("/loadBalancing/updateRange/sort", steps/loadBalancingInterval);
+    int lbSteps = (int)round(steps/loadBalancingInterval)+1;
+    profiler.createTimeDataSet("/loadBalancing/totalTime", lbSteps);
+    //profiler.createTimeDataSet("/loadBalancing/updateRange/sort", lbSteps);
     profiler.createValueDataSet<int>("/loadBalancing/sendParticles/receiveLength",
-                                     steps/loadBalancingInterval);
+                                     lbSteps);
     profiler.createVectorDataSet<int>("/loadBalancing/sendParticles/sendLengths",
-                                      steps/loadBalancingInterval, s.numprocs);
+                                      lbSteps, s.numprocs);
 
     // Force computation profiling
     profiler.createTimeDataSet("/forceComputation/totalTime", steps);
