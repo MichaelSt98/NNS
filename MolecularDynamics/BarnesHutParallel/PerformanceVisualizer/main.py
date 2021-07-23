@@ -11,6 +11,7 @@ SHARE_COLORS = ["#00ff00", "#0000ff", "#ff007f", "#ffff00",
                 "#ff00ff", "#ff0000", "#00ffff", "#ff7f00"]
 LINE_COLOR = "#5f5f5f"
 
+
 def plotDataPerProcAsPercentage(h5file, path, axis, ylabel="Share per process"):
     data = np.array(h5file[path])
     data[data < 0] = 0  # removing all -1 values
@@ -25,6 +26,14 @@ def plotDataPerProcAsPercentage(h5file, path, axis, ylabel="Share per process"):
 
     axis.set_ylabel(ylabel)
     axis.stackplot(np.arange(data.shape[0]), *percData, colors=SHARE_COLORS)
+
+
+def plotTotalPerProc(h5file, path, axis, ylabel="Total per process"):
+    data = np.array(h5file[path])
+    data[data < 0] = 0  # removing all -1 values
+    totalData = np.transpose(data)
+    axis.set_ylabel(ylabel)
+    axis.stackplot(np.arange(data.shape[0]), *totalData, colors=SHARE_COLORS)
 
 
 def plotSumOverProcs(h5file, path, axis, ylabel="Sum over all processes"):
@@ -47,6 +56,7 @@ if __name__ == "__main__":
     parser.add_argument("--time", "-t", action="store_true", help="plotting time instead of amounts")
     parser.add_argument("--h5file", metavar="str", type=str, help="input h5 file path",
                         nargs="?", default="data/performance.h5")
+    parser.add_argument("--absolute", "-a", action="store_true", help="plot absolute stack without total")
 
     args = parser.parse_args()
 
@@ -57,19 +67,24 @@ if __name__ == "__main__":
     # Initialize plot style
     plt.style.use('dark_background')
 
+
     fig, ax1 = plt.subplots(figsize=(12, 9), dpi=200)
     fig.patch.set_facecolor("black")
     ax1.set_title("/" + args.h5path)
     ax1.set_xlabel("Timestep")
 
-    plotDataPerProcAsPercentage(performance, args.h5path, ax1)
+    if args.absolute:
+        plotTotalPerProc(performance, args.h5path, ax1)
 
-    ax2 = ax1.twinx()
-
-    if args.time:
-        plotMaxOfProcs(performance, args.h5path, ax2)
     else:
-        plotSumOverProcs(performance, args.h5path, ax2)
+        plotDataPerProcAsPercentage(performance, args.h5path, ax1)
+
+        ax2 = ax1.twinx()
+
+        if args.time:
+            plotMaxOfProcs(performance, args.h5path, ax2)
+        else:
+            plotSumOverProcs(performance, args.h5path, ax2)
 
     fig.tight_layout()
     plt.savefig(re.sub(r"data/(.*)\.h5", r"output/\g<1>_" + args.h5path.replace("/", "-") + ".png", args.h5file))
