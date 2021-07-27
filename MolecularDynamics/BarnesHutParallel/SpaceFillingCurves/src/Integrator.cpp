@@ -20,7 +20,7 @@ void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, Tre
 
     while (t <= t_end) {
         Logger(INFO) << " ";
-        Logger(INFO) << "t = " << t;
+        Logger(INFO) << "t = " << t << ", step = " << step;
         Logger(DEBUG) << "============================";
 
         std::stringstream stepss;

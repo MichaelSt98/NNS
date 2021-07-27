@@ -186,6 +186,8 @@ int main(int argc, char *argv[]) {
     // Updating positions and velocities profiling
     profiler.createTimeDataSet("/updatePosVel/totalTime", steps);
 
+    Logger(DEBUG) << "TOTAL LOAD BALANCING STEPS = " << lbSteps;
+
     // declarations for renderer related variables, unused if h5Dump
     int width, height;
     char *image;
