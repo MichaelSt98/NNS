@@ -9,7 +9,7 @@ void finalize(TreeNode *root) {
     MPI_Finalize();
 }
 
-void timeIntegration_BH_par(float t, float delta_t, float t_end, float diam, TreeNode *root, SubDomainKeyTree *s,
+void timeIntegration_BH_par(double t, double delta_t, double t_end, float diam, TreeNode *root, SubDomainKeyTree *s,
                             Renderer *renderer, char *image, double *hdImage, bool render, bool processColoring,
                             bool h5Dump, int h5DumpEachTimeSteps, int loadBalancingInterval) {
 

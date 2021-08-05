@@ -150,9 +150,9 @@ int main(int argc, char *argv[]) {
     LOGCFG.myrank = s.myrank;
     LOGCFG.outputRank = confP.getVal<int>("outputRank");
 
-    float t = 0;
-    float delta_t = confP.getVal<float>("timeStep");
-    float t_end = confP.getVal<float>("timeEnd");
+    double t = 0;
+    double delta_t = confP.getVal<double>("timeStep");
+    double t_end = confP.getVal<double>("timeEnd");
 
     // check if result should be written to h5 file instead of rendering
     bool h5Dump = confP.getVal<bool>("h5Dump");
