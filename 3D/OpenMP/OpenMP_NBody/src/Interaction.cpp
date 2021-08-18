@@ -6,12 +6,12 @@
 
 Interaction::Interaction() : frictionEnabled { true } {
     LOGCFG.headers = true;
-    LOGCFG.level = INFO;
+    LOGCFG.level = DEBUG;
 }
 
 Interaction::Interaction(bool _frictionEnabled) : frictionEnabled { _frictionEnabled } {
     LOGCFG.headers = true;
-    LOGCFG.level = INFO;
+    LOGCFG.level = DEBUG;
 }
 
 void Interaction::singleInteraction(Body* body1, Body* body2, bool symmetric, bool debug) {
@@ -98,8 +98,7 @@ void Interaction::treeInteraction(Tree *tree, Body *body) {
 }
 
 
-void Interaction::interactBodies(Body* suns, Body* bods)
-{
+void Interaction::interactBodies(Body* suns, Body* bods, bool hashed) {
 
     Timer t_starInteraction;
     Timer t_buildingOctree;
@@ -109,19 +108,17 @@ void Interaction::interactBodies(Body* suns, Body* bods)
     Logger(DEBUG) << "Calculating force from star(s) ...";
 
     t_starInteraction.reset();
-    for (int sIndex=0; sIndex<NUM_SUNS; sIndex++)
-    {
-        #pragma omp parallel for
-        for (int ssIndex = 0; ssIndex<NUM_SUNS; ssIndex++) {
+    for (int sIndex = 0; sIndex < NUM_SUNS; sIndex++) {
+    #pragma omp parallel for
+        for (int ssIndex = 0; ssIndex < NUM_SUNS; ssIndex++) {
             if (sIndex != ssIndex) {
                 singleInteraction(&suns[sIndex], &suns[ssIndex], false, false);
             }
         }
 
 
-        #pragma omp parallel for
-        for (int bIndex=0; bIndex<NUM_BODIES; bIndex++)
-        {
+    #pragma omp parallel for
+        for (int bIndex = 0; bIndex < NUM_BODIES; bIndex++) {
             singleInteraction(&suns[sIndex], &bods[bIndex], true);
         }
     }
@@ -129,36 +126,88 @@ void Interaction::interactBodies(Body* suns, Body* bods)
 
     Logger(DEBUG) << "Building Octree ...";
 
-    Octant&& proot = Octant(0.0, // center x
-                            0.0, // center y
-                            0.0, // center z
-                            60.0*SYSTEM_SIZE);
+    // calculation x,y and z spans normed to zero
+    double xMin, xMax, yMin, yMax, zMin, zMax = 0;
+
+    for (int bIndex = 0; bIndex < NUM_BODIES; bIndex++) {
+        const Body *body = &bods[bIndex];
+        xMin = body->position.x < xMin ? body->position.x : xMin;
+        yMin = body->position.y < yMin ? body->position.y : yMin;
+        zMin = body->position.z < zMin ? body->position.z : zMin;
+        xMax = body->position.x > xMax ? body->position.x : xMax;
+        yMax = body->position.y > yMax ? body->position.y : yMax;
+        zMax = body->position.z > xMax ? body->position.z : zMax;
+    }
+    Logger(INFO) << "simulationBox: [(" << xMin << ", " << yMin << ", " << zMin
+                 << "), (" << xMax << ", " << yMax << ", " << zMax << ")]";
+    double xSpan = std::fabs(xMax - xMin);
+    double ySpan = std::fabs(yMax - yMin);
+    double zSpan = std::fabs(zMax - zMin);
+    double maxSpan = xSpan > ySpan ? xSpan : ySpan;
+    maxSpan = maxSpan < zSpan ? zSpan : maxSpan;
+
+    Octant proot = Octant(0., 0., 0., maxSpan);
+    /*Octant proot = Octant(0.0, // center x
+                   0.0, // center y
+                   0.0, // center z
+                   60.0 * SYSTEM_SIZE);*/
+
+    // container for particles
+    std::map<uint64_t, Body*> bodies; // unused when !hashed
+    std::vector<Body*> bodsVec; // unused when !hashed
+
+    if (hashed) {
+        Logger(INFO) << "maxSpan = " << maxSpan << ", origin = (" << xMin << ", " << yMin << ", "
+                     << zMin << ")";
+
+        for (int bIndex = 0; bIndex < NUM_BODIES; bIndex++) {
+            Body *body = &bods[bIndex];
+            body->discretizePosition(maxSpan, Vector3D(xMin, yMin, zMin));
+            bodies[body->getKey()] = body; // store bodies in hashed map
+        }
+        // sanity check
+        if (bodies.size() != NUM_BODIES) {
+            Logger(WARN) << "Some bodies seem to have been lost during position-discretization.";
+            //TODO: Throw exception
+        }
+        // vectorize map which is ordered by key
+        for (auto const &bdy: bodies){
+            bodsVec.push_back(bdy.second);
+        }
+    }
 
     Tree *tree = new Tree(std::move(proot));
 
     t_buildingOctree.reset();
-    for (int bIndex=0; bIndex<NUM_BODIES; bIndex++)
-    {
-        if (tree->getOctant().contains(bods[bIndex].position))
-        {
+    for (int bIndex = 0; bIndex < NUM_BODIES; bIndex++) {
+        if (tree->getOctant().contains(bods[bIndex].position)) {
             tree->insert(&bods[bIndex]);
         }
     }
+
     Logger(WARN) << "\tTime for building octree: " << t_buildingOctree.elapsed();
 
     Logger(DEBUG) << "Calculating particle-particle interactions ...";
 
     t_particleParticle.reset();
-    #pragma omp parallel for
-    for (int bIndex=0; bIndex<NUM_BODIES; bIndex++)
-    {
-        if (tree->getOctant().contains(bods[bIndex].position))
-        {
-            treeInteraction(tree, &bods[bIndex]);
+    if (hashed) {
+        std::vector<Body*>::iterator it;
+        #pragma omp parallel for
+        for (it = bodsVec.begin(); it < bodsVec.end(); ++it) {
+            if (tree->getOctant().contains((*it)->position)) {
+                treeInteraction(tree, (*it));
+            }
         }
+        Logger(WARN) << "\tTime for particle inter: " << t_particleParticle.elapsed();
+    } else {
+        #pragma omp parallel for
+        for (int bIndex = 0; bIndex < NUM_BODIES; bIndex++) {
+            if (tree->getOctant().contains(bods[bIndex].position)) {
+                treeInteraction(tree, &bods[bIndex]);
+            }
+        }
+        Logger(WARN) << "\tTime for particle inter: " << t_particleParticle.elapsed();
     }
-    Logger(WARN) << "\tTime for particle inter: " << t_particleParticle.elapsed();
-
     delete tree;
 
     t_updateBodies.reset();
@@ -166,7 +215,6 @@ void Interaction::interactBodies(Body* suns, Body* bods)
     Logger(WARN) << "\tTime for updating bods: " << t_updateBodies.elapsed();
 
 }
-
 
 void Interaction::updateBodies(Body* suns, Body* bods)
 {

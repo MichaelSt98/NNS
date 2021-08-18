@@ -1,0 +1,9 @@
+file bin/runner
+
+# Setting breakpoints
+#b Tree.cpp:110
+#b Tree.cpp:118
+#br dis 1
+#br dis 2
+
+run
