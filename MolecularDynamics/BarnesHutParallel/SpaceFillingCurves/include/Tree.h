@@ -18,7 +18,7 @@
 #include <climits> // for ulong_max
 #include <mpi.h>
 #include <map>
-#include <set>
+//#include <set>
 #include <fstream>
 #include <highfive/H5File.hpp>
 #include <highfive/H5DataSpace.hpp>

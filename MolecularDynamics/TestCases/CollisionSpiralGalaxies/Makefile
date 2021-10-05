@@ -83,7 +83,7 @@ install:
 # check if target directory 'bin' already exist via prerequisite
 $(TRGTDIR)/$(TARGET): $(OBJDIR)/$(MAIN).$(OBJEXT) | $(TRGTDIR)
 	@echo "Linking binary '$@'..."
-	@$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJECTS) -o $(TRGTDIR)/$(TARGET)
+	@$(CXX) $(CXXFLAGS) $(OBJECTS) $(LDFLAGS) -o $(TRGTDIR)/$(TARGET)
 	@echo "... done."
 
 # pattern rule to build object from source file

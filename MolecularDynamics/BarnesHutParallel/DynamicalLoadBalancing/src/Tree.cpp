@@ -211,9 +211,9 @@ void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s){
     // update new ranges on all processors
     MPI_Allreduce(sendRange, s->range, s->numprocs+1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
 
-    for (int i=0; i<=s->numprocs; i++){
-        Logger(DEBUG) << "Load balancing: NEW range[" << i << "] = " << s->range[i];
-    }
+    //for (int i=0; i<=s->numprocs; i++){
+    //    Logger(DEBUG) << "Load balancing: NEW range[" << i << "] = " << s->range[i];
+    //}
 
     delete [] oldcount;
 }
@@ -275,8 +275,7 @@ void createDomainList(TreeNode *t, int level, keytype k, SubDomainKeyTree *s) {
                 t->son[i] = (TreeNode *) calloc(1, sizeof(TreeNode));
             } else if (isLeaf(t->son[i]) && t->son[i]->node == particle){
                 t->son[i]->node = domainList; // need to be set before inserting into the tree
-                insertTree(&t->son[i]->p, t);
-                //continue; // skip recursive call of createDomainList()
+                insertTree(&t->son[i]->p, t); // insert tree handles box
             }
             createDomainList(t->son[i], level + 1,  (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))), s);
         }
@@ -326,10 +325,9 @@ void insertTree(Particle *p, TreeNode *t) {
     int b = sonNumber(&t->box, &sonbox, p);
 
     if (t->node == domainList && t->son[b] != NULL) {
-        t->son[b]->box = sonbox; //TODO: sonbox or t->box ?
+        t->son[b]->box = sonbox;
         insertTree(p, t->son[b]);
-    }
-    else {
+    } else {
         if (t->son[b] == NULL) {
             if (isLeaf(t) && t->node != domainList) {
                 Particle p2 = t->p;
@@ -343,7 +341,6 @@ void insertTree(Particle *p, TreeNode *t) {
                 t->son[b] = (TreeNode *) calloc(1, sizeof(TreeNode));
                 t->son[b]->p = *p;
                 t->son[b]->box = sonbox;
-                //q
                 // t->son[b]->node = particle;
             }
         } else {
@@ -351,6 +348,22 @@ void insertTree(Particle *p, TreeNode *t) {
             insertTree(p, t->son[b]);
             //insertTree(p, t);
         }
+    }
+}
+
+// used to insert particles from other processes which should already be fine
+// don't use when you're not 100% sure you can use it
+// order must be ensured that parents are inserted before childs
+void insertTreeFromOtherProc(Particle *p, TreeNode *t){
+    Box sonbox;
+    int b = sonNumber(&t->box, &sonbox, p);
+    if (t->son[b] != NULL) {
+        t->son[b]->box = sonbox;
+        insertTreeFromOtherProc(p, t->son[b]);
+    } else {
+        t->son[b] = (TreeNode *) calloc(1, sizeof(TreeNode));
+        t->son[b]->p = *p;
+        t->son[b]->box = sonbox;
     }
 }
 
@@ -569,6 +582,9 @@ void freeTree_BH(TreeNode *root) {
 // determine right amount of memory which has to be allocated for the `buffer`,
 // by e.g. communicating the length of the message as prior message or by using other MPI commands
 void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
+
+    H5Profiler &profiler = H5Profiler::getInstance();
+
     //allocate memory for s->numprocs particle lists in plist;
     //initialize ParticleList plist[to] for all processes to;
     ParticleList * plist;
@@ -638,11 +654,26 @@ void sendParticles(TreeNode *root, SubDomainKeyTree *s) {
     // allocate missing (sub)array for process rank
     pArray[s->myrank] = new Particle[receiveLength];
 
-    //for (int proc=0; proc<s->numprocs; proc++) {
-    //    for (int i = 0; i < plistLengthSend[proc]; i++) {
-    //        Logger(INFO) << "Sending particle pArray[" << proc << "][" << i << "] : " << pArray[proc][i].x[0];
-    //    }
-    //}
+    // building string to output sendLengths to one line
+    std::vector<int> sendLengthContainer;
+    sendLengthContainer.reserve(s->numprocs);
+    std::string sendLengthStr = "[";
+    for (int proc = 0; proc < s->numprocs; proc++){
+        sendLengthContainer.push_back(plistLengthSend[proc]);
+        sendLengthStr += std::to_string(plistLengthSend[proc]);
+        if (proc < s->numprocs - 1) {
+            sendLengthStr += ", ";
+        } else {
+            sendLengthStr += "]";
+        }
+    }
+
+    // profiler is disabled in time integration when this routine is called for particle exchange after move
+    profiler.vector2file("/loadBalancing/sendParticles/sendLengths", s->myrank, sendLengthContainer);
+    profiler.value2file("/loadBalancing/sendParticles/receiveLength", s->myrank, receiveLength);
+
+    Logger(DEBUG) << "sendParticles(): [PER PROC] sendLength = " << sendLengthStr;
+    Logger(DEBUG) << "sendParticles(): [TOTAL] receiveLength = " << receiveLength;
 
     MPI_Request reqParticles[s->numprocs-1];
     MPI_Status statParticles[s->numprocs-1];
@@ -681,7 +712,7 @@ void buildSendList(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist, int *p
     if (t != NULL) {
         // start of the operation on *t
         int proc;
-        if ((isLeaf(t)) && ((proc = key2proc(k, s)) != s->myrank) && t->node != domainList) {
+        if (isLeaf(t) && (proc = key2proc(k, s)) != s->myrank && t->node != domainList) {
             current = &plist[proc];
             for (int i=0; i<pIndex[proc]; i++) {
                 current = current->next;
@@ -699,18 +730,18 @@ void buildSendList(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist, int *p
     }
 }
 
-void outputTree(TreeNode *t, bool detailed, bool onlyParticles) {
+void outputTree(TreeNode *root, bool detailed, bool onlyParticles) {
 
     int counterParticle = 0;
     int counterPseudoParticle = 0;
     int counterDomainList = 0;
 
-    int nNodes = countNodes(t);
+    int nNodes = countNodes(root);
     Particle * pArray;
     nodetype * nArray;
     pArray = new Particle[nNodes];
     nArray = new nodetype[nNodes];
-    getTreeArray(t, pArray, nArray);
+    getTreeArray(root, pArray, nArray);
 
     Logger(INFO) << "-------------------------------------------------------------------------";
 
@@ -771,7 +802,7 @@ void outputTree(TreeNode *t, bool detailed, bool onlyParticles) {
     delete [] pArray;
 }
 
-void outputTree(TreeNode *t, std::string file, bool detailed, bool onlyParticles) {
+void outputTree(TreeNode *root, std::string file, bool detailed, bool onlyParticles) {
 
     std::ofstream outf { file };
 
@@ -782,14 +813,14 @@ void outputTree(TreeNode *t, std::string file, bool detailed, bool onlyParticles
         int counterPseudoParticle = 0;
         int counterDomainList = 0;
 
-        int nNodes = countNodes(t);
+        int nNodes = countNodes(root);
         Particle * pArray;
         nodetype * nArray;
         keytype * kArray;
         pArray = new Particle[nNodes];
         nArray = new nodetype[nNodes];
         kArray = new keytype[nNodes];
-        getTreeArray(t, pArray, nArray, kArray);
+        getTreeArray(root, pArray, nArray, kArray);
 
         for (int i=nNodes-1; i>=0; i--) {
             if (nArray[i] == 0) {
@@ -816,18 +847,38 @@ void outputTree(TreeNode *t, std::string file, bool detailed, bool onlyParticles
                              << "    F = (" << pArray[i].F[0] << ", "
                              << pArray[i].F[1] << ", "
                              << pArray[i].F[2] << ")"
-                             << "    m = " << pArray[i].m
-                             << kArray[i] << '\n';
+                             << "    m = " << pArray[i].m << ", ";
+                        // converting key format
+                        int levels [maxlevel];
+                        for (int i = 0; i<maxlevel; i++) {
+                            levels[i] = (kArray[i] >> 3*i) & (unsigned long)7;
+                        }
+                        std::string keyStr = "#|";
+                        for (int i = maxlevel-1; i>=0; i--) {
+                            keyStr += std::to_string(levels[i]);
+                            keyStr += "|";
+                        }
+                        outf << keyStr << '\n';
                     }
                 }
                 else {
                     outf << "\tnodetype: " << getNodeType(nArray[i]) << " ["
                          << (pArray[i].todelete ? "true " : "false")
-                         << ", " << (pArray[i].moved ? "true " : "false")
-                         << "], " << std::bitset<64>(kArray[i])
+                         << ", " << (pArray[i].moved ? "true " : "false") << "], ";
+                    // converting key format
+                    int levels [maxlevel];
+                    for (int lvl = 0; lvl<maxlevel; lvl++) {
+                        levels[lvl] = (kArray[i] >> 3*lvl) & (unsigned long)7;
+                    }
+                    std::string keyStr = "#|";
+                    for (int lvl = maxlevel-1; lvl>=0; lvl--) {
+                        keyStr += std::to_string(levels[lvl]);
+                        keyStr += "|";
+                    }
+                    outf << keyStr
                          << "  x = (" << pArray[i].x[0] << ", "
                          << pArray[i].x[1] << ", "
-                         << pArray[i].x[2] << ")" << '\n';
+                         << pArray[i].x[2] << ")\n";
                 }
             }
         }
@@ -836,6 +887,102 @@ void outputTree(TreeNode *t, std::string file, bool detailed, bool onlyParticles
         delete [] pArray;
         delete [] kArray;
     }
+}
+
+/* UNUSED
+void particles2file(TreeNode *root, std::string file, SubDomainKeyTree *s){
+    std::ofstream outf { file };
+
+    if (!outf) {
+        Logger(ERROR) << "An error occurred while opening '" << file << "'";
+    } else {
+        // writing csv header
+        outf << "x" << ";"
+             << "y" << ";"
+             << "z" << ";"
+             << "process" << ";"
+             << "key" << "\n";
+
+        int nNodes = countNodes(root);
+        Particle * pArray;
+        nodetype * nArray;
+        keytype * kArray;
+        pArray = new Particle[nNodes];
+        nArray = new nodetype[nNodes];
+        kArray = new keytype[nNodes];
+        getTreeArray(root, pArray, nArray, kArray);
+
+        for (int i=0; i<nNodes; i++) {
+            if (nArray[i] == particle){
+                outf << pArray[i].x[0] << ";"
+                    << pArray[i].x[1] << ";"
+                    << pArray[i].x[2] << ";"
+                    << key2proc(kArray[i], s) << ";"
+                    << std::bitset<64>(kArray[i]) << "\n";
+            }
+        }
+
+        delete [] nArray;
+        delete [] pArray;
+        delete [] kArray;
+    }
+}
+*/
+
+void particles2file(TreeNode *root,
+                    HighFive::DataSet *pos, HighFive::DataSet *vel, HighFive::DataSet *key, SubDomainKeyTree *s){
+    int nNodes = countNodes(root);
+    Particle * pArray;
+    nodetype * nArray;
+    keytype * kArray;
+    pArray = new Particle[nNodes];
+    nArray = new nodetype[nNodes];
+    kArray = new keytype[nNodes];
+    getTreeArray(root, pArray, nArray, kArray);
+
+    std::vector<std::vector<double>> x, v; // two dimensional vector for 3D vector data
+    std::vector<unsigned long> k; // one dimensional vector holding particle keys
+
+    int nParticles = 0;
+
+    for (int i=0; i<nNodes; i++) {
+        if (nArray[i] == particle){
+            x.push_back({ pArray[i].x[0], pArray[i].x[1], pArray[i].x[2] });
+            v.push_back({ pArray[i].v[0], pArray[i].v[1], pArray[i].v[2] });
+            k.push_back(kArray[i]);
+            ++nParticles;
+        }
+    }
+
+    // receive buffer
+    int procN[s->numprocs];
+
+    // send buffer
+    int sendProcN[s->numprocs];
+    for (int proc=0; proc<s->numprocs; proc++){
+        sendProcN[proc] = s->myrank == proc ? nParticles : 0;
+    }
+
+    MPI_Allreduce(sendProcN, procN, s->numprocs, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+
+    std::size_t nOffset = 0;
+    // count total particles on other processes
+    for (int proc = 0; proc < s->myrank; proc++){
+        nOffset += procN[proc];
+    }
+    Logger(DEBUG) << "Offset to write to datasets: " << std::to_string(nOffset);
+
+    // write to asscoiated datasets in h5 file
+    // only working when load balancing has been completed and even number of particles
+    pos->select({nOffset, 0},
+                {std::size_t(nParticles), std::size_t(DIM)}).write(x);
+    vel->select({nOffset, 0},
+                {std::size_t(nParticles), std::size_t(DIM)}).write(v);
+    key->select({nOffset}, {std::size_t(nParticles)}).write(k);
+
+    delete [] nArray;
+    delete [] pArray;
+    delete [] kArray;
 }
 
 /* UNUSED
@@ -1360,33 +1507,37 @@ float smallestDistance(TreeNode *td, TreeNode *t) {
     return sqrt(dx*dx + dy*dy + dz*dz);
 }
 
+
+// Using naive keys, as they are unique
+// td is a domain list node, belonging to other process
+// level unused, keep it for now for debugging purposes
 void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleMap &pmap, SubDomainKeyTree *s,
                    keytype k, int level) {
 
     //Logger(INFO) << "symbolicForce: " << std::bitset<64>(k) << " mapped to proc " << key2proc(k, s);
-    if (t != NULL && (key2proc(k, s) == s->myrank || t->node == domainList)) {
+    if (t != NULL){ // && (key2proc(Lebesgue2Hilbert(k, level), s) == s->myrank || t->node == domainList) {
 
         // the key of *t can be computed step by step in the recursion insert t->p into list plist;
-        if (t->node != domainList) {
-            bool insert = true;
-            for (ParticleMap::iterator pit = pmap.begin(); pit != pmap.end(); pit++)
-            {
-                if (pit->second.x[0] == t->p.x[0] && pit->second.x[1] == t->p.x[1] && pit->second.x[2] == t->p.x[2]) {
-                    insert = false;
-                }
-            }
-            if (insert) {
-                pmap[k] = t->p; // insert into map which has unique keys (will overwrite)
-            }
+        if (t->node != domainList) { // don't send domainList keys
+            /*ParticleMap::iterator pit = pmap.find(k);
+            if (pit == pmap.end()){ // not found
+                Logger(DEBUG) << "td: " << getNodeType(td->node) << ", x = " << "(" << td->p.x[0] << ", ...)";
+                //Logger(DEBUG) << "toSend: " << k << ", " << getNodeType(t->node) << ", x = " << t->p.x[0]
+                //                    << ", level = " << level;
+            }*/
+            pmap[k] = t->p; // will overwrite and therefore ensures uniqueness
         }
 
-        float r = smallestDistance(td, t); //IMPLEMENT: smallest distance from t->p.x to cell td->box;
-        //Logger(DEBUG) << "diam = " << diam << "  theta * r = " << theta * r;
-        //Logger(DEBUG) << "Current node key = " << std::bitset<64>(k);
+        float r = smallestDistance(td, t);
+        /*Logger(DEBUG) << "symbolicForce(): td->box.lower = ["
+                      << td->box.lower[0] << ", " << td->box.lower[1] << ", " << td->box.lower[2] << "]";
+        Logger(DEBUG) << "                 td->box.upper = ["
+                      << td->box.upper[0] << ", " << td->box.upper[1] << ", " << td->box.upper[2] << "]";*/
         if (diam >= theta * r) {
             for (int i = 0; i < POWDIM; i++) {
+                // recursion with naive key
                 symbolicForce(td, t->son[i], .5 * diam, pmap, s,
-                              (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))), level+1); //TODO: is that correct?
+                              (keytype)((k << DIM) | (keytype)i), level+1); // !!! different key for uniqueness
             }
         }
     }
@@ -1405,6 +1556,10 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleMap &pmap, Sub
 
 //compF_BHpar analog to sendParticles()
 void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
+
+    H5Profiler &profiler = H5Profiler::getInstance();
+    double t1, t2; // timing variables
+
     ParticleList * plist;
     plist = new ParticleList[s->numprocs];
     ParticleList * uniquePlist;
@@ -1412,13 +1567,18 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
     ParticleMap * pmap;
     pmap = new ParticleMap[s->numprocs];
 
-    int * pIndex;
+    /*int * pIndex;
     pIndex = new int[s->numprocs];
     for (int proc = 0; proc < s->numprocs; proc++) {
         pIndex[proc] = 0;
-    }
-    compTheta(root, root, s, pmap, diam);
+    }*/
 
+    t1 = MPI_Wtime();
+    compTheta(root, root, s, pmap, diam);
+    t2 = MPI_Wtime();
+    Logger(DEBUG) << "compF_BHpar(): +++++++++++++++++++++++++ compTheta(): " << t2-t1 << "s";
+
+    t1 = MPI_Wtime();
     Particle ** pArray = new Particle*[s->numprocs];
 
     int *plistLengthSend;
@@ -1436,6 +1596,7 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
             pArray[proc] = new Particle[plistLengthSend[proc]];
             ParticleList * current = &plist[proc];
             int counter = 0;
+            // parents have lesser key than children
             for (ParticleMap::iterator pit = pmap[proc].begin(); pit != pmap[proc].end(); pit++) {
                 pArray[proc][counter] = pit->second;
                 counter++;
@@ -1467,12 +1628,29 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
     // allocate missing (sub)array for process rank
     pArray[s->myrank] = new Particle[receiveLength];
 
-    //for (int proc=0; proc<s->numprocs; proc++) {
-    //    for (int i = 0; i < plistLengthSend[proc]; i++) {
-    //        Logger(INFO) << "Sending particle pArray[" << proc << "][" << i << "] : " << pArray[proc][i].x[0];
-    //    }
-    //}
+    // building string to output sendLengths to one line
+    std::vector<int> sendLengthContainer;
+    sendLengthContainer.reserve(s->numprocs);
+    std::string sendLengthStr = "[";
+    for (int proc = 0; proc < s->numprocs; proc++){
+        sendLengthContainer.push_back(plistLengthSend[proc]);
+        sendLengthStr += std::to_string(plistLengthSend[proc]);
+        if (proc < s->numprocs - 1) {
+            sendLengthStr += ", ";
+        } else {
+            sendLengthStr += "]";
+        }
+    }
 
+    profiler.vector2file("/compF_BHpar/sendLengths", s->myrank, sendLengthContainer);
+    profiler.value2file("/compF_BHpar/receiveLength", s->myrank, receiveLength);
+
+    Logger(DEBUG) << "compF_BHpar(): [PER PROC] sendLength = " << sendLengthStr;
+    Logger(DEBUG) << "compF_BHpar(): [TOTAL] receiveLength = " << receiveLength;
+    t2 = MPI_Wtime();
+    Logger(DEBUG) << "compF_BHpar(): +++++++++ preparing particle exchange: " << t2-t1 << "s";
+
+    t1 = MPI_Wtime();
     MPI_Request reqParticles[s->numprocs-1];
     MPI_Status statParticles[s->numprocs-1];
 
@@ -1491,9 +1669,10 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
     MPI_Waitall(s->numprocs-1, reqParticles, statParticles);
 
     for (int i=0; i<receiveLength; i++) {
-        //Logger(INFO) << "Inserting particle pArray[" << i << "] : " << pArray[s->myrank][i].x[0];
+        //Logger(DEBUG) << "Inserting particle pArray[" << i << "] : x = "
+        //                    << pArray[s->myrank][i].x[0] << ", m = " << pArray[s->myrank][i].m;
         pArray[s->myrank][i].todelete = true;
-        insertTree(&pArray[s->myrank][i], root);
+        insertTreeFromOtherProc(&pArray[s->myrank][i], root);
     }
 
     delete [] plist;
@@ -1504,8 +1683,13 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
         delete [] pArray[proc];
     }
     delete [] pArray;
+    t2 = MPI_Wtime();
+    Logger(DEBUG) << "compF_BHpar(): +++++ sending and receiving particles: " << t2-t1 << "s";
 
+    t1 = MPI_Wtime();
     compF_BH(root, root, diam, s);
+    t2 = MPI_Wtime();
+    Logger(DEBUG) << "compF_BHpar(): +++++ force calculation on local tree: " << t2-t1 << "s";
 }
 
 /**
@@ -1519,17 +1703,17 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
  * @param level
  */
 void compTheta(TreeNode *t, TreeNode *root, SubDomainKeyTree *s, ParticleMap *pmap, float diam, keytype k, int level) {
-    if (level >= maxlevel){
-        Logger(ERROR) << "Max tree depth not sufficient. (level = " << level << ")";
-    }
+    //if (level >= maxlevel){
+    //    Logger(ERROR) << "Max tree depth not sufficient. (level = " << level << ")";
+    //}
     if (t != NULL) {
         for (int i = 0; i < POWDIM; i++) {
             compTheta(t->son[i], root, s, pmap, diam, (keytype)(k | ((keytype)i << (DIM*(maxlevel-level-1)))), level+1);
         }
         // start of the operation on *t
         int proc;
-        if ((t->node == domainList) && ((proc = key2proc(k, s)) != s->myrank)) {
-            symbolicForce(t, root, diam, pmap[proc], s, 0UL, 0);
+        if (t->node == domainList && (proc = key2proc(k, s)) != s->myrank && level != 0) { // exclude root
+            symbolicForce(t, root, diam, pmap[proc], s, 1UL, 0); // !!! using different keys here to ensure uniqueness
         }
     } // end of the operation on *t
 }

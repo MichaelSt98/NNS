@@ -201,7 +201,7 @@ void createRanges(TreeNode *root, int N, SubDomainKeyTree *s) {
 //TODO: Code fragment 8.4: Determining current and new load distribution
 void newLoadDistribution(TreeNode *root, SubDomainKeyTree *s){
 
-    H5Profiler &profiler = H5Profiler::getInstance();
+    //H5Profiler &profiler = H5Profiler::getInstance();
 
     long c = countParticles(root); // count of particles in current process
     long *oldcount = new long[s->numprocs];
@@ -279,7 +279,7 @@ void updateRange(TreeNode *t, long &n, int &p, keytype *range, long *newdist, ke
         //called recursively as in Algorithm 8.1;
         // the key of *t can be computed step by step in the recursion
 
-        H5Profiler &profiler = H5Profiler::getInstance();
+        //H5Profiler &profiler = H5Profiler::getInstance();
 
         //profiler.time();
         std::map<keytype, int> keymap;
@@ -464,7 +464,7 @@ void insertTree(Particle *p, TreeNode *t) {
     int b = sonNumber(&t->box, &sonbox, p);
 
     if (t->node == domainList && t->son[b] != NULL) {
-        t->son[b]->box = sonbox;
+        t->son[b]->box = sonbox; // important as boxes for domainList nodes have to be set
         insertTree(p, t->son[b]);
     } else {
         if (t->son[b] == NULL) {
@@ -497,9 +497,15 @@ void insertTreeFromOtherProc(Particle *p, TreeNode *t){
     Box sonbox;
     int b = sonNumber(&t->box, &sonbox, p);
     if (t->son[b] != NULL) {
-        t->son[b]->box = sonbox;
+        t->son[b]->box = sonbox; // needed for domain list nodes
         insertTreeFromOtherProc(p, t->son[b]);
     } else {
+        // assuming a total mass of 1. and 1e5 particles
+        if (t->p.m < 1.5e-5 && t->node != domainList) {
+            Logger(ERROR) << "Inserting below particle in insertTreeFromOtherProc. WTF Motherf****r!, "
+                             "Parent: m = " << t->p.m << " Son m = " << p->m;
+        }
+
         t->son[b] = (TreeNode *) calloc(1, sizeof(TreeNode));
         t->son[b]->p = *p;
         t->son[b]->box = sonbox;
@@ -853,8 +859,8 @@ void buildSendList(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist, int *p
     if (t != NULL) {
         // start of the operation on *t
         int proc;
-        if ((isLeaf(t))
-            && ((proc = key2proc(Lebesgue2Hilbert(k, level), s)) != s->myrank)
+        if (isLeaf(t)
+            && (proc = key2proc(Lebesgue2Hilbert(k, level), s)) != s->myrank
             && t->node != domainList) {
             current = &plist[proc];
             for (int i=0; i<pIndex[proc]; i++) {
@@ -1116,7 +1122,7 @@ void particles2file(TreeNode *root,
     Logger(DEBUG) << "Offset to write to datasets: " << std::to_string(nOffset);
 
     // write to asscoiated datasets in h5 file
-    // only working when load balancing has been completed and even number of particles
+    // only working when load balancing has been completed
     pos->select({nOffset, 0},
                 {std::size_t(nParticles), std::size_t(DIM)}).write(x);
     vel->select({nOffset, 0},
@@ -1672,7 +1678,8 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleMap &pmap, Sub
                 Logger(DEBUG) << "td: " << getNodeType(td->node) << ", x = " << "(" << td->p.x[0] << ", ...)";
                 //Logger(DEBUG) << "toSend: " << k << ", " << getNodeType(t->node) << ", x = " << t->p.x[0]
                 //                    << ", level = " << level;
-            }*/
+            }
+            Logger(DEBUG) << getNodeType(t->node) << ", " << k;*/
             pmap[k] = t->p; // will overwrite and therefore ensures uniqueness
         }
 
@@ -1690,11 +1697,6 @@ void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleMap &pmap, Sub
         }
     }
 }
-
-/*void symbolicForce(TreeNode *td, TreeNode *t, float diam, ParticleList &plist, SubDomainKeyTree *s,
-                   keytype k, int level){
-
-}*/
 
 /*
  * NOTE: Force computation:
@@ -1747,7 +1749,7 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
             plistLengthSend[proc] = (int)pmap[proc].size(); //getParticleListLength(&plist[proc]);
 
             pArray[proc] = new Particle[plistLengthSend[proc]];
-            ParticleList * current = &plist[proc];
+            ParticleList *current = &plist[proc];
             int counter = 0;
             // parents have lesser key than children
             for (ParticleMap::iterator pit = pmap[proc].begin(); pit != pmap[proc].end(); pit++) {
@@ -1825,6 +1827,7 @@ void compF_BHpar(TreeNode *root, float diam, SubDomainKeyTree *s) {
         //Logger(DEBUG) << "Inserting particle pArray[" << i << "] : x = "
         //                    << pArray[s->myrank][i].x[0] << ", m = " << pArray[s->myrank][i].m;
         pArray[s->myrank][i].todelete = true;
+
         insertTreeFromOtherProc(&pArray[s->myrank][i], root);
     }
 

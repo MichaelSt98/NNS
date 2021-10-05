@@ -184,7 +184,8 @@ int main(int argc, char *argv[]) {
     profiler.createVectorDataSet<int>("/compF_BHpar/sendLengths", steps, s.numprocs);
 
     // Updating positions and velocities profiling
-    profiler.createTimeDataSet("/updatePosVel/totalTime", steps);
+    profiler.createTimeDataSet("/updatePos/totalTime", steps);
+    profiler.createTimeDataSet("/updateVel/totalTime", steps);
 
     Logger(DEBUG) << "TOTAL LOAD BALANCING STEPS = " << lbSteps;
 

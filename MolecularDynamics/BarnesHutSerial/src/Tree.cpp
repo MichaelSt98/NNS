@@ -27,8 +27,8 @@ bool isLeaf(TreeNode *t) {
 void insertTree(Particle *p, TreeNode *t) {
     // determine the son b of t in which particle p is located
     // compute the boundary data of the subdomain of the son node and store it in t->son[b].box;
-    Box sunbox;
-    int b = sonNumber(&t->box, &sunbox, p);
+    Box sonbox;
+    int b = sonNumber(&t->box, &sonbox, p);
     //std::cout << "b = " << b << std::endl;
     //std::cout << "sunbox.upper[0] = " << sunbox.upper[0] << std::endl;
     //t->son[b]->box = *sunbox;
@@ -41,15 +41,15 @@ void insertTree(Particle *p, TreeNode *t) {
             Particle p2 = t->p;
             t->son[b] = (TreeNode*)calloc(1, sizeof(TreeNode));
             t->son[b]->p = *p;
-            t->son[b]->box = sunbox;
+            t->son[b]->box = sonbox;
             insertTree(&p2, t);
         } else {
             t->son[b] = (TreeNode*)calloc(1, sizeof(TreeNode));
             t->son[b]->p = *p;
-            t->son[b]->box = sunbox;
+            t->son[b]->box = sonbox;
         }
     } else {
-        t->son[b]->box = sunbox; //?
+        //t->son[b]->box = sonbox; //?
         insertTree(p, t->son[b]);
     }
 }
@@ -115,7 +115,7 @@ void force_tree(TreeNode *tl, TreeNode *t, float diam) {
     if ((t != tl) && (t != NULL)) {
         float r = 0;
         for (int d=0; d<DIM; d++) {
-            r += sqrt(abs(t->p.x[d] - tl->p.x[d]));
+            r += (t->p.x[d] - tl->p.x[d])*(t->p.x[d] - tl->p.x[d]);
         }
         r = sqrt(r);
         if ((isLeaf(t)) || (diam < theta * r)) {
@@ -171,7 +171,7 @@ void moveLeaf(TreeNode *t, TreeNode *root) {
         }
         if ((isLeaf(t)) && (!t->p.moved)) {
             t->p.moved = true;
-            if (particleWithinBox(t->p, t->box)) {
+            if (!particleWithinBox(t->p, t->box)) {
                 insertTree(&t->p, root);
                 t->p.todelete = true;
             }
@@ -202,7 +202,10 @@ void repairTree(TreeNode *t) {
                 // the son node is deleted directly
                 t->p = t->son[d]->p;
                 //std::cout << "t->son[d]->p.x[0] = " << t->son[d]->p.x[0] << std::endl;
-                free(&t->son[d]->p);
+                if(isLeaf(t->son[d])){
+                    free(&t->son[d]->p);
+                    t->son[d] = NULL;
+                }
             }
         }
     }

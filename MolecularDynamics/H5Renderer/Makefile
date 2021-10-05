@@ -25,9 +25,9 @@ OBJECTS := $(SOURCES:$(SRCDIR)/%.$(SRCEXT)=$(OBJDIR)/%.$(OBJEXT))
 MAIN := main
 
 # setting general flags
-CXXFLAGS := -std=c++11 -I$(INCLDIR) -I/usr/include/hdf5/serial -fopenmp
+CXXFLAGS := -std=c++11 -I$(INCLDIR) -I/usr/include/hdf5/serial -Xpreprocessor -fopenmp
 # setting linker flags
-LDFLAGS := -lboost_system -lboost_filesystem -L/usr/lib/x86_64-linux-gnu/hdf5/serial/ -lhdf5
+LDFLAGS := -lboost_system -lboost_filesystem -L/usr/lib/x86_64-linux-gnu/hdf5/serial/ -lhdf5 -lomp
 
 # get kernel name to be able to run sed correctly on Darwin (MacOS) or Linux kernels
 KERNEL := $(shell uname -s)

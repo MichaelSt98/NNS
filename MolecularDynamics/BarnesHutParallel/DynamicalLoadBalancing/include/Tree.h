@@ -9,6 +9,8 @@
 #include "Constants.h"
 #include "Particle.h"
 #include "Logger.h"
+#include "H5Profiler.h"
+
 #include <cmath>
 #include <iostream>
 #include <bitset>
@@ -17,6 +19,9 @@
 #include <mpi.h>
 #include <map>
 #include <fstream>
+#include <highfive/H5File.hpp>
+#include <highfive/H5DataSpace.hpp>
+#include <highfive/H5DataSet.hpp>
 
 #define KEY_MAX ULONG_MAX
 
@@ -47,7 +52,7 @@ struct TreeNode {
 };
 
 typedef unsigned long keytype;
-typedef std::map<keytype, Particle> ParticleMap;
+typedef std::map<keytype, Particle> ParticleMap; // TODO: redo functions utilizing this
 
 struct KeyList {
     keytype k;
@@ -89,6 +94,8 @@ bool isLeaf(TreeNode *t);
 
 void insertTree(Particle *p, TreeNode *t);
 
+void insertTreeFromOtherProc(Particle *p, TreeNode *t);
+
 int sonNumber(Box *box, Box *sonbox, Particle *p);
 
 void compPseudoParticles(TreeNode *t);
@@ -121,6 +128,11 @@ void buildSendList(TreeNode *t, SubDomainKeyTree *s, ParticleList *plist,
 void outputTree(TreeNode *root, bool detailed=false, bool onlyParticles=false);
 
 void outputTree(TreeNode *root, std::string file, bool detailed=false, bool onlyParticles=false);
+
+//void particles2file(TreeNode *root, std::string file, SubDomainKeyTree *s);
+
+void particles2file(TreeNode *root,
+                    HighFive::DataSet *pos, HighFive::DataSet *vel, HighFive::DataSet *key, SubDomainKeyTree *s);
 
 //void outputParticles(TreeNode *root);
 

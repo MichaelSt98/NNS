@@ -32,11 +32,13 @@ int main(int argc, char *argv[]) {
     const double M { opts["M-system"].as<double>() };
     const double R { opts["R-sphere"].as<double>() };
 
+    // mass of a single particle
+    const double m = M/(double)N;
+
     // distande of galxies
-    const double deltaX = 10.*R;
-    const double deltaY = 10.*R;
-    //const double deltaV = .2;
-    const double deltaV = sqrt(G*M/sqrt(deltaX*deltaX+deltaY*deltaY));
+    const double deltaX = 5.*R;
+    const double deltaY = 5.*R;
+    const double deltaV = sqrt(.5*G*M/sqrt(deltaX*deltaX+deltaY*deltaY));
 
     // print help on usage and exit
     if (opts.count("help")) {
@@ -57,9 +59,9 @@ int main(int argc, char *argv[]) {
     std::mt19937 gen(seed); //Standard mersenne_twister_engine seeded with rd()
 
     /** Generate distribution in spherical coordinates **/
-    std::uniform_real_distribution<double> rndRCube(0., 1.);
+    std::uniform_real_distribution<double> rndRCube(0., std::nextafter(1., std::numeric_limits<double>::max()));
     std::uniform_real_distribution<double> rndPhi(0., 2.*M_PI);
-    std::uniform_real_distribution<double> rndCosTheta(-1., 1.);
+    std::uniform_real_distribution<double> rndCosTheta(-1., std::nextafter(1., std::numeric_limits<double>::max()));
 
     // containers for particle properties, each will be written to h5 file as dataset
     std::vector<std::vector<double>> x, v; // positions and velocities
@@ -99,7 +101,7 @@ int main(int argc, char *argv[]) {
                                              r1 * sin(phi1) * sin(theta1) + deltaY/2.,
                                              r1 * cos(theta1)});
             // store particle velocity of galaxy 1 in cartesian coordinates and move it rightwards
-            v.push_back(std::vector<double>{ v1 * sin(phi1) + deltaV/2.,
+            v.push_back(std::vector<double>{ v1 * sin(phi1) + deltaV,
                                              -v1 * cos(phi1), 0.});
 
             // generate random particle in galaxy 2
@@ -116,7 +118,7 @@ int main(int argc, char *argv[]) {
                                              r2 * sin(phi2) * sin(theta2) - deltaY/2.,
                                              r2 * cos(theta2)});
             // store particle velocity of galaxy 2 in cartesian coordinates and move it leftwards
-            v.push_back(std::vector<double>{ v2 * sin(phi2) - deltaV/2.,
+            v.push_back(std::vector<double>{ v2 * sin(phi2) - deltaV,
                                              -v2 * cos(phi2), 0.});
         }
     }
@@ -126,9 +128,6 @@ int main(int argc, char *argv[]) {
     // open h5 file with default property list
     File file("output/N" + std::to_string(N) + "seed" + std::to_string(seed) + ".h5",
               File::ReadWrite | File::Create | File::Truncate);
-
-    // prepare particle mass to be written to file
-    const double m = M/(double)N;
 
     // create data sets
     DataSet mass = file.createDataSet<double>("/m", DataSpace::From(m));

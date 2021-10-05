@@ -18,6 +18,11 @@ void timeIntegration_BH_par(double t, double delta_t, double t_end, float diam, 
 
     double t1, t2; // timing variables
 
+    profiler.disableWrite();
+    compF_BHpar(root, diam, s);
+    repairTree(root); // cleanup local tree by removing symbolicForce-particles
+    profiler.enableWrite();
+
     while (t <= t_end) {
         Logger(INFO) << " ";
         Logger(INFO) << "t = " << t << ", step = " << step;
@@ -35,7 +40,7 @@ void timeIntegration_BH_par(double t, double delta_t, double t_end, float diam, 
             Logger(DEBUG) << "Load balancing ... ";
 
             profiler.setStep(step/loadBalancingInterval);
-            profiler.time();
+            profiler.time("/loadBalancing/totalTime");
 
             //Logger(DEBUG) << "OLD Ranges:";
             //for (int i=0; i<=s->numprocs; i++){
@@ -43,7 +48,6 @@ void timeIntegration_BH_par(double t, double delta_t, double t_end, float diam, 
             //}
 
             //outputTree(root, "log/beforeLBproc" + std::to_string(s->myrank), true, false);
-
             newLoadDistribution(root, s); // calculate new load distribution
 
             //outputTree(root, "log/afterNLDproc" + std::to_string(s->myrank), true, false);
@@ -156,12 +160,33 @@ void timeIntegration_BH_par(double t, double delta_t, double t_end, float diam, 
 
         t += delta_t; // update timestep
 
+        Logger(DEBUG) << "... updating positions ...";
+        t1 = MPI_Wtime();
+
+        profiler.time("/updatePos/totalTime");
+        compX_BH(root, delta_t);
+
+        setFlags(root);
+        moveLeaf(root, root);
+        repairTree(root);
+
+        profiler.disableWrite();
+        sendParticles(root, s);
+        profiler.enableWrite();
+
+        compPseudoParticlesPar(root, s);
+        profiler.time2file("/updatePos/totalTime", s->myrank);
+
+        t2 = MPI_Wtime();
+        Logger(INFO) << "++++++++++++++ Position update: " << t2-t1 << "s";
+        Logger(DEBUG) << "... done.";
+
         //outputTree(root, "log/before_step" + std::to_string(step) + "proc" + std::to_string(s->myrank), true, false);
 
         Logger(DEBUG) << "... force calculation ...";
         t1 = MPI_Wtime();
 
-        profiler.time();
+        profiler.time("/forceComputation/totalTime");
         compF_BHpar(root, diam, s);
         repairTree(root); // cleanup local tree by removing symbolicForce-particles
         profiler.time2file("/forceComputation/totalTime", s->myrank);
@@ -169,39 +194,17 @@ void timeIntegration_BH_par(double t, double delta_t, double t_end, float diam, 
         t2 = MPI_Wtime();
         Logger(INFO) << "+++++++++++++++++++++++++ Force calculation: " << t2-t1 << "s";
 
-        Logger(DEBUG) << "... updating positions and velocities ...";
+        Logger(DEBUG) << "... updating velocities ...";
         t1 = MPI_Wtime();
 
-        profiler.time();
-        compX_BH(root, delta_t);
+        profiler.time("/updateVel/totalTime");
 
         compV_BH(root, delta_t);
 
-        //outputTree(root, "log/before_move" + std::to_string(step) + "proc" + std::to_string(s->myrank),
-        //            true, false);
-
-        setFlags(root);
-        moveLeaf(root, root);
-
-        //outputTree(root, "log/after_move" + std::to_string(step) + "proc" + std::to_string(s->myrank),
-        //            true, false);
-
-        repairTree(root);
-
-        //outputTree(root, "log/after_repair" + std::to_string(step) + "proc" + std::to_string(s->myrank),
-        //            true, false);
-
-        //moveParticles_BH(root);
-
-        profiler.disableWrite();
-        sendParticles(root, s);
-        profiler.enableWrite();
-
-        compPseudoParticlesPar(root, s);
-        profiler.time2file("/updatePosVel/totalTime", s->myrank);
+        profiler.time2file("/updateVel/totalTime", s->myrank);
 
         t2 = MPI_Wtime();
-        Logger(INFO) << "++++++++++++++ Position and velocity update: " << t2-t1 << "s";
+        Logger(INFO) << "++++++++++++++ Velocity update: " << t2-t1 << "s";
         Logger(DEBUG) << "... done.";
 
         //outputTree(root, false, false);

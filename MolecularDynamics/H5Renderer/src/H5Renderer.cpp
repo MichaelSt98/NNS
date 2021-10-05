@@ -41,16 +41,18 @@ void H5Renderer::createImages(std::string outDir){
 
         Logger(INFO) << "Reading " << h5PathIt->filename() << " ...";
 
+        Logger(DEBUG) << "    Opening '" << h5PathIt->string() << "' ...";
         // opening file
         HighFive::File file(h5PathIt->string(), HighFive::File::ReadOnly);
+        Logger(DEBUG) << "    file opened.";
 
         // reading process ranges
-        HighFive::DataSet rng = file.getDataSet("/hilbertRanges");
+        HighFive::DataSet rng = file.getDataSet("/ranges");
         std::vector<unsigned long> ranges;
         rng.read(ranges);
 
         // reading particle keys
-        HighFive::DataSet key = file.getDataSet("/hilbertKey");
+        HighFive::DataSet key = file.getDataSet("/key");
         std::vector<unsigned long> k;
         key.read(k);
 

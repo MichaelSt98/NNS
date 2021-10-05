@@ -14,6 +14,7 @@ typedef struct {
     float x[DIM];
     float v[DIM];
     float F[DIM];
+    float F_old[DIM];
     bool moved = false;
     bool todelete = false;
 } Particle;

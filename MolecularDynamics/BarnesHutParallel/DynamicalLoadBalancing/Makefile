@@ -15,14 +15,15 @@ TESTDIR     := ./test
 DOCDIR      := ./doc
 DOCUMENTSDIR:= ./documents
 IMAGESDIR := ./images
+OUTDIR := ./output
 
 SRCEXT      := cpp
 DEPEXT      := d
 OBJEXT      := o
 
 #Flags, Libraries and Includes
-CXXFLAGS    += -std=c++11 -g #-Wno-conversion -g3 #-std=c++17 -O3 -Wall -pedantic -Wno-vla-extension -I/usr/local/include/ -I/usr/local/include/eigen3/ -I./include -I./src
-LFLAGS      := -std=c++11 -lboost_filesystem -lboost_system #-O3 -Wall -Wno-deprecated -Werror -pedantic -L/usr/local/lib/
+CXXFLAGS    := -std=c++11 -I/usr/include/hdf5/openmpi #-Wno-conversion -g3 #-std=c++17 -O3 -Wall -pedantic -Wno-vla-extension -I/usr/local/include/ -I/usr/local/include/eigen3/ -I./include -I./src
+LFLAGS      := -std=c++11 -lboost_filesystem -lboost_system -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -lhdf5 #-O3 -Wall -Wno-deprecated -Werror -pedantic -L/usr/local/lib/
 LIB         := -Xpreprocessor -fopenmp #-lomp
 INC         := -I$(INCDIR) #-I/usr/local/include
 INCDEP      := -I$(INCDIR)
@@ -37,6 +38,12 @@ DOXYFILE    := $(DOCDIR)/Doxyfile
 
 #default make (all)
 all: resources tester ideas $(TARGET)
+
+# build all with debug flags
+debug: CXXFLAGS += -g
+# show linker invocation when building debug target
+debug: LDFLAGS += -v
+debug: all
 
 #make regarding source files
 sources: resources $(TARGET)
@@ -67,6 +74,12 @@ movie: $(TARGET) | $(IMAGESDIR)
 	@rm -f $(IMAGESDIR)/*.ppm
 	@mpirun -np 2 bin/runner
 	@./createMP4
+	@echo "... done."
+
+h5files: $(TAGRET) | $(OUTDIR)
+	@echo "Creating h5-files in $(OUTDIR) ..."
+	@rm -f $(OUTDIR)/*.h5
+	@mpirun -np 2 bin/runner
 	@echo "... done."
 
 $(IMAGESDIR):
@@ -123,4 +136,4 @@ doc: doxyfile.inc
 	cp -r "./doc/html/" "./docs/"
 
 #Non-File Targets
-.PHONY: all remake clean cleaner resources sources directories ideas tester doc movie
+.PHONY: all remake debug clean cleaner resources sources directories ideas tester doc movie h5files

@@ -42,7 +42,7 @@ all: resources tester ideas $(TARGET)
 # build all with debug flags
 debug: CXXFLAGS += -g
 # show linker invocation when building debug target
-debug: LDFLAGS += -v
+debug: LFLAGS += -v
 debug: all
 
 #make regarding source files
@@ -91,7 +91,7 @@ $(IMAGESDIR):
 #link
 $(TARGET): $(OBJECTS)
 	@echo "Linking ..."
-	@$(CXX) $(LFLAGS) $(INC) -o $(TARGETDIR)/$(TARGET) $^ $(LIB)
+	@$(CXX) $(INC) -o $(TARGETDIR)/$(TARGET) $^ $(LIB) $(LFLAGS)
 
 #compile
 $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)

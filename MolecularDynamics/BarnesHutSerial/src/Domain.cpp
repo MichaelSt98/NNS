@@ -24,7 +24,7 @@ float getSystemSize(Box *b) {
 
 bool particleWithinBox(Particle &p, Box &b) {
     for (int i=0; i<DIM; i++) {
-        if (p.x[i] > b.upper[i] || p.x[i] < b.lower[i]) {
+        if (p.x[i] >= b.upper[i] || p.x[i] < b.lower[i]) {
             return false;
         }
     }
